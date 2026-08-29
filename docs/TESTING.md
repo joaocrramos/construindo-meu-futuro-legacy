@@ -8,23 +8,41 @@
 
 ---
 
-## 2. Resultados Reais da Execução Nesta Tarefa
+## 2. Resultados Reais da Última Execução
 
-Todos os testes foram executados com sucesso real pelo runner do Vitest (`pnpm test` / `vitest run`):
+Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de estimativa ou contagem manual:
 
-- **Arquivos de Teste (Test Files):** 6 arquivos passados (100% sucesso)
-- **Total de Testes:** 20 testes passados (0 falhas, 0 pulados)
+- **Arquivos de Teste (Test Files):** 6 arquivos, 6 aprovados
+- **Total de Testes:** **36 testes** — 36 aprovados, 0 falhos, 0 pulados
 
 ### 2.1 Detalhamento por Arquivo de Teste
 
-| Arquivo de Teste                            | Tipo                | Testes Passados / Total | Status         |
-| :------------------------------------------ | :------------------ | :---------------------- | :------------- |
-| `src/test/formatters.test.ts`               | Unitário            | 3 suítes / 3 testes     | Aprovado (3/3) |
-| `src/test/errorHandler.test.ts`             | Unitário            | 1 suíte / 5 testes      | Aprovado (5/5) |
-| `src/test/pocketbaseClient.test.ts`         | Unitário            | 1 suíte / 2 testes      | Aprovado (2/2) |
-| `src/test/navigation.test.ts`               | Estrutural          | 1 suíte / 5 testes      | Aprovado (5/5) |
-| `src/test/authRegression.test.tsx`          | Frontend / Contexto | 1 suíte / 8 testes      | Aprovado (8/8) |
-| `src/test/disabledFlowsRegression.test.tsx` | Frontend / Telas    | 1 suíte / 5 testes      | Aprovado (5/5) |
+Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A coluna "Blocos `describe`" conta **todos** os `describe`, inclusive os aninhados — blocos de agrupamento **não** são testes e não devem ser somados à contagem de casos.
+
+| Arquivo de Teste                            | Tipo                | Blocos `describe` | Casos `it` | Status |
+| :------------------------------------------ | :------------------ | ----------------: | ---------: | :----- |
+| `src/test/formatters.test.ts`               | Unitário            | 4 (1 + 3 aninhados) |     **11** | 11/11  |
+| `src/test/errorHandler.test.ts`             | Unitário            |                 1 |          5 | 5/5    |
+| `src/test/pocketbaseClient.test.ts`         | Unitário            |                 1 |          2 | 2/2    |
+| `src/test/navigation.test.ts`               | Estrutural          |                 1 |          5 | 5/5    |
+| `src/test/authRegression.test.tsx`          | Frontend / Contexto |                 1 |          8 | 8/8    |
+| `src/test/disabledFlowsRegression.test.tsx` | Frontend / Telas    |                 1 |          5 | 5/5    |
+| **TOTAL**                                   |                     |             **9** |     **36** | 36/36  |
+
+### 2.2 Como os Testes São Descobertos
+
+- O Vitest é configurado por `vitest.config.ts` na raiz (`environment: 'jsdom'`, `globals: true`, alias `@/` → `./src`).
+- Não há `include`/`exclude` customizados: vale o padrão do Vitest, que descobre `**/*.{test,spec}.?(c|m)[jt]s?(x)` em todo o projeto, excluindo `node_modules` e `dist`.
+- Na prática, todos os arquivos de teste vivem em `src/test/` com os sufixos `.test.ts` e `.test.tsx`.
+- Não existe nenhum `it.skip`, `describe.skip`, `.only` ou `.todo` no projeto — portanto todos os casos declarados são coletados e executados.
+
+### 2.3 Nota de Correção de Contagem
+
+Versões anteriores deste documento registraram **20 testes**, e atribuíram **3 testes** a `formatters.test.ts`. Ambos os números estavam incorretos:
+
+- `formatters.test.ts` possui **11 casos `it`** distribuídos em 3 `describe` aninhados. O número 3 correspondia aos blocos de agrupamento, não aos testes.
+- O total correto é **36**, confirmado pela saída do runner (`Tests 36 passed (36)`).
+- Nenhum teste foi adicionado, removido ou renomeado para chegar a esse número: a divergência foi exclusivamente **erro de contagem em relatório anterior**, não perda de descoberta, não mudança de configuração e não diferença entre branches ou entre HEAD local e remoto.
 
 ---
 
@@ -92,6 +110,14 @@ Todos os testes foram executados com sucesso real pelo runner do Vitest (`pnpm t
 | **Estruturais**                 | **Existentes, Executados e Aprovados** | Validam integridade da árvore e estrutura declarativa de menus e rotas.                                                                     |
 | **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto ainda não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2). |
 | **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright). |
+
+### 4.1 Limitações de Cobertura e de Comprovação
+
+- **Não há pipeline de CI** no repositório. Os resultados registrados na seção 2 valem para a execução manual feita no commit correspondente; eles **não** são revalidados automaticamente a cada commit. Qualquer afirmação sobre testes deve ser reconfirmada rodando `pnpm test` no HEAD em questão.
+- **Autenticação real não é testada** — os testes de regressão usam `vi.spyOn` sobre o SDK do PocketBase e provam apenas que uma falha do backend nunca produz sucesso, sessão, token ou papel. Não existe teste contra um PocketBase real.
+- **Não há teste de banco vazio nem de Resend**, porque não existem collections de domínio nem integração de e-mail nesta fase.
+- **`ProtectedRoute` é coberto indiretamente**, via estado do `AuthContext`. Não há teste que monte a rota protegida e verifique o redirecionamento.
+- **Não há medição de cobertura** (`coverage`) configurada.
 
 ---
 
