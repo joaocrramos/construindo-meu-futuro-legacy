@@ -4,6 +4,18 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.13] - 2026-08-29 (Auditoria da Fundação e Governança de Qualidade)
+
+### Corrigido (Fixed)
+
+- **Alinhamento de Versionamento (ADR-006)**:
+  - Registro da versão `0.0.13` correspondente ao valor declarado no `package.json` (fonte de verdade).
+  - Trata-se de sincronização documental e governança operacional sem alterações funcionais de produto (não inclui avanço para Fase 2, autenticação real, banco de dados, migrations, Resend ou domínio patrimonial).
+- **Restauração das Regras de Correctness no Oxlint**:
+  - Removidas as desativações (`"off"`) de regras da categoria `correctness` no arquivo `.oxlintrc.json` (`no-const-assign`, `no-dupe-keys`, `no-func-assign`, `no-import-assign`, `no-obj-calls`, `no-redeclare`, `no-this-before-super`, `no-unsafe-negation`, `no-class-assign`, `no-dupe-class-members`, `no-new-native-nonconstructor`, `no-setter-return`, `no-with`), restaurando o rigor da análise estática (`correctness: "error"`).
+
+---
+
 ## [0.0.12] - 2026-08-29 (Integração contínua e aplicação automática do versionamento)
 
 ### Adicionado (Added)
