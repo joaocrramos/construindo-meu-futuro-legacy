@@ -4,12 +4,25 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.17] - 2026-08-29 (Restauração do package.json como Fonte de Verdade)
+
+### Corrigido (Fixed)
+
+- **Governança de Versionamento (ADR-006)**:
+  - Reversão da solução transitória baseada no arquivo `VERSION` e restauração do campo `version` do `package.json` como única fonte de verdade da versão semântica do produto.
+  - Exclusão definitiva do arquivo `VERSION` da raiz do repositório.
+  - Atualização do guard de validação (`scripts/check-version-alignment.mjs`) e dos fluxos documentados (`docs/DECISIONS.md`, `docs/DEVELOPMENT_WORKFLOW.md`, `.github/workflows/ci.yml`) para verificar estritamente o alinhamento entre `package.json` e `CHANGELOG.md`.
+  - Upgrades de versão no CHANGELOG realizados para convergência com o incremento automático do commit da plataforma para `0.0.17`.
+  - Mudança estritamente de governança e documental, sem alteração funcional de produto, sem avanço para a Fase 2, sem banco de dados, migrations, collections, Resend, autenticação real ou domínio patrimonial.
+
+---
+
 ## [0.0.15] - 2026-08-29 (Alinhamento de Versionamento e Governança)
 
 ### Corrigido (Fixed)
 
 - **Alinhamento de Versionamento (ADR-006)**:
-  - Registro e sincronização da versão `0.0.15` correspondente ao valor declarado no arquivo `VERSION` (fonte de verdade da versão semântica do produto).
+  - Registro e sincronização documental da versão de governança.
   - Trata-se de um incremento operacional e documental sem qualquer alteração funcional de produto.
   - Não inclui avanço para a Fase 2, autenticação real, banco de dados, migrations, collections, Resend, administração funcional ou domínio patrimonial.
 
