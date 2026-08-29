@@ -4,13 +4,35 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.6] - 2025-05-15 (Auditoria e Correções da Fundação)
+
+### Alterado (Changed)
+
+- **Eliminação Completa de Simulações de Sucesso sem Backend**:
+  - `src/pages/public/ForgotPassword.tsx`: Removido `setTimeout` e exibição simulada de "Instruções enviadas". O formulário agora apresenta aviso explícito de funcionalidade em implementação com campos e botão desabilitados.
+  - `src/pages/public/FirstAccess.tsx`: Removida simulação de ativação e timer de redirecionamento. O formulário agora informa que a funcionalidade será ativada na fase de autenticação.
+  - `src/pages/account/Password.tsx`: Removida mensagem falsa de "Senha Alterada" e `setTimeout`. Inputs e botão foram desabilitados com aviso claro.
+  - `src/pages/account/Profile.tsx`: Removido feedback simulado de "Salvo!". Inputs e botão foram desabilitados até a criação dos endpoints na Fase 2.
+- **Alinhamento Documental e de Configurações**:
+  - `README.md`: Corrigida a porta padrão para 8080 (conforme `vite.config.ts`), alinhado o estado da autenticação (fundação visual/estrutural concluída; backend funcional e autenticação real a serem implementados em fase posterior), e documentada a ausência de migrations aplicadas e ausência de integração efetiva com Resend.
+  - `docs/DATABASE_SCHEMA.md`: Removida contagem fixa de collections; documento refatorado para deixar explícito que se trata de proposta de planejamento para a Fase 2, sem collections de negócio criadas ou migrations aplicadas.
+  - `pocketbase/migrations/README.md`: Esclarecido que nenhuma migration foi criada ou aplicada no PocketBase e que o documento representa planejamento arquitetural.
+  - `docs/TESTING.md`: Atualizados comandos com `pnpm`, adicionada classificação rigorosa dos testes e detalhada a cobertura dos novos testes de regressão.
+  - `docs/DEVELOPMENT_WORKFLOW.md`: Atualizados comandos de desenvolvimento para utilizar exclusivamente o gerenciador oficial `pnpm`.
+
+### Adicionado (Added)
+
+- **Suíte de Testes de Regressão da Autenticação e Segurança**:
+  - `src/test/authRegression.test.tsx`: Testes automatizados executáveis garantindo que falhas do PocketBase nunca resultem em login, nunca criem sessão, nunca gravem token, nunca concedam roles ou acesso administrativo, que `isAdmin` nunca retorne verdadeiro sem role admin confiável, e que sessões e tokens mockados não existam.
+  - `src/test/disabledFlowsRegression.test.tsx`: Testes automatizados cobrindo todas as telas com fluxos desabilitados (`Register`, `ForgotPassword`, `FirstAccess`, `AccountPassword`, `AccountProfile`), validando a ausência de mensagens falsas de sucesso e a presença de avisos instrutivos.
+
 ## [0.0.5] - Limpeza da Fundação do Projeto
 
 ### Alterado (Changed)
 
-- **Remoção de Código Morto**: Exclusão de arquivos de template não utilizados e sem referências (`src/components/Layout.tsx`, `src/pages/Index.tsx`, `src/lib/skipAi.ts`, `public/placeholder.svg`, `public/skip.png`).
+- **Remoção de Código Morto**: Exclusão de arquivos de template não utilizados e sem referências.
 - **Segurança e Eliminação de Fallback Mock**:
-  - Remoção completa do fallback de administrador local (`admin@construindomeufuturo.com`), tokens JWT mockados e gravação de sessões falsas no `localStorage` em `AuthContext`.
+  - Remoção completa do fallback de administrador local, tokens JWT mockados e gravação de sessões falsas no `localStorage` em `AuthContext`.
   - Tratamento seguro de autenticação com feedback padronizado em pt-BR quando o PocketBase não puder autenticar ou estiver indisponível.
   - Ajuste na tela de Login para remoção de orientações com credenciais fixas de demonstração.
 - **Fluxo de Cadastro por Convite**:
@@ -61,7 +83,7 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
   - Testes unitários para formatadores financeiros, tratamento de erros, integridade da árvore de navegação e inicialização do cliente PocketBase.
 - **Documentação Técnica Abrangente**:
   - `docs/ARCHITECTURE.md`: Arquitetura do MVP, diretórios e separação de camadas.
-  - `docs/DATABASE_SCHEMA.md`: Modelo relacional e schema planejado das 13 collections.
+  - `docs/DATABASE_SCHEMA.md`: Proposta arquitetural de modelo relacional para a Fase 2.
   - `docs/SECURITY.md`: Políticas de segurança, modelo Invite-Only, RLS e auditoria.
   - `docs/DEVELOPMENT_WORKFLOW.md`: Fluxo de desenvolvimento, convenções e boas práticas.
   - `docs/DECISIONS.md`: Registro de Decisões de Arquitetura (ADRs).

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { PublicLayout } from '@/components/PublicLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,45 +13,12 @@ import {
   CardFooter,
 } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { ShieldCheck, Sparkles, Loader2, ArrowRight } from 'lucide-react'
+import { Sparkles, Info } from 'lucide-react'
 
 export default function FirstAccessPage() {
-  const navigate = useNavigate()
   const [tempCode, setTempCode] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
-  const [loading, setLoading] = React.useState(false)
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
-  const [success, setSuccess] = React.useState(false)
-
-  const handleFirstAccess = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrorMessage(null)
-
-    if (!tempCode || !newPassword) {
-      setErrorMessage('Informe o código temporário recebido e defina sua nova senha.')
-      return
-    }
-
-    if (newPassword.length < 8) {
-      setErrorMessage('A nova senha deve ter no mínimo 8 caracteres.')
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('As senhas não coincidem.')
-      return
-    }
-
-    setLoading(true)
-    try {
-      await new Promise((res) => setTimeout(res, 700))
-      setSuccess(true)
-      setTimeout(() => navigate('/login'), 2000)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <PublicLayout>
@@ -70,22 +37,19 @@ export default function FirstAccessPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {errorMessage && (
-              <Alert variant="destructive" className="py-2.5 text-xs">
-                <AlertTitle className="text-xs font-semibold">Falha na ativação</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
+            <Alert className="py-2.5 text-xs border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+              <Info className="h-4 w-4" />
+              <AlertTitle className="text-xs font-semibold">
+                Funcionalidade em Implementação
+              </AlertTitle>
+              <AlertDescription className="text-[11px] leading-relaxed">
+                O fluxo de ativação do primeiro acesso e definição de senha definitiva estará
+                disponível na fase de autenticação e validação segura de tokens no backend. No
+                momento, a ativação está temporariamente desabilitada.
+              </AlertDescription>
+            </Alert>
 
-            {success && (
-              <Alert className="py-2.5 text-xs border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="h-4 w-4" />
-                <AlertTitle className="text-xs font-semibold">Credencial Ativada!</AlertTitle>
-                <AlertDescription>Redirecionando para a tela de autenticação...</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleFirstAccess} className="space-y-4">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="code" className="text-xs font-semibold">
                   Código Temporário de Acesso / Token
@@ -93,11 +57,11 @@ export default function FirstAccessPage() {
                 <Input
                   id="code"
                   type="text"
-                  placeholder="Código recebido por e-mail"
+                  placeholder="Aguardando liberação do serviço..."
                   value={tempCode}
                   onChange={(e) => setTempCode(e.target.value)}
                   className="h-10 text-xs font-mono"
-                  required
+                  disabled
                 />
               </div>
 
@@ -108,11 +72,11 @@ export default function FirstAccessPage() {
                 <Input
                   id="pass"
                   type="password"
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="••••••••"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="h-10 text-xs"
-                  required
+                  disabled
                 />
               </div>
 
@@ -123,30 +87,20 @@ export default function FirstAccessPage() {
                 <Input
                   id="cpass"
                   type="password"
-                  placeholder="Repita a nova senha"
+                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="h-10 text-xs"
-                  required
+                  disabled
                 />
               </div>
 
               <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-10 text-xs font-semibold"
+                type="button"
+                disabled
+                className="w-full h-10 text-xs font-semibold cursor-not-allowed"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Ativando credenciais seguras...
-                  </>
-                ) : (
-                  <>
-                    <span>Ativar e Salvar Senha</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
+                Ativação Temporariamente Indisponível
               </Button>
             </form>
           </CardContent>

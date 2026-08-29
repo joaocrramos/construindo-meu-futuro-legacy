@@ -12,35 +12,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { KeyRound, ShieldCheck } from 'lucide-react'
+import { KeyRound, Info } from 'lucide-react'
 
 export default function AccountPasswordPage() {
   const [currentPassword, setCurrentPassword] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
-  const [success, setSuccess] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    if (newPassword.length < 8) {
-      setError('A nova senha deve ter no mínimo 8 caracteres.')
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('A confirmação da nova senha não confere.')
-      return
-    }
-
-    setSuccess(true)
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setTimeout(() => setSuccess(false), 3000)
-  }
 
   return (
     <div className="space-y-6">
@@ -56,7 +33,7 @@ export default function AccountPasswordPage() {
 
       <div className="max-w-md">
         <Card className="border-border/80">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={(e) => e.preventDefault()}>
             <CardHeader>
               <CardTitle className="text-base font-semibold">Atualizar Credencial</CardTitle>
               <CardDescription className="text-xs">
@@ -65,21 +42,17 @@ export default function AccountPasswordPage() {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive" className="py-2 text-xs">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {success && (
-                <Alert className="py-2 text-xs border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  <ShieldCheck className="h-4 w-4" />
-                  <AlertTitle className="text-xs font-semibold">Senha Alterada</AlertTitle>
-                  <AlertDescription>
-                    Sua credencial de acesso foi atualizada com sucesso.
-                  </AlertDescription>
-                </Alert>
-              )}
+              <Alert className="py-2.5 text-xs border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                <Info className="h-4 w-4" />
+                <AlertTitle className="text-xs font-semibold">
+                  Funcionalidade em Implementação
+                </AlertTitle>
+                <AlertDescription className="text-[11px] leading-relaxed">
+                  A alteração de senha autenticada estará disponível após a integração dos endpoints
+                  de gestão de credenciais no backend. No momento, a alteração de senha está
+                  temporariamente desabilitada.
+                </AlertDescription>
+              </Alert>
 
               <div className="space-y-1.5">
                 <Label htmlFor="currPass" className="text-xs font-semibold">
@@ -92,7 +65,7 @@ export default function AccountPasswordPage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="h-10 text-xs"
-                  required
+                  disabled
                 />
               </div>
 
@@ -107,7 +80,7 @@ export default function AccountPasswordPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="h-10 text-xs"
-                  required
+                  disabled
                 />
               </div>
 
@@ -122,14 +95,19 @@ export default function AccountPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="h-10 text-xs"
-                  required
+                  disabled
                 />
               </div>
             </CardContent>
 
             <CardFooter className="border-t border-border/60 pt-4">
-              <Button type="submit" size="sm" className="w-full h-9 text-xs font-semibold">
-                Salvar Nova Senha
+              <Button
+                type="button"
+                size="sm"
+                disabled
+                className="w-full h-9 text-xs font-semibold cursor-not-allowed"
+              >
+                Alteração Temporariamente Indisponível
               </Button>
             </CardFooter>
           </form>

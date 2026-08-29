@@ -1,12 +1,15 @@
-# Sequência Lógica de Migrations Planejadas (Fase 2)
+# Planejamento de Migrations (Fase 2)
 
-Este diretório armazena as migrations JavaScript do PocketBase (PocketBase v0.36 JSVM) para evolução do banco de dados.
+Este diretório destina-se a armazenar as migrations JavaScript do PocketBase (JSVM) para evolução do banco de dados.
 
-> **Importante:** Em conformidade com o escopo da Fundação MVP, **nenhuma migration foi aplicada nesta primeira fase**. A sequência abaixo define a ordem lógica de execução planejada para quando a modelagem for persistida no backend.
+> **Aviso Crítico de Estado:**
+> - **NÃO há migrations implementadas ou aplicadas no projeto no momento.**
+> - A sequência de migrations será definida e executada exclusivamente na **Fase 2 (Modelagem e Persistência de Dados)**.
+> - A lista abaixo constitui **apenas um planejamento arquitetural orientativo**, e NÃO um histórico de migrations já executadas ou existentes no banco.
 
 ---
 
-## Sequência Inicial de Migrations Proposta
+## Sequência Inicial de Migrations Proposta (Planejamento)
 
 ```
 pocketbase/migrations/

@@ -34,13 +34,13 @@ pnpm install
 ### Desenvolvimento
 
 ```bash
-# Iniciar servidor de desenvolvimento (porta padrão: 5173)
+# Iniciar servidor de desenvolvimento (porta configurada no Vite: 8080)
 pnpm run dev
 # ou
 pnpm start
 ```
 
-Abre a aplicação em modo de desenvolvimento em [http://localhost:5173](http://localhost:5173).
+Abre a aplicação em modo de desenvolvimento em [http://localhost:8080](http://localhost:8080).
 
 ### Testes
 
@@ -101,6 +101,8 @@ pnpm run preview
 
 ## 📌 Estado Atual da Implementação
 
-- **Fundação Concluída**: Estrutura visual completa, paleta profissional com suporte a tema Claro, Escuro (*Deep Obsidian*) e Automático, layout responsivo (Desktop Sidebar e Mobile Drawer), navegação e todas as rotas mapeadas com estados vazios instrutivos.
-- **Autenticação Real**: Conectada ao cliente PocketBase. Não há dados nem sessões simuladas/mockadas.
-- **Modelo Invite-Only**: O cadastro por convite está desabilitado na interface até que a collection de convites e o serviço transacional sejam provisionados na Fase 2.
+- **Fundação Visual e Estrutural Concluída**: Estrutura visual completa, paleta profissional com suporte a tema Claro, Escuro (*Deep Obsidian*) e Automático, layout responsivo (Desktop Sidebar e Mobile Drawer), navegação e todas as rotas mapeadas com estados vazios instrutivos.
+- **Estado da Autenticação**: A fundação estrutural e o cliente PocketBase estão integrados, mas a autenticação e fluxos reais serão implementados e ativados em fase posterior (Fase 2). Não há sessões simuladas, tokens fixos, usuários mockados nem sucesso falso.
+- **Diretório `pocketbase/` e Ausência de Backend Funcional / Migrations**: O diretório `pocketbase/` contém documentação de planejamento. Nenhuma migration foi criada ou aplicada ao banco de dados no momento, e não há backend funcional ou collections de negócio criadas nesta fase.
+- **Ausência de Integração Efetiva com Resend**: O disparo de e-mails transacionais não está ativo nesta etapa.
+- **Fluxos Desabilitados com Avisos Claros**: Telas de cadastro por convite (`/register`), recuperação de senha (`/forgot-password`), primeiro acesso (`/first-access`), alteração de senha (`/account/password`) e edição de perfil (`/account/profile`) exibem avisos explícitos de funcionalidade em implementação, sem qualquer simulação de sucesso.

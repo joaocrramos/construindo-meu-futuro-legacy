@@ -27,14 +27,14 @@
 
 ## 3. Comandos de Desenvolvimento
 
-| Comando              | Descrição                                                |
-| -------------------- | -------------------------------------------------------- |
-| `npm run dev`        | Inicia o servidor local de desenvolvimento (Vite)        |
-| `npm run build`      | Executa a compilação e bundle de produção com TypeScript |
-| `npm run lint`       | Executa análise estática de código com oxlint            |
-| `npm run lint:fix`   | Corrige problemas automáticos de lint                    |
-| `npm test`           | Executa a suíte completa de testes unitários com Vitest  |
-| `npm run test:watch` | Executa os testes em modo interativo contínuo            |
+| Comando               | Descrição                                                      |
+| --------------------- | -------------------------------------------------------------- |
+| `pnpm run dev`        | Inicia o servidor local de desenvolvimento (Vite - porta 8080) |
+| `pnpm run build`      | Executa a compilação e bundle de produção com TypeScript       |
+| `pnpm run lint`       | Executa análise estática de código com oxlint                  |
+| `pnpm run lint:fix`   | Corrige problemas automáticos de lint                          |
+| `pnpm test`           | Executa a suíte completa de testes com Vitest                  |
+| `pnpm run test:watch` | Executa os testes em modo interativo contínuo                  |
 
 ---
 

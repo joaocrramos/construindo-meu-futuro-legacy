@@ -13,26 +13,10 @@ import {
   CardFooter,
 } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { KeyRound, Mail, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react'
+import { KeyRound, Mail, ArrowLeft } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = React.useState('')
-  const [loading, setLoading] = React.useState(false)
-  const [submitted, setSubmitted] = React.useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-
-    setLoading(true)
-    try {
-      // Simulação do fluxo de envio seguro de instruções de redefinição
-      await new Promise((res) => setTimeout(res, 700))
-      setSubmitted(true)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <PublicLayout>
@@ -51,52 +35,45 @@ export default function ForgotPasswordPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {submitted ? (
-              <Alert className="py-3 text-xs border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                <AlertTitle className="text-xs font-semibold">Instruções enviadas</AlertTitle>
-                <AlertDescription className="text-xs leading-relaxed mt-1">
-                  Se o e-mail <strong className="text-foreground">{email}</strong> estiver
-                  cadastrado em nossa base, você receberá um link com validade temporária para
-                  redefinir sua senha.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-semibold">
-                    E-mail da Conta
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu.email@exemplo.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-9 h-10 text-xs"
-                      required
-                    />
-                  </div>
-                </div>
+            <Alert className="py-2.5 text-xs border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+              <KeyRound className="h-4 w-4" />
+              <AlertTitle className="text-xs font-semibold">
+                Funcionalidade em Implementação
+              </AlertTitle>
+              <AlertDescription className="text-[11px] leading-relaxed">
+                O envio de links e instruções seguras de redefinição de senha estará disponível na
+                fase de integração do serviço de e-mail transacional e autenticação. No momento, o
+                envio está temporariamente desabilitado para evitar confirmações falsas.
+              </AlertDescription>
+            </Alert>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-10 text-xs font-semibold"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processando solicitação...
-                    </>
-                  ) : (
-                    'Enviar Link de Redefinição'
-                  )}
-                </Button>
-              </form>
-            )}
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs font-semibold">
+                  E-mail da Conta
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9 h-10 text-xs"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                disabled
+                className="w-full h-10 text-xs font-semibold cursor-not-allowed"
+              >
+                Recuperação Temporariamente Indisponível
+              </Button>
+            </form>
           </CardContent>
 
           <CardFooter className="flex justify-center border-t border-border/40 pt-4">

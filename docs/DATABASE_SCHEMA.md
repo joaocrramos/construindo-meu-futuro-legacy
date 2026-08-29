@@ -1,12 +1,19 @@
-# Modelo Funcional de Dados e Schema Planejado
+# Modelo Funcional de Dados e Schema Proposto (Planejamento para Fase 2)
 
-Este documento descreve o modelo relacional planejado para persistência no **PocketBase (SQLite)**, cobrindo todas as entidades de domínio, campos, tipos, regras de acesso (RLS) e índices.
-
-> **Importante:** Por decisão de escopo da Fundação MVP, nenhuma migration foi aplicada ao banco de dados nesta etapa. O schema a seguir orienta as migrations da Fase 2.
+Este documento descreve a **proposta de modelo de dados e schema relacional** para a futura persistência no **PocketBase (SQLite)**. O modelo definitivo será validado e implementado na Fase 2.
 
 ---
 
-## 1. Mapeamento de Collections
+## ⚠️ Estado Atual do Banco de Dados vs Planejamento
+
+- **Collections Existentes no PocketBase:** Apenas a auth collection padrão `users` fornecida nativamente pelo PocketBase.
+- **Collections de Domínio Criadas:** **Nenhuma**. Não há collections de negócio (`portfolios`, `accounts`, `positions`, `movements`, etc.) criadas ou provisionadas no banco.
+- **Migrations:** **Nenhuma migration foi criada ou aplicada** até o momento.
+- **Status do Documento:** O conteúdo abaixo é **estritamente uma proposta de planejamento arquitetural** e não representa o estado atual do banco de dados em execução.
+
+---
+
+## 1. Mapeamento de Collections (Proposta Arquitetural para a Fase 2)
 
 | Collection         | Tipo | Objetivo Principal                                      | RLS (Leitura / Escrita)                 |
 | ------------------ | ---- | ------------------------------------------------------- | --------------------------------------- |

@@ -12,19 +12,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
-import { User, Mail, Phone, ShieldCheck, Check } from 'lucide-react'
+import { User, Mail, Phone, ShieldCheck, Info } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function AccountProfilePage() {
   const { user } = useAuth()
   const [name, setName] = React.useState(user?.name || '')
   const [phone, setPhone] = React.useState(user?.phone || '')
-  const [saved, setSaved] = React.useState(false)
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
+  React.useEffect(() => {
+    if (user?.name) setName(user.name)
+    if (user?.phone) setPhone(user.phone)
+  }, [user?.name, user?.phone])
 
   return (
     <div className="space-y-6">
@@ -37,15 +36,27 @@ export default function AccountProfilePage() {
 
       <div className="max-w-2xl">
         <Card className="border-border/80">
-          <form onSubmit={handleSave}>
+          <form onSubmit={(e) => e.preventDefault()}>
             <CardHeader>
               <CardTitle className="text-base font-semibold">Dados Cadastrais</CardTitle>
               <CardDescription className="text-xs">
-                Atualize seus dados pessoais e informações de comunicação
+                Visualize seus dados cadastrais e status de identificação
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
+              <Alert className="py-2.5 text-xs border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                <Info className="h-4 w-4" />
+                <AlertTitle className="text-xs font-semibold">
+                  Funcionalidade em Implementação
+                </AlertTitle>
+                <AlertDescription className="text-[11px] leading-relaxed">
+                  A edição e sincronização cadastral de perfil estará disponível após a
+                  implementação das regras e campos na Fase 2. No momento, a atualização cadastral
+                  está temporariamente desabilitada.
+                </AlertDescription>
+              </Alert>
+
               <div className="space-y-1.5">
                 <Label htmlFor="profEmail" className="text-xs font-semibold">
                   E-mail Principal (Bloqueado)
@@ -76,7 +87,7 @@ export default function AccountProfilePage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Seu nome completo"
                     className="pl-9 h-10 text-xs"
-                    required
+                    disabled
                   />
                 </div>
               </div>
@@ -93,6 +104,7 @@ export default function AccountProfilePage() {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(11) 99999-9999"
                     className="pl-9 h-10 text-xs"
+                    disabled
                   />
                 </div>
               </div>
@@ -110,17 +122,10 @@ export default function AccountProfilePage() {
 
             <CardFooter className="flex items-center justify-between border-t border-border/60 pt-4">
               <span className="text-[11px] text-muted-foreground">
-                Alterações de privilégios não podem ser feitas pelo próprio usuário.
+                Alterações cadastrais serão salvas quando o backend for provisionado.
               </span>
-              <Button type="submit" size="sm" className="h-9 text-xs">
-                {saved ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1 text-emerald-300" />
-                    Salvo!
-                  </>
-                ) : (
-                  'Salvar Alterações'
-                )}
+              <Button type="button" size="sm" disabled className="h-9 text-xs cursor-not-allowed">
+                Atualização Temporariamente Indisponível
               </Button>
             </CardFooter>
           </form>
