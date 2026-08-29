@@ -4,6 +4,12 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.10] - 2026-08-29 (Correções de versionamento)
+
+### Corrigido (Fixed)
+
+- **Todas as versões coincidem agora**:
+
 ## [0.0.9] - 2026-08-29 (Correções da Auditoria da Fundação)
 
 ### Corrigido (Fixed)
