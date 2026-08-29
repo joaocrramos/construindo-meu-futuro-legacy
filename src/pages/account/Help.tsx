@@ -7,7 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { HelpCircle, Shield, FolderLock, Sparkles, BookOpen } from 'lucide-react'
+import { HelpCircle, Sparkles, BookOpen } from 'lucide-react'
 
 export default function AccountHelpPage() {
   return (

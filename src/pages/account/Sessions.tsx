@@ -2,7 +2,7 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Laptop, Smartphone, LogOut, CheckCircle2 } from 'lucide-react'
+import { Laptop, LogOut, CheckCircle2 } from 'lucide-react'
 
 export default function AccountSessionsPage() {
   return (

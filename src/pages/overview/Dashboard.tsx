@@ -13,7 +13,6 @@ import {
   Calendar,
   AlertCircle,
   PlusCircle,
-  ArrowUpRight,
   ShieldCheck,
   FolderTree,
 } from 'lucide-react'

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Settings2, Database, Terminal, Cpu } from 'lucide-react'
+import { Settings2, Database, Cpu } from 'lucide-react'
 
 export default function AdminSettingsPage() {
   return (

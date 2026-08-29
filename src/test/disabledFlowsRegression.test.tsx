@@ -88,7 +88,7 @@ describe('Testes de Regressão de Telas e Fluxos Desabilitados (Sem Sucesso Fals
 
     // Campos desabilitados
     const currPassInput = screen.getByLabelText(/Senha Atual/i) as HTMLInputElement
-    const nPassInput = screen.getByLabelText(/Nova Senha/i) as HTMLInputElement
+    const nPassInput = screen.getByLabelText(/^Nova Senha/i) as HTMLInputElement
     const cPassInput = screen.getByLabelText(/Confirmar Nova Senha/i) as HTMLInputElement
 
     expect(currPassInput.disabled).toBe(true)

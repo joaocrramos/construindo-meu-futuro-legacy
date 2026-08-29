@@ -2,7 +2,7 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Shield, ShieldCheck, KeyRound, Smartphone } from 'lucide-react'
+import { Shield, ShieldCheck, Smartphone } from 'lucide-react'
 
 export default function AccountSecurityPage() {
   return (

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Mail, Send, Server, Key } from 'lucide-react'
+import { Mail, Send, Server } from 'lucide-react'
 
 export default function AdminEmailPage() {
   return (
