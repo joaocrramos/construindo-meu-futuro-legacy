@@ -1,6 +1,6 @@
-# Projeto Criado com o Skip
+# Construindo Meu Futuro
 
-Este projeto foi criado de ponta a ponta com o [Skip](https://goskip.dev).
+Sistema de Gestão Patrimonial e Governança Financeira. Projeto criado com o [Skip](https://goskip.dev).
 
 ## 🚀 Stack Tecnológica
 
