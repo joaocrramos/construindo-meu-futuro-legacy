@@ -2,13 +2,11 @@
 /**
  * Guarda de versionamento (ADR-006).
  *
- * A versão oficial do produto é o campo `version` do package.json. Este script
+ * A versão semântica do produto é definida pelo arquivo `VERSION` na raiz. Este script
  * falha quando a entrada mais recente do CHANGELOG.md não corresponde a ela.
  *
- * Existe porque o desalinhamento reincidiu em várias versões seguidas: commits
- * automáticos "vX.Y.Z" incrementam o package.json sem entrada correspondente no
- * CHANGELOG, e a divergência só era descoberta em auditoria manual. Rodando no
- * CI, a divergência passa a falhar o build no mesmo commit que a introduz.
+ * O campo `version` do package.json é gerenciado como contador operacional pela
+ * plataforma a cada commit/deploy e NÃO define a versão semântica do produto.
  *
  * Uso: pnpm run check:version
  */
@@ -25,27 +23,32 @@ function fail(message, detail) {
   if (detail) console.error(`${detail}\n`)
   console.error(
     '  Regra (ADR-006, docs/DECISIONS.md):\n' +
-      '    1. A versão oficial do produto é o campo "version" do package.json.\n' +
-      '    2. O CHANGELOG.md deve acompanhar estritamente essa mesma versão.\n\n' +
-      '  Para corrigir, adicione ao topo do CHANGELOG.md a entrada da versão\n' +
-      '  declarada no package.json, ou reverta o incremento de versão caso ele\n' +
-      '  não corresponda a uma alteração de produto (ADR-006, regras 4 e 5).\n',
+      '    1. A versão semântica do produto é definida pelo arquivo VERSION na raiz.\n' +
+      '    2. O CHANGELOG.md deve acompanhar estritamente a mesma versão declarada em VERSION.\n' +
+      '    3. O campo version do package.json é gerido automaticamente pela plataforma\n' +
+      '       como contador operacional e não define a versão semântica.\n\n' +
+      '  Para corrigir, sincronize o arquivo VERSION e o topo do CHANGELOG.md\n' +
+      '  para que ambos declarem a mesma versão semântica.\n',
   )
   process.exit(1)
 }
 
-const pkgPath = join(repoRoot, 'package.json')
+const versionFilePath = join(repoRoot, 'VERSION')
 const changelogPath = join(repoRoot, 'CHANGELOG.md')
 
-let pkgVersion
+let expectedVersion
 try {
-  pkgVersion = JSON.parse(readFileSync(pkgPath, 'utf8')).version
+  expectedVersion = readFileSync(versionFilePath, 'utf8')
+    .trim()
+    .replace(/^["']|["']$/g, '')
 } catch (error) {
-  fail(`Não foi possível ler ${pkgPath}.`, `  ${error.message}`)
+  fail(`Não foi possível ler ${versionFilePath}.`, `  ${error.message}`)
 }
 
-if (typeof pkgVersion !== 'string' || !SEMVER.test(pkgVersion)) {
-  fail(`package.json não declara uma versão semântica válida (recebido: ${String(pkgVersion)}).`)
+if (!SEMVER.test(expectedVersion)) {
+  fail(
+    `O arquivo VERSION não declara uma versão semântica válida (recebido: "${expectedVersion}").`,
+  )
 }
 
 let changelog
@@ -64,10 +67,10 @@ if (!heading) {
 
 const changelogVersion = heading[1].trim()
 
-if (changelogVersion !== pkgVersion) {
+if (changelogVersion !== expectedVersion) {
   fail(
-    `package.json declara "${pkgVersion}", mas a entrada mais recente do CHANGELOG.md é "${changelogVersion}".`,
+    `O arquivo VERSION declara "${expectedVersion}", mas a entrada mais recente do CHANGELOG.md é "${changelogVersion}".`,
   )
 }
 
-console.log(`✔ Versionamento alinhado: package.json e CHANGELOG.md em ${pkgVersion}`)
+console.log(`✔ Versionamento alinhado: VERSION e CHANGELOG.md em ${expectedVersion}`)

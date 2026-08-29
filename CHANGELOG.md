@@ -4,12 +4,12 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [0.0.14] - 2026-08-29 (Alinhamento de Versionamento e Governança)
+## [0.0.15] - 2026-08-29 (Alinhamento de Versionamento e Governança)
 
 ### Corrigido (Fixed)
 
 - **Alinhamento de Versionamento (ADR-006)**:
-  - Registro e sincronização da versão `0.0.14` correspondente ao valor declarado no `package.json` (fonte de verdade).
+  - Registro e sincronização da versão `0.0.15` correspondente ao valor declarado no arquivo `VERSION` (fonte de verdade da versão semântica do produto).
   - Trata-se de um incremento operacional e documental sem qualquer alteração funcional de produto.
   - Não inclui avanço para a Fase 2, autenticação real, banco de dados, migrations, collections, Resend, administração funcional ou domínio patrimonial.
 
