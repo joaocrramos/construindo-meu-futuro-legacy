@@ -4,6 +4,27 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.9] - 2026-08-29 (Correções da Auditoria da Fundação)
+
+### Corrigido (Fixed)
+
+- **Configuração e Execução Real dos Testes de Regressão**:
+  - Adicionado `vitest.config.ts` com configuração do ambiente `jsdom` e resolução de alias `@/`.
+  - Movidas as dependências `@testing-library/react` e `vitest` exclusivamente para `devDependencies`.
+  - Instalado `jsdom` em `devDependencies` para permitir a montagem e renderização real de componentes React durante a suíte de testes.
+  - Executados e validados 100% dos testes da suíte (6 arquivos, 20 testes ao total).
+- **Remoção de Código Morto**:
+  - Exclusão do arquivo não utilizado `src/lib/skipAi.ts` após verificação estrita de ausência de referências no codebase.
+- **Linter e Análise Estática**:
+  - Reativada a categoria `correctness: "error"` no arquivo `.oxlintrc.json`.
+  - Análise estática do Oxlint executada com 0 erros e 0 avisos em todo o projeto.
+- **Governança de Versionamento e Documentação**:
+  - Alinhado `CHANGELOG.md` com a versão `0.0.9` presente no `package.json`.
+  - Registrada a regra de governança de versionamento (ADR-006) em `docs/DECISIONS.md`.
+  - Atualizado `docs/TESTING.md` com os resultados, detalhamento de suítes e categorização comprovada dos testes.
+
+---
+
 ## [0.0.8] - 2026-08-29 (Auditoria e Correções da Fundação)
 
 ### Alterado (Changed)
