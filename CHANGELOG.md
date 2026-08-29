@@ -4,6 +4,26 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.12] - 2026-08-29 (Integração contínua e aplicação automática do versionamento)
+
+### Adicionado (Added)
+
+- **Pipeline de Integração Contínua** (`.github/workflows/ci.yml`): executa, a cada push e pull request na `main`, a mesma sequência que um desenvolvedor roda localmente — alinhamento de versão, lint com avisos tratados como erro, verificação de tipos, testes e build de produção. Elimina a necessidade de comprovar manualmente, a cada auditoria, que a fundação continua íntegra.
+- **Guarda de versionamento** (`scripts/check-version-alignment.mjs`, `pnpm run check:version`): compara o campo `version` do `package.json` com a entrada mais recente do `CHANGELOG.md` e falha o build quando divergem, com mensagem apontando a regra da ADR-006. O desalinhamento passa a ser detectado no commit que o introduz, e não em auditoria posterior.
+- **Script `lint:ci`** (`oxlint src --deny-warnings`): avisos do Oxlint passam a produzir saída de erro no CI. O script `lint` permanece inalterado para uso local.
+- **Script `verify`**: encadeia localmente a mesma sequência do CI (`check:version`, `lint:ci`, `tsc --noEmit`, `test`, `build`).
+
+### Corrigido (Fixed)
+
+- **Alinhamento de versão**: o commit de incremento `v0.0.12` havia elevado o `package.json` para `0.0.12` sem entrada correspondente no `CHANGELOG.md`, que permanecia em `[0.0.11]`. O `CHANGELOG.md` foi alinhado a `0.0.12`, conforme a regra 2 da ADR-006. A versão do produto **não** foi incrementada nesta tarefa.
+
+### Observações
+
+- Este é o quarto ciclo em que o desalinhamento de versão reincide por incremento automático sem entrada de changelog. A causa está no processo que gera os commits `vX.Y.Z`, não no conteúdo do repositório; a guarda automática acima converte a divergência silenciosa em falha explícita de build (ADR-006, regra 6).
+- Nenhuma alteração em banco de dados, migrations, collections, usuários, seeds, autenticação real, Resend ou domínio patrimonial.
+
+---
+
 ## [0.0.11] - 2026-08-29 (Correções de QA e alinhamento de versão)
 
 ### Corrigido (Fixed)

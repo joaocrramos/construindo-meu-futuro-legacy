@@ -10,12 +10,15 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "oxlint src",
+    "lint:ci": "oxlint src --deny-warnings",
     "lint:fix": "oxlint src --fix",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:version": "node scripts/check-version-alignment.mjs",
+    "verify": "pnpm run check:version && pnpm run lint:ci && pnpm exec tsc --noEmit && pnpm test && pnpm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

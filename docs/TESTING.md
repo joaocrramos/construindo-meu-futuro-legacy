@@ -113,7 +113,7 @@ Versões anteriores deste documento registraram **20 testes**, e atribuíram **3
 
 ### 4.1 Limitações de Cobertura e de Comprovação
 
-- **Não há pipeline de CI** no repositório. Os resultados registrados na seção 2 valem para a execução manual feita no commit correspondente; eles **não** são revalidados automaticamente a cada commit. Qualquer afirmação sobre testes deve ser reconfirmada rodando `pnpm test` no HEAD em questão.
+- **Os testes são revalidados automaticamente pelo CI** (`.github/workflows/ci.yml`) a cada push e pull request na `main`, junto com alinhamento de versão, lint, tipagem e build. O resultado do CI é a evidência de referência sobre o estado da suíte em um commit — os números da seção 2 devem ser lidos como o retrato da última execução registrada, não como garantia perpétua. Para reproduzir localmente a mesma sequência, use `pnpm run verify`.
 - **Autenticação real não é testada** — os testes de regressão usam `vi.spyOn` sobre o SDK do PocketBase e provam apenas que uma falha do backend nunca produz sucesso, sessão, token ou papel. Não existe teste contra um PocketBase real.
 - **Não há teste de banco vazio nem de Resend**, porque não existem collections de domínio nem integração de e-mail nesta fase.
 - **`ProtectedRoute` é coberto indiretamente**, via estado do `AuthContext`. Não há teste que monte a rota protegida e verifique o redirecionamento.

@@ -1,0 +1,60 @@
+name: CI
+
+# Verificação automática da fundação. Roda os mesmos comandos que um
+# desenvolvedor roda localmente, de modo que nenhuma afirmação sobre testes,
+# lint, tipos, build ou versionamento precise ser confirmada manualmente.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Versão, lint, tipos, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      # ADR-006: package.json é a fonte da versão; o CHANGELOG deve acompanhá-la.
+      - name: Alinhamento de versão (package.json x CHANGELOG.md)
+        run: pnpm run check:version
+
+      # --deny-warnings: avisos do Oxlint falham o build, não apenas erros.
+      - name: Lint (Oxlint, avisos tratados como erro)
+        run: pnpm run lint:ci
+
+      - name: Verificação de tipos (TypeScript)
+        run: pnpm exec tsc --noEmit
+
+      - name: Testes (Vitest)
+        run: pnpm test
+
+      - name: Build de produção (Vite)
+        run: pnpm run build

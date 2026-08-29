@@ -33,8 +33,25 @@
 | `pnpm run build`      | Executa a compilação e bundle de produção com TypeScript       |
 | `pnpm run lint`       | Executa análise estática de código com oxlint                  |
 | `pnpm run lint:fix`   | Corrige problemas automáticos de lint                          |
+| `pnpm run lint:ci`    | Igual ao `lint`, mas trata avisos como erro (usado pelo CI)    |
 | `pnpm test`           | Executa a suíte completa de testes com Vitest                  |
 | `pnpm run test:watch` | Executa os testes em modo interativo contínuo                  |
+| `pnpm run check:version` | Verifica se `package.json` e `CHANGELOG.md` declaram a mesma versão (ADR-006) |
+| `pnpm run verify`     | Roda localmente a mesma sequência do CI: versão, lint, tipos, testes e build |
+
+---
+
+## 3.1 Integração Contínua
+
+O workflow `.github/workflows/ci.yml` executa, a cada push e pull request na `main`, exatamente a sequência do comando `verify`:
+
+1. `pnpm run check:version` — alinhamento entre `package.json` e `CHANGELOG.md` (ADR-006, regra 6)
+2. `pnpm run lint:ci` — Oxlint com avisos tratados como erro
+3. `pnpm exec tsc --noEmit` — verificação de tipos
+4. `pnpm test` — suíte Vitest
+5. `pnpm run build` — build de produção
+
+Conforme a ADR-007, o resultado do CI é a evidência de referência sobre o estado de qualidade de um commit. Antes de abrir um pull request, rode `pnpm run verify` para antecipar as mesmas falhas localmente.
 
 ---
 
