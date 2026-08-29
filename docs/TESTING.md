@@ -19,17 +19,17 @@ Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de 
 
 Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A coluna "Blocos `describe`" conta **todos** os `describe`, inclusive os aninhados — blocos de agrupamento **não** são testes e não devem ser somados à contagem de casos.
 
-| Arquivo de Teste                            | Tipo                |   Blocos `describe` | Casos `it` | Status |
-| :------------------------------------------ | :------------------ | ------------------: | ---------: | :----- |
-| `src/test/formatters.test.ts`               | Unitário            | 4 (1 + 3 aninhados) |     **11** | 11/11  |
-| `src/test/errorHandler.test.ts`             | Unitário            |                   1 |          5 | 5/5    |
-| `src/test/pocketbaseClient.test.ts`         | Unitário            |                   1 |          2 | 2/2    |
-| `src/test/navigation.test.ts`               | Estrutural          |                   1 |          5 | 5/5    |
-| `src/test/authRegression.test.tsx`          | Frontend / Contexto |                   1 |          8 | 8/8    |
-| `src/test/disabledFlowsRegression.test.tsx` | Frontend / Telas    |                   1 |          5 | 5/5    |
-| `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard   |                   1 |          6 | 6/6    |
-| `src/test/deadCodeRegression.test.ts`       | Estrutural / Higiene |                  1 |          3 | 3/3    |
-| **TOTAL**                                   |                     |              **11** |     **45** | 45/45  |
+| Arquivo de Teste                             | Tipo                 |   Blocos `describe` | Casos `it` | Status |
+| :------------------------------------------- | :------------------- | ------------------: | ---------: | :----- |
+| `src/test/formatters.test.ts`                | Unitário             | 4 (1 + 3 aninhados) |     **11** | 11/11  |
+| `src/test/errorHandler.test.ts`              | Unitário             |                   1 |          5 | 5/5    |
+| `src/test/pocketbaseClient.test.ts`          | Unitário             |                   1 |          2 | 2/2    |
+| `src/test/navigation.test.ts`                | Estrutural           |                   1 |          5 | 5/5    |
+| `src/test/authRegression.test.tsx`           | Frontend / Contexto  |                   1 |          8 | 8/8    |
+| `src/test/disabledFlowsRegression.test.tsx`  | Frontend / Telas     |                   1 |          5 | 5/5    |
+| `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard     |                   1 |          6 | 6/6    |
+| `src/test/deadCodeRegression.test.ts`        | Estrutural / Higiene |                   1 |          3 | 3/3    |
+| **TOTAL**                                    |                      |              **11** |     **45** | 45/45  |
 
 ### 2.2 Como os Testes São Descobertos
 
