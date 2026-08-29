@@ -41,3 +41,12 @@
 - **Status:** Aprovado.
 - **Contexto:** Valores em BRL exigem separador de milhar com ponto e decimal com vírgula, com distinção entre valores brutos e líquidos.
 - **Decisão:** Criar módulo central `src/lib/formatters.ts` com testes unitários cobrindo nulos, negativos e distinção de impostos.
+
+---
+
+## ADR-006: Alinhamento de Versionamento da Plataforma (v0.0.8)
+
+- **Status:** Aprovado.
+- **Contexto:** O contador interno de build/deploy da plataforma registrou a versão `0.0.8` (referência `deployment.lastDevBuildRef` no hash `4d52684`), e o `package.json` já havia sido alinhado para `"version": "0.0.8"`. No entanto, a entrada mais recente no `CHANGELOG.md` ainda constava como `[0.0.7]`, gerando divergência entre os artefatos de documentação e a configuração do pacote.
+- **Decisão:** Alinhar o cabeçalho do `CHANGELOG.md` de `[0.0.7]` para `[0.0.8]` mantendo todo o conteúdo e a data (`2026-08-29`), consolidando a versão `0.0.8` em todos os registros do repositório. Nenhuma funcionalidade de Fase 2 foi declarada como concluída.
+- **Consequências:** Sincronização e rastreabilidade total entre o contador da plataforma, o manifesto do projeto (`package.json`) e o histórico de alterações (`CHANGELOG.md`), sem modificações em esquemas de banco, autenticação ou regras de negócio.

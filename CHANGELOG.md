@@ -4,7 +4,7 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [0.0.7] - 2026-08-29 (Auditoria e Correções da Fundação)
+## [0.0.8] - 2026-08-29 (Auditoria e Correções da Fundação)
 
 ### Alterado (Changed)
 
