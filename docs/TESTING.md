@@ -19,15 +19,15 @@ Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de 
 
 Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A coluna "Blocos `describe`" conta **todos** os `describe`, inclusive os aninhados — blocos de agrupamento **não** são testes e não devem ser somados à contagem de casos.
 
-| Arquivo de Teste                            | Tipo                | Blocos `describe` | Casos `it` | Status |
-| :------------------------------------------ | :------------------ | ----------------: | ---------: | :----- |
+| Arquivo de Teste                            | Tipo                |   Blocos `describe` | Casos `it` | Status |
+| :------------------------------------------ | :------------------ | ------------------: | ---------: | :----- |
 | `src/test/formatters.test.ts`               | Unitário            | 4 (1 + 3 aninhados) |     **11** | 11/11  |
-| `src/test/errorHandler.test.ts`             | Unitário            |                 1 |          5 | 5/5    |
-| `src/test/pocketbaseClient.test.ts`         | Unitário            |                 1 |          2 | 2/2    |
-| `src/test/navigation.test.ts`               | Estrutural          |                 1 |          5 | 5/5    |
-| `src/test/authRegression.test.tsx`          | Frontend / Contexto |                 1 |          8 | 8/8    |
-| `src/test/disabledFlowsRegression.test.tsx` | Frontend / Telas    |                 1 |          5 | 5/5    |
-| **TOTAL**                                   |                     |             **9** |     **36** | 36/36  |
+| `src/test/errorHandler.test.ts`             | Unitário            |                   1 |          5 | 5/5    |
+| `src/test/pocketbaseClient.test.ts`         | Unitário            |                   1 |          2 | 2/2    |
+| `src/test/navigation.test.ts`               | Estrutural          |                   1 |          5 | 5/5    |
+| `src/test/authRegression.test.tsx`          | Frontend / Contexto |                   1 |          8 | 8/8    |
+| `src/test/disabledFlowsRegression.test.tsx` | Frontend / Telas    |                   1 |          5 | 5/5    |
+| **TOTAL**                                   |                     |               **9** |     **36** | 36/36  |
 
 ### 2.2 Como os Testes São Descobertos
 
@@ -103,12 +103,12 @@ Versões anteriores deste documento registraram **20 testes**, e atribuíram **3
 
 ## 4. Classificação dos Testes do Projeto e Limitações
 
-| Categoria                       | Status no Projeto                      | Descrição e Limitações                                                                                                                      |
+| Categoria                       | Status e Execução Nesta Tarefa         | Descrição e Limitações                                                                                                                      |
 | :------------------------------ | :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Unitários**                   | **Existentes, Executados e Aprovados** | Testam funções puras e utilitários isolados (`formatters`, `errorHandler`, `pocketbaseClient`).                                             |
-| **Frontend / Regressão**        | **Existentes, Executados e Aprovados** | Testam componentes React renderizados em ambiente virtual jsdom com mock de chamadas do SDK.                                                |
-| **Estruturais**                 | **Existentes, Executados e Aprovados** | Validam integridade da árvore e estrutura declarativa de menus e rotas.                                                                     |
-| **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto ainda não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2). |
+| **Unitários**                   | **Executados e Aprovados (18 testes)** | Testam funções puras e utilitários isolados (`formatters`: 11, `errorHandler`: 5, `pocketbaseClient`: 2).                                   |
+| **Frontend / Regressão**        | **Executados e Aprovados (13 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 5).                                      |
+| **Estruturais**                 | **Executados e Aprovados (5 testes)**  | Validam integridade da árvore e estrutura declarativa de menus e rotas (`navigation`: 5).                                                   |
+| **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2).       |
 | **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright). |
 
 ### 4.1 Limitações de Cobertura e de Comprovação

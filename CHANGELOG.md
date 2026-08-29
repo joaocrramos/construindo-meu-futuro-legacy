@@ -8,24 +8,15 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ### Corrigido (Fixed)
 
-- **Remoção de código morto (reincidência)**: `src/lib/skipAi.ts` havia retornado ao repositório sem referências ativas. O arquivo foi removido novamente. Nenhum import, rota, teste ou configuração aponta para ele.
-- **Correção da contagem de testes em `docs/TESTING.md`**: o documento registrava 20 testes (e 3 para `formatters.test.ts`). A contagem real, obtida da saída do runner, é de **36 testes em 6 arquivos**; os "3" correspondiam a blocos `describe` aninhados, não a casos de teste. Nenhum teste foi adicionado ou removido para ajustar o número.
-- **Documentação da descoberta de testes e das limitações de cobertura**: `docs/TESTING.md` passa a registrar como o Vitest descobre os arquivos, a ausência de `skip`/`only`, a ausência de CI e o que não é coberto (autenticação real, banco vazio, Resend, E2E, cobertura).
-- **Alinhamento de versão**: `CHANGELOG.md` alinhado ao `package.json` (`0.0.11`), conforme a regra 2 da ADR-006. A versão do produto não foi incrementada nesta tarefa.
+- **Remoção de código morto (reincidência)**: `src/lib/skipAi.ts` havia retornado ao repositório sem referências ativas. O arquivo foi removido definitivamente após verificação estrita de ausência de referências no codebase (nenhum import, rota, teste ou configuração aponta para ele).
+- **Correção e consolidação de versionamento**: `CHANGELOG.md` alinhado à versão `0.0.11` do `package.json` (fonte de verdade segundo a ADR-006 em `docs/DECISIONS.md`), consolidando a entrada `[0.0.10]` anterior.
+- **Correção da contagem e classificação de testes em `docs/TESTING.md`**: comprovação e registro dos 36 casos de teste reais em 6 arquivos de teste, diferenciando a execução unitária/estrutural/contextual da fundação frente a integrações reais e E2E.
 
 ### Observações
 
-- O seletor ambíguo em `src/test/disabledFlowsRegression.test.tsx` e os imports não utilizados já haviam sido corrigidos em `411b200`; nenhuma alteração adicional foi necessária nesses pontos.
-- O seletor do campo de nova senha permanece `/^Nova Senha/i`. A âncora final (`/^Nova Senha$/i`) não pode ser usada porque o label real é `Nova Senha (mín. 8 caracteres)`; a âncora inicial já é suficiente para desambiguar de `Confirmar Nova Senha`.
-- Nenhuma alteração em banco, migrations, collections, autenticação, Resend ou domínio patrimonial.
+- Nenhuma alteração em banco de dados, migrations, collections, usuários, seeds, autenticação real, Resend ou domínio patrimonial.
 
 ---
-
-## [0.0.10] - 2026-08-29 (Correções de versionamento)
-
-### Corrigido (Fixed)
-
-- **Todas as versões coincidem agora**:
 
 ## [0.0.9] - 2026-08-29 (Correções da Auditoria da Fundação)
 
