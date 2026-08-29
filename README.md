@@ -1,28 +1,32 @@
 # Construindo Meu Futuro
 
-Sistema de Gestão Patrimonial e Governança Financeira. Projeto criado com o [Skip](https://goskip.dev).
+Sistema de organização patrimonial e acompanhamento de investimentos pessoais, com foco em consolidação financeira familiar, governança e segurança de dados.
+
+## 🎯 Objetivo do Produto
+
+Prover aos usuários e famílias uma plataforma centralizada, intuitiva e segura para monitorar a evolução do patrimônio líquido, distribuição por classes de ativos, metas financeiras, vencimentos, liquidez e movimentações, com controle de acesso rigoroso por papéis.
 
 ## 🚀 Stack Tecnológica
 
-- **React 19** - Biblioteca JavaScript para construção de interfaces
-- **Vite** - Build tool extremamente rápida
-- **TypeScript** - Superset tipado do JavaScript
-- **Shadcn UI** - Componentes reutilizáveis e acessíveis
-- **Tailwind CSS** - Framework CSS utility-first
-- **React Router** - Roteamento para aplicações React
-- **React Hook Form** - Gerenciamento de formulários performático
-- **Zod** - Validação de schemas TypeScript-first
-- **Recharts** - Biblioteca de gráficos para React
+- **React 19** - Biblioteca JavaScript para construção de interfaces reativas
+- **Vite 8** - Build tool e servidor de desenvolvimento
+- **TypeScript** - Tipagem estática de ponta a ponta
+- **Tailwind CSS & Shadcn UI** - Estilização utility-first com primitives acessíveis baseados em Radix UI
+- **PocketBase** - Backend integrado para autenticação e banco de dados
+- **React Router 7** - Roteamento cliente estruturado com Route Guards
+- **Vitest** - Suíte de testes unitários e de integração
+- **Oxlint & Oxfmt** - Linter e formatador de alta performance
+- **Gerenciador de Pacotes**: **pnpm**
 
 ## 📋 Pré-requisitos
 
 - Node.js 18+
-- npm
+- pnpm (gerenciador oficial adotado no projeto)
 
 ## 🔧 Instalação
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## 💻 Scripts Disponíveis
@@ -30,102 +34,73 @@ npm install
 ### Desenvolvimento
 
 ```bash
-# Iniciar servidor de desenvolvimento
-npm start
+# Iniciar servidor de desenvolvimento (porta padrão: 5173)
+pnpm run dev
 # ou
-npm run dev
+pnpm start
 ```
 
 Abre a aplicação em modo de desenvolvimento em [http://localhost:5173](http://localhost:5173).
 
-### Build
+### Testes
 
 ```bash
-# Build para produção
-npm run build
-
-# Build para desenvolvimento
-npm run build:dev
+# Executar a suíte de testes com Vitest
+pnpm test
 ```
 
-Gera os arquivos otimizados para produção na pasta `dist/`.
-
-### Preview
+### Checagem de Tipos e Linting
 
 ```bash
+# Checagem estática de tipos com TypeScript
+pnpm exec tsc --noEmit
+
+# Análise estática com Oxlint
+pnpm run lint
+
+# Correção automática de problemas no lint
+pnpm run lint:fix
+
+# Formatação de código
+pnpm run format
+```
+
+### Build e Preview
+
+```bash
+# Build para produção (gerado na pasta dist/)
+pnpm run build
+
 # Visualizar build de produção localmente
-npm run preview
+pnpm run preview
 ```
 
-Permite visualizar a build de produção localmente antes do deploy.
-
-### Linting e Formatação
-
-```bash
-# Executar linter
-npm run lint
-
-# Executar linter e corrigir problemas automaticamente
-npm run lint:fix
-
-# Formatar código com Oxfmt
-npm run format
-```
-
-## 📁 Estrutura do Projeto
+## 📁 Estrutura Principal de Diretórios
 
 ```
 .
-├── src/              # Código fonte da aplicação
-├── public/           # Arquivos estáticos
-├── dist/             # Build de produção (gerado)
-├── node_modules/     # Dependências (gerado)
-└── package.json      # Configurações e dependências do projeto
+├── src/
+│   ├── components/       # Layouts (AppLayout, PublicLayout), Route Guards e UI Kit
+│   │   └── ui/           # Primitivas shadcn/ui (Radix UI)
+│   ├── config/           # Configurações de navegação e constantes globais
+│   ├── contexts/         # Contextos React (AuthContext, ThemeContext)
+│   ├── hooks/            # Custom hooks (use-mobile, use-realtime, use-toast)
+│   ├── lib/              # Utilitários, formatadores pt-BR, cliente PocketBase e error handler
+│   ├── pages/            # Páginas da aplicação divididas por área de negócio:
+│   │   ├── public/       # Portal inicial, Login, Convite, Primeiro Acesso, Recuperação de Senha
+│   │   ├── overview/     # Dashboard, Resumo, Evolução, Distribuição, Alertas, Vencimentos, Metas
+│   │   ├── wealth/       # Carteiras, Contas, Instituições, Ativos, Posições, Movimentações, etc.
+│   │   ├── admin/        # Gestão de Usuários, Convites, Permissões, Auditoria, Segurança
+│   │   └── account/      # Perfil do Titular, Segurança, Senha, Sessões, Aparência, Ajuda
+│   └── test/             # Testes unitários da fundação
+├── public/               # Ativos estáticos públicos (favicons, og-image)
+├── pocketbase/           # Migrations e hooks do backend
+├── docs/                 # Documentação técnica e registros de arquitetura (ADRs)
+└── package.json          # Metadados e dependências do projeto
 ```
 
-## 🎨 Componentes UI
+## 📌 Estado Atual da Implementação
 
-Este template inclui uma biblioteca completa de componentes Shadcn UI baseados em Radix UI:
-
-- Accordion
-- Alert Dialog
-- Avatar
-- Button
-- Checkbox
-- Dialog
-- Dropdown Menu
-- Form
-- Input
-- Label
-- Select
-- Switch
-- Tabs
-- Toast
-- Tooltip
-- E muito mais...
-
-## 📝 Ferramentas de Qualidade de Código
-
-- **TypeScript**: Tipagem estática
-- **Oxlint**: Linter extremamente rápido
-- **Oxfmt**: Formatação automática de código
-
-## 🔄 Workflow de Desenvolvimento
-
-1. Instale as dependências: `npm install`
-2. Inicie o servidor de desenvolvimento: `npm start`
-3. Faça suas alterações
-4. Verifique o código: `npm run lint`
-5. Formate o código: `npm run format`
-6. Crie a build: `npm run build`
-7. Visualize a build: `npm run preview`
-
-## 📦 Build e Deploy
-
-Para criar uma build otimizada para produção:
-
-```bash
-npm run build
-```
-
-Os arquivos otimizados serão gerados na pasta `dist/` e estarão prontos para deploy.
+- **Fundação Concluída**: Estrutura visual completa, paleta profissional com suporte a tema Claro, Escuro (*Deep Obsidian*) e Automático, layout responsivo (Desktop Sidebar e Mobile Drawer), navegação e todas as rotas mapeadas com estados vazios instrutivos.
+- **Autenticação Real**: Conectada ao cliente PocketBase. Não há dados nem sessões simuladas/mockadas.
+- **Modelo Invite-Only**: O cadastro por convite está desabilitado na interface até que a collection de convites e o serviço transacional sejam provisionados na Fase 2.

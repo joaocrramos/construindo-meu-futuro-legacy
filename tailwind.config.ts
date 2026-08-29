@@ -6,12 +6,7 @@ import aspectRatioPlugin from '@tailwindcss/aspect-ratio'
 
 export default {
   darkMode: ['class'],
-  content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
-  ],
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
   prefix: '',
   theme: {
     container: {
@@ -27,8 +22,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter var', 'SF Pro Display', 'system-ui', 'sans-serif'],
-        display: ['SF Pro Display', 'Inter var', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'Inter var', 'system-ui', 'sans-serif'],
+        heading: ['Outfit', 'Plus Jakarta Sans', 'sans-serif'],
+        display: ['Outfit', 'SF Pro Display', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',

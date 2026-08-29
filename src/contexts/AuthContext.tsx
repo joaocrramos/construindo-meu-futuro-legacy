@@ -29,14 +29,12 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 
-const AUTH_STORAGE_KEY = 'cmf-mock-auth-state'
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<UserProfile | null>(null)
   const [token, setToken] = React.useState<string | null>(null)
   const [isLoading, setIsLoading] = React.useState<boolean>(true)
 
-  // Inicializa o estado lendo tanto o PocketBase quanto a persistência simulada local para testes/fundação
+  // Inicializa o estado lendo exclusivamente a sessão válida do PocketBase
   React.useEffect(() => {
     const initAuth = () => {
       try {
@@ -55,16 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
           setToken(pb.authStore.token)
         } else {
-          // Verifica se há sessão local ativa gravada para navegação de desenvolvimento/testes
-          const savedSession = localStorage.getItem(AUTH_STORAGE_KEY)
-          if (savedSession) {
-            const parsed = JSON.parse(savedSession)
-            setUser(parsed.user)
-            setToken(parsed.token)
-          } else {
-            setUser(null)
-            setToken(null)
-          }
+          setUser(null)
+          setToken(null)
         }
       } catch {
         setUser(null)
@@ -89,11 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         setToken(tokenVal)
       } else {
-        const savedSession = localStorage.getItem(AUTH_STORAGE_KEY)
-        if (!savedSession) {
-          setUser(null)
-          setToken(null)
-        }
+        setUser(null)
+        setToken(null)
       }
     })
 
@@ -105,51 +92,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = React.useCallback(async (email: string, pass: string) => {
     setIsLoading(true)
     try {
-      // Tenta autenticar pelo PocketBase se configurado
-      try {
-        const authData = await pb.collection('users').authWithPassword(email, pass)
-        if (authData.record) {
-          const rec = authData.record as AuthRecord & { role?: string; name?: string }
-          const u: UserProfile = {
-            id: rec.id,
-            email: rec.email || email,
-            name: rec.name || email.split('@')[0],
-            role: (rec.role as 'admin' | 'user') || (email.includes('admin') ? 'admin' : 'user'),
-            status: 'active',
-          }
-          setUser(u)
-          setToken(authData.token)
-          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: u, token: authData.token }))
-          return { success: true }
+      const authData = await pb.collection('users').authWithPassword(email, pass)
+      if (authData.record) {
+        const rec = authData.record as AuthRecord & {
+          role?: string
+          name?: string
+          status?: string
         }
-      } catch (pbErr: unknown) {
-        // Se o PocketBase não estiver com users cadastrados ainda, permitimos login estrutural de demonstração se for admin
-        // para garantir teste de rotas sem quebrar a restrição
-        console.warn('PocketBase auth fallthrough:', pbErr)
-        // Fallback simulado para desenvolvimento
-        if (email === 'admin@construindomeufuturo.com' && pass.length >= 6) {
-          const u: UserProfile = {
-            id: 'mock-admin-id',
-            email: 'admin@construindomeufuturo.com',
-            name: 'Administrador do Sistema',
-            role: 'admin',
-            status: 'active',
-          }
-          setUser(u)
-          setToken('mock-admin-jwt-token')
-          localStorage.setItem(
-            AUTH_STORAGE_KEY,
-            JSON.stringify({ user: u, token: 'mock-admin-jwt-token' }),
-          )
-          return { success: true }
+        const u: UserProfile = {
+          id: rec.id,
+          email: rec.email || email,
+          name: rec.name || email.split('@')[0],
+          role: (rec.role as 'admin' | 'user') || 'user',
+          status: (rec.status as 'active') || 'active',
         }
-        throw pbErr
+        setUser(u)
+        setToken(authData.token)
+        return { success: true }
       }
       return { success: false, error: 'Credenciais inválidas' }
-    } catch (err) {
+    } catch {
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Falha ao autenticar. Verifique seus dados.',
+        error:
+          'Credenciais inválidas ou serviço de autenticação indisponível. Verifique seus dados.',
       }
     } finally {
       setIsLoading(false)
@@ -158,7 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(() => {
     pb.authStore.clear()
-    localStorage.removeItem(AUTH_STORAGE_KEY)
     setUser(null)
     setToken(null)
   }, [])

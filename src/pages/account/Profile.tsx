@@ -54,7 +54,7 @@ export default function AccountProfilePage() {
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="profEmail"
-                    value={user?.email || 'admin@construindomeufuturo.com'}
+                    value={user?.email || ''}
                     disabled
                     className="pl-9 h-10 text-xs bg-muted text-muted-foreground cursor-not-allowed"
                   />

@@ -4,7 +4,28 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [1.0.0-foundation] - 2025-05-15
+## [0.0.5] - Limpeza da Fundação do Projeto
+
+### Alterado (Changed)
+
+- **Remoção de Código Morto**: Exclusão de arquivos de template não utilizados e sem referências (`src/components/Layout.tsx`, `src/pages/Index.tsx`, `src/lib/skipAi.ts`, `public/placeholder.svg`, `public/skip.png`).
+- **Segurança e Eliminação de Fallback Mock**:
+  - Remoção completa do fallback de administrador local (`admin@construindomeufuturo.com`), tokens JWT mockados e gravação de sessões falsas no `localStorage` em `AuthContext`.
+  - Tratamento seguro de autenticação com feedback padronizado em pt-BR quando o PocketBase não puder autenticar ou estiver indisponível.
+  - Ajuste na tela de Login para remoção de orientações com credenciais fixas de demonstração.
+- **Fluxo de Cadastro por Convite**:
+  - Desativação do fluxo simulado de convite em `Register.tsx` (removidos tokens fixos `INV-DEMO-2025`, e-mail mockado e validação por `setTimeout`).
+  - Apresentação de aviso em pt-BR de funcionalidade em implementação com botão desabilitado até a modelagem do backend de convites.
+- **Identidade e Metadados**:
+  - Atualização do `package.json` com nome `construindo-meu-futuro` e descrição do produto.
+  - Atualização do `index.html` com `lang="pt-BR"`, título "Construindo Meu Futuro" e meta description institucional.
+  - Atualização do `README.md` com stack completa, gerenciador `pnpm`, documentação de scripts, portas e estrutura de pastas.
+- **Configurações e Estilos**:
+  - Correção do `components.json` apontando o arquivo CSS para `src/main.css`.
+  - Correção no `tailwind.config.ts` adicionando a família `fontFamily.heading` vinculada a `Outfit` e `Plus Jakarta Sans` e remoção de paths inexistentes no `content`.
+  - Atualização do `.gitignore` para proteção estrita de arquivos `.env` e `.env.*`.
+
+## [0.0.4-foundation]
 
 ### Adicionado (Added)
 
