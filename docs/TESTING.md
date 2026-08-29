@@ -12,8 +12,8 @@
 
 Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de estimativa ou contagem manual:
 
-- **Arquivos de Teste (Test Files):** 6 arquivos, 6 aprovados
-- **Total de Testes:** **36 testes** — 36 aprovados, 0 falhos, 0 pulados
+- **Arquivos de Teste (Test Files):** 8 arquivos, 8 aprovados
+- **Total de Testes:** **45 testes** — 45 aprovados, 0 falhos, 0 pulados
 
 ### 2.1 Detalhamento por Arquivo de Teste
 
@@ -27,7 +27,9 @@ Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A colu
 | `src/test/navigation.test.ts`               | Estrutural          |                   1 |          5 | 5/5    |
 | `src/test/authRegression.test.tsx`          | Frontend / Contexto |                   1 |          8 | 8/8    |
 | `src/test/disabledFlowsRegression.test.tsx` | Frontend / Telas    |                   1 |          5 | 5/5    |
-| **TOTAL**                                   |                     |               **9** |     **36** | 36/36  |
+| `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard   |                   1 |          6 | 6/6    |
+| `src/test/deadCodeRegression.test.ts`       | Estrutural / Higiene |                  1 |          3 | 3/3    |
+| **TOTAL**                                   |                     |              **11** |     **45** | 45/45  |
 
 ### 2.2 Como os Testes São Descobertos
 
@@ -99,6 +101,25 @@ Versões anteriores deste documento registraram **20 testes**, e atribuíram **3
 - Alteração de senha (`Password.tsx`) com campos desabilitados e sem sucesso simulado.
 - Atualização de perfil (`Profile.tsx`) com campos desabilitados e sem mensagem falsa de salvamento.
 
+### 3.7 Regressão do Guard de Rotas (`src/test/protectedRouteRegression.test.tsx`) — [Frontend / Guard]
+
+Cobertura **direta** do `ProtectedRoute`, montando o componente dentro de um roteador com destinos de redirecionamento reais. O hook `useAuth` é mockado para exercer cada estado isoladamente.
+
+- Usuário anônimo é redirecionado para `/login` e não vê o conteúdo protegido.
+- Durante o carregamento da autenticação, nada é liberado nem redirecionado.
+- Usuário autenticado sem papel admin acessa rota comum.
+- Usuário autenticado sem papel admin é redirecionado para `/dashboard` em rota `requireAdmin`.
+- Usuário autenticado com papel admin acessa rota `requireAdmin`.
+- Usuário anônimo com `isAdmin` verdadeiro **nunca** acessa rota administrativa (defesa em profundidade).
+
+### 3.8 Regressão de Código Órfão (`src/test/deadCodeRegression.test.ts`) — [Estrutural / Higiene]
+
+- `src/lib/skipAi.ts` não existe no repositório.
+- Nenhum arquivo de `src/` referencia o símbolo `skipAi`.
+- Nenhum arquivo de configuração da raiz referencia o símbolo `skipAi`.
+
+O arquivo é um artefato de template sem uso no projeto; foi removido três vezes e reintroduzido duas por sincronização automática da plataforma. Este teste faz a reincidência falhar o CI no commit que a traz de volta. Se algum dia o módulo passar a ser necessário, o teste deve ser removido em commit deliberado que documente o uso — nunca silenciado com `skip`.
+
 ---
 
 ## 4. Classificação dos Testes do Projeto e Limitações
@@ -106,8 +127,8 @@ Versões anteriores deste documento registraram **20 testes**, e atribuíram **3
 | Categoria                       | Status e Execução Nesta Tarefa         | Descrição e Limitações                                                                                                                      |
 | :------------------------------ | :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Unitários**                   | **Executados e Aprovados (18 testes)** | Testam funções puras e utilitários isolados (`formatters`: 11, `errorHandler`: 5, `pocketbaseClient`: 2).                                   |
-| **Frontend / Regressão**        | **Executados e Aprovados (13 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 5).                                      |
-| **Estruturais**                 | **Executados e Aprovados (5 testes)**  | Validam integridade da árvore e estrutura declarativa de menus e rotas (`navigation`: 5).                                                   |
+| **Frontend / Regressão**        | **Executados e Aprovados (19 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 5, `protectedRouteRegression`: 6).       |
+| **Estruturais**                 | **Executados e Aprovados (8 testes)**  | Validam a árvore de navegação e a ausência de código órfão (`navigation`: 5, `deadCodeRegression`: 3).                                      |
 | **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2).       |
 | **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright). |
 
@@ -116,7 +137,6 @@ Versões anteriores deste documento registraram **20 testes**, e atribuíram **3
 - **Os testes são revalidados automaticamente pelo CI** (`.github/workflows/ci.yml`) a cada push e pull request na `main`, junto com alinhamento de versão, lint, tipagem e build. O resultado do CI é a evidência de referência sobre o estado da suíte em um commit — os números da seção 2 devem ser lidos como o retrato da última execução registrada, não como garantia perpétua. Para reproduzir localmente a mesma sequência, use `pnpm run verify`.
 - **Autenticação real não é testada** — os testes de regressão usam `vi.spyOn` sobre o SDK do PocketBase e provam apenas que uma falha do backend nunca produz sucesso, sessão, token ou papel. Não existe teste contra um PocketBase real.
 - **Não há teste de banco vazio nem de Resend**, porque não existem collections de domínio nem integração de e-mail nesta fase.
-- **`ProtectedRoute` é coberto indiretamente**, via estado do `AuthContext`. Não há teste que monte a rota protegida e verifique o redirecionamento.
 - **Não há medição de cobertura** (`coverage`) configurada.
 
 ---

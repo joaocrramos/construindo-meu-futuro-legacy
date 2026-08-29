@@ -29,6 +29,20 @@ Prover aos usuários e famílias uma plataforma centralizada, intuitiva e segura
 pnpm install
 ```
 
+## 🔐 Variáveis de Ambiente
+
+Copie o modelo versionado e preencha com os valores do seu ambiente:
+
+```bash
+cp .env.example .env
+```
+
+| Variável              | Obrigatória | Descrição                                                              |
+| --------------------- | ----------- | ---------------------------------------------------------------------- |
+| `VITE_POCKETBASE_URL` | Sim         | URL base da instância do PocketBase, lida por `src/lib/pocketbase/client.ts` |
+
+O arquivo `.env` é ignorado pelo Git e **nunca** deve ser versionado — apenas o `.env.example`, com valores de exemplo. Variáveis com prefixo `VITE_` são embutidas no bundle do frontend durante o build e ficam visíveis para qualquer usuário da aplicação: **nunca coloque segredos nelas**. As variáveis de backend planejadas para a Fase 2 (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME`, `SITE_URL`) estão listadas comentadas no `.env.example` e ainda não são consumidas por nenhum código deste repositório.
+
 ## 💻 Scripts Disponíveis
 
 ### Desenvolvimento

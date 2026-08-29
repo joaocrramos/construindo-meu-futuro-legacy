@@ -13,9 +13,14 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 - **Script `lint:ci`** (`oxlint src --deny-warnings`): avisos do Oxlint passam a produzir saída de erro no CI. O script `lint` permanece inalterado para uso local.
 - **Script `verify`**: encadeia localmente a mesma sequência do CI (`check:version`, `lint:ci`, `tsc --noEmit`, `test`, `build`).
 
+- **`.env.example`** com a variável efetivamente consumida pelo projeto (`VITE_POCKETBASE_URL`, usada em `src/lib/pocketbase/client.ts`) e aviso explícito de que variáveis `VITE_` são embutidas no bundle e nunca devem conter segredos. As variáveis planejadas para a Fase 2 (`RESEND_*`, `SITE_URL`) aparecem comentadas, apenas como referência de nomenclatura. Até aqui, a única ocorrência de `VITE_POCKETBASE_URL` no repositório era dentro do código.
+- **Teste direto do guard de rotas** (`src/test/protectedRouteRegression.test.tsx`, 6 casos): o `ProtectedRoute` era coberto apenas de forma indireta, via estado do `AuthContext`. Agora o componente é montado dentro de um roteador com destinos reais, cobrindo usuário anônimo, estado de carregamento, usuário comum em rota comum, usuário comum barrado em rota `requireAdmin`, admin em rota `requireAdmin` e o caso de defesa em profundidade em que `isAdmin` é verdadeiro sem autenticação.
+- **Guarda contra reincidência de código órfão** (`src/test/deadCodeRegression.test.ts`, 3 casos): verifica que `src/lib/skipAi.ts` não existe e que nenhum arquivo de `src/` ou de configuração da raiz referencia o símbolo. O arquivo já havia sido removido três vezes e reintroduzido duas por sincronização automática, sempre sem menção em commit; a reincidência passa a falhar o CI no commit que a traz de volta.
+
 ### Corrigido (Fixed)
 
 - **Alinhamento de versão**: o commit de incremento `v0.0.12` havia elevado o `package.json` para `0.0.12` sem entrada correspondente no `CHANGELOG.md`, que permanecia em `[0.0.11]`. O `CHANGELOG.md` foi alinhado a `0.0.12`, conforme a regra 2 da ADR-006. A versão do produto **não** foi incrementada nesta tarefa.
+- **Documentação de variáveis de ambiente no `README.md`**, com instrução de cópia do `.env.example` e reforço de que `.env` permanece fora do versionamento.
 
 ### Observações
 
