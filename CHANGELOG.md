@@ -4,12 +4,12 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [0.0.26] - 2026-08-29 (Fase 1.5 - Correções de Não Conformidades, Sincronização e Governança de Plataforma)
+## [0.0.28] - 2026-08-29 (Fase 1.5 - Correções de Não Conformidades, Sincronização e Governança de Plataforma)
 
 ### Corrigido (Fixed)
 
 - **Alinhamento Estrito de Versionamento (ADR-006)**:
-  - Alinhado `CHANGELOG.md` com a versão `0.0.26` presente no `package.json` (fonte de verdade), solucionando o erro no `pnpm run check:version`.
+  - Alinhado `CHANGELOG.md` com a versão `0.0.28` presente no `package.json` (fonte de verdade), solucionando o erro no `pnpm run check:version`.
   - Revertido o relaxamento de tolerância e restaurada a igualdade estrita em `scripts/check-version-alignment.mjs` (`package.json === CHANGELOG.md`).
 - **Governança de Arquivos da Plataforma Skip e Quebra de Laço nos Testes (ADR-008)**:
   - Identificada a causa raiz da restauração de `src/lib/skipAi.ts`: trata-se de arquivo de scaffolding/template gerenciado pela infraestrutura da plataforma Skip.
