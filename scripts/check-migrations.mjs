@@ -138,11 +138,15 @@ for (const mig of sortedMigrations) {
     continue
   }
 
-  // Detecta criação de collection:
-  // new Collection({ name: "xyz" }) ou name: 'xyz'
-  const createMatches = content.matchAll(/name\s*:\s*["']([^"']+)["']/g)
-  for (const match of createMatches) {
-    createdCollections.add(match[1])
+  // Detecta criação de collection apenas dentro do contexto new Collection({ ... name: "xyz" ... }):
+  // Ex: new Collection({ name: "portfolios", ... }) ou new Collection({ ..., name: "portfolios" })
+  const collectionBlocks = content.matchAll(/new\s+Collection\s*\(\s*\{([\s\S]*?)\}\s*\)/g)
+  for (const blockMatch of collectionBlocks) {
+    const blockBody = blockMatch[1]
+    const nameMatch = blockBody.match(/\bname\s*:\s*["']([^"']+)["']/)
+    if (nameMatch) {
+      createdCollections.add(nameMatch[1])
+    }
   }
 
   // Detecta drops / exclusões no up handler:

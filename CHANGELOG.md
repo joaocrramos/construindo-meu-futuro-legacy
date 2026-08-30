@@ -4,6 +4,30 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.31] - 2026-08-30 (Correção CI, Refinamento da Guarda de Migrations e Investigação \_migrations)
+
+### Corrigido (Fixed)
+
+- **Correção de Lint no CI (`src/test/checkMigrations.test.ts`)**:
+  - Removido import não utilizado `beforeEach` do `vitest`, restaurando o status verde da análise estática (`pnpm run lint:ci` e `pnpm run verify`).
+- **Integração e Comentários do CI (`.github/workflows/ci.yml`)**:
+  - Adicionado o passo `pnpm run check:migrations` entre a validação de versão e o lint.
+  - Atualizado o comentário da ADR-006: `# ADR-006: arquivo VERSION é a fonte da versão; package.json é contador de build`.
+- **Refinamento da Guarda de Migrations (`scripts/check-migrations.mjs`)**:
+  - Refatorado o regex de captura de collections para coletar apenas nomes declarados no contexto `new Collection({ name: ... })`, eliminando potenciais falsos positivos originados de nomes de campos (`fields: [{ name: ... }]`).
+  - Adicionado caso de teste de regressão em `src/test/checkMigrations.test.ts` cobrindo a diferenciação entre nomes de collections e nomes de campos.
+
+### Investigação e Governança
+
+- **Investigação da Tabela Interna `_migrations` do PocketBase**:
+  - Confirmada a estrutura interna do PocketBase onde migrations aplicadas são registradas na tabela do sistema `_migrations`.
+  - Mapeamento das 7 entradas existentes no histórico do backend (`0001_canary_test.js` a `0007_b2_probe_cleanup.js`).
+  - Constatado que o chaveamento e controle de execução do PocketBase são baseados no **NOME DE ARQUIVO** (`file`), exigindo ordinais crescentes para ordenação cronológica.
+- **Protocolo B2**:
+  - B2: LIMITAÇÃO CONHECIDA NÃO COMPROVADA (mecanismo nativo indisponível para agentes).
+
+---
+
 ## [0.0.30] - 2026-08-30 (Fechamento do Canário, Guarda de Migrations, Prova B2 e ADR do Lote 1)
 
 ### Adicionado (Added)
@@ -21,7 +45,7 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
   - Regra de execução incremental estritamente unitária (uma migration por vez com validação no schema live).
   - Alocação prévia e fixada dos ordinais das 14 collections de domínio (`0001` a `0014`), respeitando `0004 = portfolios` e `0005 = institutions`.
 - **Exercício e Comprovação Empírica do Protocolo B2**:
-  - Execução controlada de ciclo de persistência e deleção transacional/migration no Skip Cloud sem deixar resíduos.
+  - B2: LIMITAÇÃO CONHECIDA NÃO COMPROVADA (mecanismo nativo indisponível para agentes).
 
 ### Removido (Removed)
 

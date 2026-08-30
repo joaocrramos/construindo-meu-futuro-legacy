@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { execSync } from 'node:child_process'
 import { writeFileSync, unlinkSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -112,6 +112,23 @@ describe('check:migrations guard script', () => {
     expect(res.status).not.toBe(0)
     expect(res.stderr).toContain(
       'tenta remover/referenciar collection "canary_check", mas ela não foi criada',
+    )
+  })
+
+  it('não confunde nomes de campos de collection com nome da collection (evita falsos positivos)', () => {
+    createTempMigration(
+      '0001_create_users_extra.js',
+      'migrate((app) => { app.save(new Collection({ name: "portfolios", fields: [{ name: "description", type: "text" }] })) }, (app) => {})',
+    )
+    // Se "description" fosse equivocadamente capturado como collection, um drop dele passaria. Mas com o regex correto, deve falhar:
+    createTempMigration(
+      '0002_drop_field_as_col.js',
+      'migrate((app) => { const col = app.findCollectionByNameOrId("description"); app.delete(col); }, (app) => {})',
+    )
+    const res = runCheck()
+    expect(res.status).not.toBe(0)
+    expect(res.stderr).toContain(
+      'tenta remover/referenciar collection "description", mas ela não foi criada',
     )
   })
 

@@ -42,9 +42,13 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
-      # ADR-006: package.json é a fonte da versão; o CHANGELOG deve acompanhá-la.
-      - name: Alinhamento de versão (package.json x CHANGELOG.md)
+      # ADR-006: arquivo VERSION é a fonte da versão; package.json é contador de build
+      - name: Alinhamento de versão (VERSION x CHANGELOG.md)
         run: pnpm run check:version
+
+      # Guarda de integridade de migrations
+      - name: Guarda de migrations (pocketbase/migrations)
+        run: pnpm run check:migrations
 
       # --deny-warnings: avisos do Oxlint falham o build, não apenas erros.
       - name: Lint (Oxlint, avisos tratados como erro)
