@@ -105,9 +105,9 @@ export default function Dashboard() {
         description="Esta é a fundação do Construindo Meu Futuro. Para começar a monitorar a evolução dos seus investimentos, comece estruturando suas carteiras e instituições financeiras."
         nextStepGuide="Acesse a seção 'Patrimônio > Carteiras' para cadastrar seu primeiro agrupamento estratégico (ex: Reserva de Emergência, Aposentadoria, Renda Passiva)."
         actionLabel="Cadastrar Primeira Carteira"
-        onAction={() => window.location.assign('/wealth/portfolios')}
+        actionHref="/wealth/portfolios"
         secondaryActionLabel="Ver Instituições"
-        onSecondaryAction={() => window.location.assign('/wealth/institutions')}
+        secondaryActionHref="/wealth/institutions"
       />
 
       {/* Grid com seções informativas de status de segurança da fundação */}

@@ -32,7 +32,7 @@ export default function DueDatesOverviewPage() {
         description="Nenhum título, contrato ou obrigação com data de liquidação futura foi identificado nos seus registros."
         nextStepGuide="Ao cadastrar títulos de renda fixa (CDBs, LCIs, Tesouro Direto) na aba de Posições, as datas de liquidação serão sincronizadas neste painel."
         actionLabel="Adicionar Ativo de Renda Fixa"
-        onAction={() => window.location.assign('/wealth/positions')}
+        actionHref="/wealth/positions"
       />
     </div>
   )

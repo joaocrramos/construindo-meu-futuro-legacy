@@ -32,7 +32,7 @@ export default function ActivitiesPage() {
         description="Todas as ações de criação, edição de posições, importações e transferências realizadas gerarão registros automáticos aqui."
         nextStepGuide="Inicie suas operações cadastrando uma instituição ou movimentação para começar o registro do histórico."
         actionLabel="Cadastrar Instituição Financeira"
-        onAction={() => window.location.assign('/wealth/institutions')}
+        actionHref="/wealth/institutions"
       />
     </div>
   )

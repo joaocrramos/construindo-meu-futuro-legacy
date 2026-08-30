@@ -14,6 +14,10 @@ import {
 } from 'lucide-react'
 
 export default function IndexPage() {
+  React.useEffect(() => {
+    document.title = 'Início · Construindo Meu Futuro'
+  }, [])
+
   return (
     <PublicLayout>
       <div className="w-full max-w-5xl mx-auto space-y-12 text-center py-6 sm:py-12">

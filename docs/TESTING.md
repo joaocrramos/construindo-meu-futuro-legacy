@@ -12,24 +12,25 @@
 
 Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de estimativa ou contagem manual:
 
-- **Arquivos de Teste (Test Files):** 8 arquivos, 8 aprovados
-- **Total de Testes:** **45 testes** — 45 aprovados, 0 falhos, 0 pulados
+- **Arquivos de Teste (Test Files):** 9 arquivos, 9 aprovados
+- **Total de Testes:** **51 testes** — 51 aprovados, 0 falhos, 0 pulados
 
 ### 2.1 Detalhamento por Arquivo de Teste
 
 Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A coluna "Blocos `describe`" conta **todos** os `describe`, inclusive os aninhados — blocos de agrupamento **não** são testes e não devem ser somados à contagem de casos.
 
-| Arquivo de Teste                             | Tipo                |   Blocos `describe` | Casos `it` | Status |
-| :------------------------------------------- | :------------------ | ------------------: | ---------: | :----- |
-| `src/test/formatters.test.ts`                | Unitário            | 4 (1 + 3 aninhados) |     **11** | 11/11  |
-| `src/test/errorHandler.test.ts`              | Unitário            |                   1 |          5 | 5/5    |
-| `src/test/pocketbaseClient.test.ts`          | Unitário            |                   1 |          2 | 2/2    |
-| `src/test/navigation.test.ts`                | Estrutural          |                   1 |          5 | 5/5    |
-| `src/test/deadCodeRegression.test.ts`        | Estrutural / Guarda |                   1 |          3 | 3/3    |
-| `src/test/authRegression.test.tsx`           | Frontend / Contexto |                   1 |          8 | 8/8    |
-| `src/test/disabledFlowsRegression.test.tsx`  | Frontend / Telas    |                   1 |          5 | 5/5    |
-| `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard    |                   1 |          6 | 6/6    |
-| **TOTAL**                                    |                     |              **11** |     **45** | 45/45  |
+| Arquivo de Teste                             | Tipo                   |   Blocos `describe` | Casos `it` | Status |
+| :------------------------------------------- | :--------------------- | ------------------: | ---------: | :----- |
+| `src/test/formatters.test.ts`                | Unitário               | 4 (1 + 3 aninhados) |     **13** | 13/13  |
+| `src/test/errorHandler.test.ts`              | Unitário               |                   1 |          5 | 5/5    |
+| `src/test/pocketbaseClient.test.ts`          | Unitário               |                   1 |          2 | 2/2    |
+| `src/test/errorBoundary.test.tsx`            | Frontend / Resiliência |                   1 |          3 | 3/3    |
+| `src/test/navigation.test.ts`                | Estrutural             |                   1 |          5 | 5/5    |
+| `src/test/deadCodeRegression.test.ts`        | Estrutural / Guarda    |                   1 |          3 | 3/3    |
+| `src/test/authRegression.test.tsx`           | Frontend / Contexto    |                   1 |          8 | 8/8    |
+| `src/test/disabledFlowsRegression.test.tsx`  | Frontend / Telas       |                   1 |          6 | 6/6    |
+| `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard       |                   1 |          6 | 6/6    |
+| **TOTAL**                                    |                        |              **12** |     **51** | 51/51  |
 
 ### 2.2 Como os Testes São Descobertos
 
@@ -124,13 +125,13 @@ Validação automatizada contra o reaparecimento de arquivos órfãos não utili
 
 ## 4. Classificação dos Testes do Projeto e Limitações
 
-| Categoria                       | Status e Execução Nesta Tarefa         | Descrição e Limitações                                                                                                                      |
-| :------------------------------ | :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Unitários**                   | **Executados e Aprovados (18 testes)** | Testam funções puras e utilitários isolados (`formatters`: 11, `errorHandler`: 5, `pocketbaseClient`: 2).                                   |
-| **Frontend / Regressão**        | **Executados e Aprovados (19 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 5, `protectedRouteRegression`: 6).       |
-| **Estruturais**                 | **Executados e Aprovados (8 testes)**  | Validam a integridade da árvore e integridade estrutural (`navigation`: 5, `deadCodeRegression`: 3).                                        |
-| **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2).       |
-| **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright). |
+| Categoria                       | Status e Execução Nesta Tarefa         | Descrição e Limitações                                                                                                                                    |
+| :------------------------------ | :------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Unitários**                   | **Executados e Aprovados (20 testes)** | Testam funções puras e utilitários isolados (`formatters`: 13, `errorHandler`: 5, `pocketbaseClient`: 2).                                                 |
+| **Frontend / Regressão**        | **Executados e Aprovados (23 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 6, `protectedRouteRegression`: 6, `errorBoundary`: 3). |
+| **Estruturais**                 | **Executados e Aprovados (8 testes)**  | Validam a integridade da árvore e integridade estrutural (`navigation`: 5, `deadCodeRegression`: 3).                                                      |
+| **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2).                     |
+| **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright).               |
 
 ### 4.1 Limitações de Cobertura e de Comprovação
 

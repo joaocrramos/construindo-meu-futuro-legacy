@@ -29,6 +29,10 @@ export default function LoginPage() {
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard'
 
   React.useEffect(() => {
+    document.title = 'Acesso ao Sistema · Construindo Meu Futuro'
+  }, [])
+
+  React.useEffect(() => {
     if (isAuthenticated) {
       navigate(from, { replace: true })
     }

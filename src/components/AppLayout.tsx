@@ -33,6 +33,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const mainRef = React.useRef<HTMLElement>(null)
+
+  // Gestão de foco acessível na troca de rotas
+  React.useEffect(() => {
+    if (mainRef.current) {
+      // Prioriza focar no primeiro heading (h1/h2) se existir, senão foca no main
+      const heading = mainRef.current.querySelector<HTMLElement>('h1, h2')
+      if (heading) {
+        if (!heading.getAttribute('tabindex')) {
+          heading.setAttribute('tabindex', '-1')
+        }
+        heading.focus()
+      } else {
+        mainRef.current.focus()
+      }
+    }
+  }, [location.pathname])
 
   // Filtra seções baseadas no privilégio de admin
   const visibleSections = navigationConfig.filter(
@@ -55,6 +72,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+      {/* Link de acessibilidade: Pular para o conteúdo principal */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg text-xs font-semibold"
+      >
+        Pular para o conteúdo principal
+      </a>
+
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex flex-col w-64 lg:w-72 border-r border-border bg-card/60 backdrop-blur-md shrink-0">
         {/* Brand Header */}
@@ -91,9 +116,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       <Link
                         key={item.href}
                         to={item.href}
+                        aria-current={isActive ? 'page' : undefined}
                         className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
                           isActive
-                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
                             : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                         }`}
                       >
@@ -214,10 +240,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                               <Link
                                 key={item.href}
                                 to={item.href}
+                                aria-current={isActive ? 'page' : undefined}
                                 onClick={() => setMobileOpen(false)}
                                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                                   isActive
-                                    ? 'bg-primary text-primary-foreground'
+                                    ? 'bg-primary text-primary-foreground font-semibold'
                                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                                 }`}
                               >
@@ -303,7 +330,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* MAIN SCROLLABLE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
+        <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background outline-none"
+        >
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

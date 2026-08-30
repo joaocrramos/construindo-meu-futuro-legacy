@@ -20,6 +20,10 @@ export default function RegisterPage() {
   const tokenFromUrl = searchParams.get('token') || ''
   const [tokenInput, setTokenInput] = React.useState(tokenFromUrl)
 
+  React.useEffect(() => {
+    document.title = 'Cadastro por Convite · Construindo Meu Futuro'
+  }, [])
+
   return (
     <PublicLayout>
       <div className="w-full max-w-md mx-auto">

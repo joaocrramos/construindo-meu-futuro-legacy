@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { LucideIcon, HelpCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -9,8 +10,10 @@ export interface EmptyStateProps {
   description: string
   nextStepGuide?: string
   actionLabel?: string
+  actionHref?: string
   onAction?: () => void
   secondaryActionLabel?: string
+  secondaryActionHref?: string
   onSecondaryAction?: () => void
   badge?: string
   className?: string
@@ -22,8 +25,10 @@ export function EmptyState({
   description,
   nextStepGuide,
   actionLabel,
+  actionHref,
   onAction,
   secondaryActionLabel,
+  secondaryActionHref,
   onSecondaryAction,
   badge,
   className = '',
@@ -59,20 +64,30 @@ export function EmptyState({
 
         {(actionLabel || secondaryActionLabel) && (
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {actionLabel && (
-              <Button onClick={onAction} className="h-9 px-4 text-xs font-medium shadow-sm">
-                {actionLabel}
-              </Button>
-            )}
-            {secondaryActionLabel && (
-              <Button
-                variant="outline"
-                onClick={onSecondaryAction}
-                className="h-9 px-4 text-xs font-medium"
-              >
-                {secondaryActionLabel}
-              </Button>
-            )}
+            {actionLabel &&
+              (actionHref ? (
+                <Button asChild className="h-9 px-4 text-xs font-medium shadow-sm">
+                  <Link to={actionHref}>{actionLabel}</Link>
+                </Button>
+              ) : (
+                <Button onClick={onAction} className="h-9 px-4 text-xs font-medium shadow-sm">
+                  {actionLabel}
+                </Button>
+              ))}
+            {secondaryActionLabel &&
+              (secondaryActionHref ? (
+                <Button asChild variant="outline" className="h-9 px-4 text-xs font-medium">
+                  <Link to={secondaryActionHref}>{secondaryActionLabel}</Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={onSecondaryAction}
+                  className="h-9 px-4 text-xs font-medium"
+                >
+                  {secondaryActionLabel}
+                </Button>
+              ))}
           </div>
         )}
       </CardContent>

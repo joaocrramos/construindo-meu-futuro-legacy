@@ -18,6 +18,10 @@ import { KeyRound, Mail, ArrowLeft } from 'lucide-react'
 export default function ForgotPasswordPage() {
   const [email, setEmail] = React.useState('')
 
+  React.useEffect(() => {
+    document.title = 'Recuperação de Senha · Construindo Meu Futuro'
+  }, [])
+
   return (
     <PublicLayout>
       <div className="w-full max-w-md mx-auto">

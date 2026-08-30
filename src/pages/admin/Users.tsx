@@ -30,7 +30,7 @@ export default function AdminUsersPage() {
         description="A lista exibe todos os usuários que concluíram o processo de cadastro via convite e suas respectivas permissões."
         nextStepGuide="Como o sistema é exclusivamente Invite-Only, para adicionar novos membros, emita convites nominais na aba 'Convites'."
         actionLabel="Ir para Gestão de Convites"
-        onAction={() => window.location.assign('/admin/invites')}
+        actionHref="/admin/invites"
       />
     </div>
   )

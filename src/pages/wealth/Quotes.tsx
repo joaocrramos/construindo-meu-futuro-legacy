@@ -26,7 +26,7 @@ export default function QuotesPage() {
         description="Esta tabela armazena os preços históricos de ativos para cálculo de marcação a mercado e rentabilidade de fechamento."
         nextStepGuide="As cotações são associadas automaticamente após o cadastramento dos ativos no catálogo."
         actionLabel="Ver Catálogo de Ativos"
-        onAction={() => window.location.assign('/wealth/assets')}
+        actionHref="/wealth/assets"
       />
     </div>
   )

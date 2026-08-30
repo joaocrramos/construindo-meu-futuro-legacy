@@ -32,9 +32,9 @@ export default function SummaryPage() {
         description="O resumo patrimonial agrega dados de contas, carteiras e ativos cadastrados. Atualmente não há valores computados para seu perfil."
         nextStepGuide="Cadastre suas contas e posições de custódia na área 'Patrimônio' para calcular seu saldo bruto e líquido automaticamente."
         actionLabel="Ir para Contas & Custódias"
-        onAction={() => window.location.assign('/wealth/accounts')}
+        actionHref="/wealth/accounts"
         secondaryActionLabel="Ver Carteiras"
-        onSecondaryAction={() => window.location.assign('/wealth/portfolios')}
+        secondaryActionHref="/wealth/portfolios"
       />
     </div>
   )

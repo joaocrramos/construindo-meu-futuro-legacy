@@ -18,6 +18,18 @@ describe('Formatadores Financeiros (pt-BR)', () => {
       expect(formatCurrencyBRL('1234,56')).toBe('R$ 1.234,56')
     })
 
+    it('deve formatar corretamente entradas com separadores de milhar pt-BR', () => {
+      expect(formatCurrencyBRL('1.234,56')).toBe('R$ 1.234,56')
+      expect(formatCurrencyBRL('10.000,00')).toBe('R$ 10.000,00')
+      expect(formatCurrencyBRL('1.000.000,00')).toBe('R$ 1.000.000,00')
+      expect(formatCurrencyBRL('0,50')).toBe('R$ 0,50')
+      expect(formatCurrencyBRL('-1.234,56')).toBe('- R$ 1.234,56')
+    })
+
+    it('deve interpretar o caso ambíguo 1.234 como milhar (1234) por decisão de produto', () => {
+      expect(formatCurrencyBRL('1.234')).toBe('R$ 1.234,00')
+    })
+
     it('deve tratar valores nulos, vazios ou indefinidos retornando fallback seguro', () => {
       expect(formatCurrencyBRL(null)).toBe('—')
       expect(formatCurrencyBRL(undefined)).toBe('—')

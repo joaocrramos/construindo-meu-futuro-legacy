@@ -4,7 +4,46 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [0.0.21] - 2026-08-29 (Garantia do teste de regressão de código morto)
+## [0.0.21] - 2026-08-29 (Fase 1.5 - Correções Críticas de Frontend e Otimizações de Fundação)
+
+### Corrigido (Fixed)
+
+- **[CRÍTICO] Bug de Parsing em `formatCurrencyBRL` e `formatPercentBRL` (`src/lib/formatters.ts`)**:
+  - Normalização completa de strings financeiras em formato pt-BR com múltiplos separadores de milhar (`1.234,56`, `10.000,00`, `1.000.000,00`, `0,50`, `-1.234,56`).
+  - Decisão de produto fechada e documentada para o caso ambíguo `1.234`, interpretado formalmente como milhar no contexto brasileiro (`R$ 1.234,00`).
+  - Cobertura de testes unitários expandida em `src/test/formatters.test.ts` (13 casos).
+- **[CRÍTICO] Error Boundary no Topo da Árvore (`src/components/ErrorBoundary.tsx`, `src/App.tsx`)**:
+  - Implementado `ErrorBoundary` com captura de exceções em tempo de execução.
+  - Tela de erro em pt-BR com design sóbrio, botão de recarregar e proteção absoluta contra vazamento de stack trace ao usuário final.
+  - Teste de resiliência criado em `src/test/errorBoundary.test.tsx` (3 casos).
+- **[ALTO] Eliminação de Reloads Completos por `window.location.assign`**:
+  - Substituídas todas as 12 ocorrências de `window.location.assign` em componentes e páginas (`Dashboard`, `Summary`, `Evolution`, `Distribution`, `DueDates`, `Goals`, `Activities`, `Users`, `Maturities`, `Quotes`).
+  - `EmptyState` aprimorado para suportar navegação declarativa via `actionHref` e `secondaryActionHref` com `<Link>`, impedindo reincidência de `window.location`.
+- **[ALTO] Tratamento da Tela de Sessões Ativas (`src/pages/account/Sessions.tsx`)**:
+  - Adequada ao padrão estrito das outras cinco telas desabilitadas: aviso em pt-BR de "Funcionalidade em Implementação", botão desabilitado e remoção do card que simulava sessão conectada sem gestão backend.
+  - Coberta na suíte `src/test/disabledFlowsRegression.test.tsx` (agora com 6 casos).
+- **[ALTO] Gate de Ambiente para `/admin/reset-dev`**:
+  - A rota e o componente foram condicionados a `import.meta.env.DEV`, eliminando a rota e sua importação no bundle final de produção.
+- **[ALTO] Code Splitting por Áreas de Negócio com `React.lazy` e `Suspense`**:
+  - Rotas divididas dinamicamente em chunks agrupados por domínio (`overview`, `wealth`, `admin`, `account`), preservando telas públicas no chunk inicial.
+  - Fallback visual acessível `RouteLoadingFallback` durante transição de chunks.
+- **[ALTO] Títulos de Aba Dinâmicos (`document.title`)**:
+  - Configurado `document.title` dinâmico em `PageHeader` para todas as telas internas e hooks de efeito nas telas públicas e de erro (`<título> · Construindo Meu Futuro`).
+- **[ALTO] Unificação do Sistema de Toast no Sonner**:
+  - Removido `Toaster` do Radix e o hook duplicado `use-toast.ts`/`src/components/ui/use-toast.ts`, consolidando exclusivamente o Sonner (`src/components/ui/sonner.tsx`).
+  - Documentação atualizada em `docs/DEVELOPMENT_WORKFLOW.md`.
+- **[MÉDIO] Acessibilidade na Navegação e Gestão de Foco**:
+  - Adicionado `aria-current="page"` na sidebar desktop e drawer mobile.
+  - Gerenciamento acessível de foco para o heading principal/`<main>` na troca de rotas.
+  - Link "Pular para o conteúdo principal" adicionado no topo dos layouts.
+
+### Adicionado (Added)
+
+- Suíte de testes atualizada para **9 arquivos de teste** e **51 casos aprovados** (100% verde).
+
+---
+
+## [0.0.21-prev] - 2026-08-29 (Garantia do teste de regressão de código morto)
 
 ### Adicionado (Added)
 

@@ -32,7 +32,7 @@ export default function EvolutionPage() {
         description="A curva de evolução patrimonial é gerada a partir dos fechamentos mensais e das movimentações registradas ao longo do tempo."
         nextStepGuide="Registre seus primeiros aportes em 'Movimentações' para iniciar a série histórica de crescimento do seu capital."
         actionLabel="Cadastrar Primeira Movimentação"
-        onAction={() => window.location.assign('/wealth/movements')}
+        actionHref="/wealth/movements"
       />
     </div>
   )

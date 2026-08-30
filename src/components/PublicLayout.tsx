@@ -15,6 +15,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20">
+      {/* Link de acessibilidade: Pular para o conteúdo principal */}
+      <a
+        href="#public-main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg text-xs font-semibold"
+      >
+        Pular para o conteúdo principal
+      </a>
+
       {/* Header */}
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -85,7 +93,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Public Content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+      <main
+        id="public-main-content"
+        tabIndex={-1}
+        className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 outline-none"
+      >
         {children}
       </main>
 

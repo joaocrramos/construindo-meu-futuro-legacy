@@ -7,6 +7,7 @@ import ForgotPasswordPage from '@/pages/public/ForgotPassword'
 import FirstAccessPage from '@/pages/public/FirstAccess'
 import AccountPasswordPage from '@/pages/account/Password'
 import AccountProfilePage from '@/pages/account/Profile'
+import AccountSessionsPage from '@/pages/account/Sessions'
 import { AuthProvider } from '@/contexts/AuthContext'
 
 describe('Testes de Regressão de Telas e Fluxos Desabilitados (Sem Sucesso Falso)', () => {
@@ -129,5 +130,27 @@ describe('Testes de Regressão de Telas e Fluxos Desabilitados (Sem Sucesso Fals
 
     // Não deve exibir indicação de Salvo
     expect(screen.queryByText(/Salvo!/i)).toBeNull()
+  })
+
+  it('6. Sessões Ativas exibe aviso de implementação, botão desabilitado e não simula card de sessão ativa', () => {
+    render(
+      <MemoryRouter>
+        <AccountSessionsPage />
+      </MemoryRouter>,
+    )
+
+    // Botão desabilitado
+    const submitButton = screen.getByRole('button', {
+      name: /Gestão de Sessões Temporariamente Indisponível/i,
+    }) as HTMLButtonElement
+    expect(submitButton.disabled).toBe(true)
+
+    // Deve exibir aviso de funcionalidade em implementação
+    expect(screen.queryByText(/Funcionalidade em Implementação/i)).not.toBeNull()
+
+    // NÃO deve exibir card simulando sessão ativa ou "Conectado agora"
+    expect(screen.queryByText(/Navegador Atual \(Sessão Atual\)/i)).toBeNull()
+    expect(screen.queryByText(/Conectado agora/i)).toBeNull()
+    expect(screen.queryByText(/Desconectar Outras Sessões/i)).toBeNull()
   })
 })

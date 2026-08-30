@@ -29,7 +29,7 @@ export default function MaturitiesPage() {
         description="Acompanhe de forma granular quando seus títulos de renda fixa vencerão e planeje o reinvestimento do principal e juros."
         nextStepGuide="Cadastre a data de vencimento nas posições de custódia para gerar o calendário automático de resgates."
         actionLabel="Adicionar Posição com Vencimento"
-        onAction={() => window.location.assign('/wealth/positions')}
+        actionHref="/wealth/positions"
       />
     </div>
   )

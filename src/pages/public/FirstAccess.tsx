@@ -20,6 +20,10 @@ export default function FirstAccessPage() {
   const [newPassword, setNewPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
 
+  React.useEffect(() => {
+    document.title = 'Primeiro Acesso · Construindo Meu Futuro'
+  }, [])
+
   return (
     <PublicLayout>
       <div className="w-full max-w-md mx-auto">

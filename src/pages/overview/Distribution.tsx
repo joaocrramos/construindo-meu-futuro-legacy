@@ -29,7 +29,7 @@ export default function DistributionPage() {
         description="O gráfico de pizza e matriz de exposição exibem a proporção de cada categoria no total da sua carteira."
         nextStepGuide="Cadastre os ativos mantidos em custódia para visualizar o percentual atual de cada classe versus o percentual ideal planejado."
         actionLabel="Explorar Catálogo de Ativos"
-        onAction={() => window.location.assign('/wealth/assets')}
+        actionHref="/wealth/assets"
       />
     </div>
   )

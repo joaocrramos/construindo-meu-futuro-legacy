@@ -41,8 +41,58 @@ export function formatCurrencyBRL(
     return fallback
   }
 
-  const numericValue =
-    typeof value === 'string' ? Number.parseFloat(value.replace(',', '.')) : value
+  // Normalização de entrada numérica em string:
+  // Suporta padrões '1234.56', '1234,56', '1.234,56', '10.000,00', '1,234.56'.
+  // DECISÃO FECHADA: O caso ambíguo com apenas um ponto e 3 dígitos subsequentes (ex: '1.234')
+  // é interpretado no contexto brasileiro estritamente como separador de milhar: 1234 (mil duzentos e trinta e quatro).
+  let numericValue: number
+  if (typeof value === 'number') {
+    numericValue = value
+  } else if (typeof value === 'string') {
+    let clean = value
+      .trim()
+      .replace(/^R\$\s*/i, '')
+      .replace(/\s+/g, '')
+    const hasComma = clean.includes(',')
+    const hasDot = clean.includes('.')
+
+    if (hasComma && hasDot) {
+      const lastComma = clean.lastIndexOf(',')
+      const lastDot = clean.lastIndexOf('.')
+      if (lastComma > lastDot) {
+        // Formato pt-BR: 1.234.567,89 -> remove pontos de milhar, troca vírgula por ponto
+        clean = clean.replace(/\./g, '').replace(',', '.')
+      } else {
+        // Formato en-US: 1,234,567.89 -> remove vírgulas de milhar
+        clean = clean.replace(/,/g, '')
+      }
+    } else if (hasComma) {
+      // Ex: "1234,56" ou "1,234,56" -> troca a última vírgula por ponto decimal e remove anteriores
+      const lastComma = clean.lastIndexOf(',')
+      const intPart = clean.slice(0, lastComma).replace(/,/g, '')
+      const decPart = clean.slice(lastComma + 1)
+      clean = `${intPart}.${decPart}`
+    } else if (hasDot) {
+      // Caso ambíguo ou ponto decimal/milhar:
+      // Se tiver mais de um ponto (ex: '1.000.000'), são milhares pt-BR
+      const dotCount = (clean.match(/\./g) || []).length
+      if (dotCount > 1) {
+        clean = clean.replace(/\./g, '')
+      } else {
+        // Exatamente um ponto. Se seguido de exatamente 3 dígitos e nada mais (ex: '1.234'),
+        // a DECISÃO FECHADA é interpretar como milhar pt-BR (1234).
+        const matchSingleDotThousand = /^-?\d+\.\d{3}$/.test(clean)
+        if (matchSingleDotThousand) {
+          clean = clean.replace('.', '')
+        }
+        // Caso contrário, '1234.56' ou '0.5' permanece como decimal padrão.
+      }
+    }
+
+    numericValue = Number.parseFloat(clean)
+  } else {
+    return fallback
+  }
 
   if (Number.isNaN(numericValue) || !Number.isFinite(numericValue)) {
     return fallback
@@ -83,8 +133,39 @@ export function formatPercentBRL(
     return fallback
   }
 
-  const numericValue =
-    typeof value === 'string' ? Number.parseFloat(value.replace(',', '.')) : value
+  let numericValue: number
+  if (typeof value === 'number') {
+    numericValue = value
+  } else if (typeof value === 'string') {
+    let clean = value.trim().replace(/%/g, '').replace(/\s+/g, '')
+    const hasComma = clean.includes(',')
+    const hasDot = clean.includes('.')
+
+    if (hasComma && hasDot) {
+      const lastComma = clean.lastIndexOf(',')
+      const lastDot = clean.lastIndexOf('.')
+      if (lastComma > lastDot) {
+        clean = clean.replace(/\./g, '').replace(',', '.')
+      } else {
+        clean = clean.replace(/,/g, '')
+      }
+    } else if (hasComma) {
+      const lastComma = clean.lastIndexOf(',')
+      const intPart = clean.slice(0, lastComma).replace(/,/g, '')
+      const decPart = clean.slice(lastComma + 1)
+      clean = `${intPart}.${decPart}`
+    } else if (hasDot) {
+      const dotCount = (clean.match(/\./g) || []).length
+      if (dotCount > 1) {
+        clean = clean.replace(/\./g, '')
+      } else if (/^-?\d+\.\d{3}$/.test(clean)) {
+        clean = clean.replace('.', '')
+      }
+    }
+    numericValue = Number.parseFloat(clean)
+  } else {
+    return fallback
+  }
 
   if (Number.isNaN(numericValue) || !Number.isFinite(numericValue)) {
     return fallback

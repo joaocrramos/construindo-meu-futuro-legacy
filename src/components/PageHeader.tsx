@@ -19,6 +19,12 @@ export function PageHeader({
   actions,
   breadcrumbs,
 }: PageHeaderProps) {
+  React.useEffect(() => {
+    if (title) {
+      document.title = `${title} · Construindo Meu Futuro`
+    }
+  }, [title])
+
   return (
     <div className="flex flex-col gap-3 pb-6 border-b border-border/60 mb-6 sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-1">

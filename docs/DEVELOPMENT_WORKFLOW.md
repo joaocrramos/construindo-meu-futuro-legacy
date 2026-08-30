@@ -69,20 +69,25 @@ Conforme a ADR-007, o resultado do CI é a evidência de referência sobre o est
 
 ## 4. Política de Tratamento de Erros no Frontend
 
-Todo tratamento de exceções de requisição deve passar pelo `parseAppError` (`src/lib/errorHandler.ts`), que transforma status HTTP em mensagens claras e oculta stack traces técnicos:
+Todo tratamento de exceções de requisição deve passar pelo `parseAppError` (`src/lib/errorHandler.ts`), que transforma status HTTP em mensagens claras e oculta stack traces técnicos.
+
+### Sistema Único de Toasts (Sonner)
+
+Por decisão de arquitetura da Fase 1.5, o projeto utiliza **exclusivamente a biblioteca Sonner** (`sonner` / `src/components/ui/sonner.tsx`) montada na raiz da aplicação. O sistema de toast anterior baseado em Radix/shadcn (`use-toast.ts`, `toaster.tsx`, `toast.tsx`) e `@radix-ui/react-toast` foi unificado e descontinuado para evitar duplicação e overhead no bundle.
+
+Exemplo de uso padronizado com Sonner:
 
 ```typescript
 import { parseAppError } from '@/lib/errorHandler'
-import { toast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 try {
   await pb.collection('portfolios').create(data)
+  toast.success('Carteira criada com sucesso!')
 } catch (err) {
   const errorDetails = parseAppError(err)
-  toast({
-    title: errorDetails.title,
+  toast.error(errorDetails.title, {
     description: errorDetails.message,
-    variant: 'destructive',
   })
 }
 ```
