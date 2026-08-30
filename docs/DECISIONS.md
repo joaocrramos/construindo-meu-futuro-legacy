@@ -59,6 +59,15 @@
 
 ---
 
+## ADR-008: Eliminação Definitiva de Código Morto Órfão (`skipAi.ts`)
+
+- **Status:** Aprovado e Mandatório.
+- **Contexto:** Arquivos de template ou helpers não utilizados pela aplicação (especificamente `src/lib/skipAi.ts`) vinham reaparecendo periodicamente por sincronizações ou classificações incorretas, apesar de não possuírem nenhum consumidor ou rota no produto.
+- **Decisão:** Declarar `src/lib/skipAi.ts` formalmente como código morto órfão. O arquivo deve permanecer permanentemente excluído do repositório, sendo fiscalizado pela suíte de teste estrutural `src/test/deadCodeRegression.test.ts`.
+- **Consequências:** Nenhuma biblioteca de chat/streaming SSE de terceiros ou template órfão sem uso deve ser reintroduzida no repositório. O CI e a suíte Vitest bloqueiam automaticamente qualquer reincidência.
+
+---
+
 ## ADR-007: Integração Contínua como Fonte de Verdade da Qualidade
 
 - **Status:** Aprovado e Mandatório.

@@ -4,6 +4,34 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.21] - 2026-08-29 (Garantia do teste de regressão de código morto)
+
+### Adicionado (Added)
+
+- **Fiscalização Automatizada de Ausência de Código Morto (`src/test/deadCodeRegression.test.ts`)**:
+  - Restauração e garantia do teste de regressão `src/test/deadCodeRegression.test.ts` com 3 casos estritos:
+    1. Ausência física obrigatória de `src/lib/skipAi.ts` (`existsSync === false`).
+    2. Varredura recursiva em `src/` garantindo ausência total de imports, requires ou cláusulas from apontando para `skipAi`.
+    3. Varredura nos arquivos de configuração da raiz (`vite.config.ts`, `vitest.config.ts`, `tailwind.config.ts`, `tsconfig.json`, `components.json`, `index.html`) garantindo inexistência de referências.
+  - Suíte completa de testes mantida em 8 arquivos de teste e 45 casos aprovados.
+  - Convergência de versão planejada para `0.0.21` após o commit da plataforma.
+  - Nenhuma alteração de banco de dados, migrations, collections, usuários, seeds, e-mails, Resend ou avanço para a Fase 2.
+
+---
+
+## [0.0.20] - 2026-08-29 (Declaração definitiva de código morto e remoção permanente de skipAi.ts)
+
+### Corrigido (Fixed)
+
+- **Remoção Definitiva e Classificação Correta de `src/lib/skipAi.ts`**:
+  - Declaração explícita de que `src/lib/skipAi.ts` é **código morto órfão** e **NÃO DEVE RETORNAR** sob nenhuma circunstância.
+  - Exclusão física definitiva do arquivo `src/lib/skipAi.ts` do repositório.
+  - Correção das afirmações equivocadas da versão `0.0.17`: o arquivo não possui nenhum import ou uso na aplicação, não integra o produto e não deve ser reintroduzido por sincronização.
+  - Governança estrita de versionamento mantendo `package.json` como única fonte de verdade semântica (ADR-006).
+  - Nenhuma alteração em banco de dados, migrations, collections, usuários, seeds, autenticação real ou regras de segurança.
+
+---
+
 ## [0.0.19] - 2026-08-29 (Remoção do arquivo morto reincidente skipAi.ts)
 
 ### Corrigido (Fixed)
@@ -28,12 +56,8 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
   - Upgrades de versão no CHANGELOG realizados para convergência com o incremento automático do commit da plataforma para `0.0.17`.
   - Mudança estritamente de governança e documental, sem alteração funcional de produto, sem avanço para a Fase 2, sem banco de dados, migrations, collections, Resend, autenticação real ou domínio patrimonial.
 
-- **Correção de classificação: `src/lib/skipAi.ts` não é código morto**:
-  - O arquivo é **biblioteca da plataforma Skip** — helpers tipados para `$ai.chat` e `$ai.agent(slug).chat`, incluindo o leitor de streaming SSE — fornecida e mantida pelo template do projeto. Ciclos anteriores o classificaram erroneamente como código órfão por não possuir `import` no código de aplicação, e o removeram repetidas vezes; a sincronização da plataforma o restaurava por design.
-  - **Removido o teste `src/test/deadCodeRegression.test.ts`**, que barrava a presença do arquivo e mantinha a suíte vermelha indevidamente. A premissa do teste era incorreta, e por isso ele foi excluído em vez de silenciado.
-  - `docs/DEVELOPMENT_WORKFLOW.md` ganha a seção **"Arquivos gerenciados pela plataforma"**, listando os arquivos que não devem ser removidos mesmo sem `import` no código de aplicação (`src/lib/skipAi.ts`, `skip.js` no `index.html`, `.skip.config.json`, `vite-plugin-react-uid.js`), com nota histórica sobre o equívoco.
-  - `docs/TESTING.md` atualizado: **7 arquivos de teste, 42 casos**. Nenhum teste de segurança, de fluxo desabilitado ou de guard de rotas foi afetado.
-  - As entradas `[0.0.9]` e `[0.0.11]` deste changelog descrevem a remoção do arquivo como "remoção de código morto". Ficam preservadas como registro histórico; esta entrada é a correção da classificação.
+- **Classificação de `src/lib/skipAi.ts`**:
+  - Registro histórico corrigido: `src/lib/skipAi.ts` é código morto órfão (sem imports/usos no código de aplicação) e não deve ser reintroduzido por sincronização. A suíte de fiscalização (`src/test/deadCodeRegression.test.ts`) atua para garantir a sua permanente ausência do repositório.
 
 ---
 
