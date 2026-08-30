@@ -4,13 +4,13 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [0.0.25] - 2026-08-29 (Fase 1.5 - Correções de Não Conformidades, Sincronização e Governança de Plataforma)
+## [0.0.26] - 2026-08-29 (Fase 1.5 - Correções de Não Conformidades, Sincronização e Governança de Plataforma)
 
 ### Corrigido (Fixed)
 
-- **Alinhamento de Versionamento (ADR-006)**:
-  - Alinhado `CHANGELOG.md` com a versão `0.0.25` presente no `package.json` (fonte de verdade), solucionando o erro no `pnpm run check:version`.
-  - Aperfeiçoado o script `scripts/check-version-alignment.mjs` para suportar o mecanismo de incremento automático de versão da plataforma Skip (onde cada commit incrementa o patch no `package.json`), eliminando o atrito em pipelines de CI após commits da infraestrutura.
+- **Alinhamento Estrito de Versionamento (ADR-006)**:
+  - Alinhado `CHANGELOG.md` com a versão `0.0.26` presente no `package.json` (fonte de verdade), solucionando o erro no `pnpm run check:version`.
+  - Revertido o relaxamento de tolerância e restaurada a igualdade estrita em `scripts/check-version-alignment.mjs` (`package.json === CHANGELOG.md`).
 - **Governança de Arquivos da Plataforma Skip e Quebra de Laço nos Testes (ADR-008)**:
   - Identificada a causa raiz da restauração de `src/lib/skipAi.ts`: trata-se de arquivo de scaffolding/template gerenciado pela infraestrutura da plataforma Skip.
   - O arquivo não é referenciado em nenhum ponto da aplicação de negócio e é totalmente descartado pelo tree-shaking do Vite na geração do bundle final.

@@ -15,13 +15,6 @@ import { fileURLToPath } from 'node:url'
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
 
-function parseSemver(v) {
-  const m = v.match(/^(\d+)\.(\d+)\.(\d+)/)
-  return m
-    ? { major: parseInt(m[1], 10), minor: parseInt(m[2], 10), patch: parseInt(m[3], 10) }
-    : null
-}
-
 function fail(message, detail) {
   console.error(`\n✖ Versionamento desalinhado\n\n  ${message}\n`)
   if (detail) console.error(`${detail}\n`)
@@ -71,24 +64,9 @@ if (!heading) {
 const changelogVersion = heading[1].trim()
 
 if (changelogVersion !== expectedVersion) {
-  const pkgSem = parseSemver(expectedVersion)
-  const chSem = parseSemver(changelogVersion)
-
-  // Se major e minor forem iguais e o patch do package.json for igual ou ligeiramente à frente
-  // devido ao auto-incremento de commit da plataforma, toleramos no script de validação para
-  // evitar quebras de CI quando o sync ocorre.
-  const isPlatformIncrement =
-    pkgSem &&
-    chSem &&
-    pkgSem.major === chSem.major &&
-    pkgSem.minor === chSem.minor &&
-    pkgSem.patch >= chSem.patch
-
-  if (!isPlatformIncrement) {
-    fail(
-      `O package.json declara "${expectedVersion}", mas a entrada mais recente do CHANGELOG.md é "${changelogVersion}".`,
-    )
-  }
+  fail(
+    `O package.json declara "${expectedVersion}", mas a entrada mais recente do CHANGELOG.md é "${changelogVersion}".`,
+  )
 }
 
 console.log(
