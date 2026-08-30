@@ -46,16 +46,17 @@
 
 ## ADR-006: Governança e Regras de Versionamento do Produto
 
-- **Status:** Aprovado e Mandatório.
-- **Contexto:** O projeto necessita de diretrizes inequívocas para evitar descompasso entre o manifesto da aplicação, o registro de alterações e os contadores internos da plataforma de execução.
+- **Status:** Aprovado e Mandatório (Revisado para desacoplar do contador de build da plataforma).
+- **Contexto:** O projeto necessita de diretrizes inequívocas para evitar descompasso entre o manifesto da aplicação, o registro de alterações e os contadores internos da plataforma de execução. A redação original ancorava a governança no campo `version` do `package.json`, sob a premissa de que o arquivo fosse controlado exclusivamente pelo desenvolvimento. No entanto, na infraestrutura da plataforma Skip, o `package.json` sofre mutação e incremento automático de build a cada ciclo de persistência. Essa ancoragem causou uma esteira de descompasso contínuo (seis incrementos e cinco correções manuais em um único ciclo de trabalho).
 - **Decisão:** Adotar as seguintes regras rígidas de versionamento:
-  1. A versão semântica oficial do produto é definida pelo campo `version` do `package.json`.
-  2. O arquivo `CHANGELOG.md` deve acompanhar estritamente a mesma versão declarada no `package.json`.
-  3. O contador interno da plataforma de deploy/hospedagem não define a versão semântica do produto.
-  4. Uma nova versão do produto só deve ser criada quando houver uma alteração de produto conscientemente planejada e versionada.
-  5. Commits e builds automáticos da plataforma não constituem novas versões funcionais e não devem ser tratados como versões de produto.
-  6. **A regra 2 é verificada automaticamente.** O script `scripts/check-version-alignment.mjs` (`pnpm run check:version`) compara o campo `version` do `package.json` com a entrada mais recente do `CHANGELOG.md` e falha quando divergem. Ele roda no CI a cada push e pull request na `main`.
-- **Consequências:** O `package.json` permanece como a única fonte de verdade da versão semântica do projeto, e o `CHANGELOG.md` deve estar estritamente alinhado a ele.
+  1. A versão semântica do produto é definida pelo arquivo `VERSION` na raiz do repositório.
+  2. O `CHANGELOG.md` deve declarar estritamente a mesma versão do `VERSION`.
+  3. O campo `version` do `package.json` é contador de build da plataforma, é incrementado automaticamente a cada persistência e **NÃO** representa a versão semântica do produto.
+  4. Uma nova versão semântica só é criada por decisão consciente, editando `VERSION` e escrevendo a entrada correspondente no `CHANGELOG.md` no mesmo commit.
+  5. Commits automáticos da plataforma não constituem versões funcionais e não devem ser tratados como versões de produto.
+  6. **A regra 2 é verificada automaticamente.** O script `scripts/check-version-alignment.mjs` (`pnpm run check:version`) compara o conteúdo do arquivo `VERSION` com a entrada mais recente do `CHANGELOG.md`, com comparação estrita e sem tolerância. Ele roda no CI a cada push e pull request na `main`.
+- **Consequências:** A governança de versão semântica fica blindada contra mutações operacionais automáticas do `package.json`. A plataforma pode incrementar o `package.json` sem quebrar o pipeline de CI, enquanto a versão semântica do produto permanece sob controle consciente de versionamento.
+- **Nota Histórica / Causa Raiz da Revisão:** A redação anterior falhava porque tentava governar a versão semântica usando o único arquivo que a plataforma modifica autonomamente. Ao mover a versão semântica para o arquivo `VERSION` (preservado de forma estável pela plataforma) e desqualificar `package.json.version` como fonte de verdade de produto, o laço de descompasso é definitivamente eliminado.
 
 ---
 

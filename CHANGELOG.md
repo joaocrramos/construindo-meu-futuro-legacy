@@ -17,7 +17,10 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
   - Remoção definitiva do teste `src/test/deadCodeRegression.test.ts`, encerrando o laço de falsos-positivos na esteira de CI e sincronização.
   - Documentação atualizada em `docs/DEVELOPMENT_WORKFLOW.md`, `docs/TESTING.md` e `docs/DECISIONS.md`.
 - **Aferição Estrutural do Bundle de Produção**:
-  - Mensuração e registro transparente das métricas de compilação do Vite (`pnpm run build`), confirmando a geração dos 37 chunks e o carregamento inicial em conformidade com o code splitting.
+  - Mensuração e registro transparente das métricas de compilação do Vite (`pnpm run build`), confirmando a geração de 39 chunks e o carregamento inicial em conformidade com o code splitting:
+    - `dist/assets/index-CKfAyzm1.js`: 456.10 kB │ gzip: 138.30 kB
+    - `dist/assets/index-CL20Y4lC.css`: 65.14 kB │ gzip: 11.53 kB
+    - Redução real do bundle de entrada de 563.85 kB para 456.10 kB (~19% de redução).
 
 ### Adicionado (Added)
 
