@@ -65,7 +65,7 @@
 - **Status:** Aprovado e Mandatório.
 - **Contexto:** Até a versão `0.0.11` o repositório não possuía pipeline de CI. Toda afirmação sobre testes, lint, tipagem ou build dependia de execução manual e de relato em documento, o que produziu divergências reais entre o que a documentação declarava e o que os comandos efetivamente retornavam.
 - **Decisão:**
-  1. O workflow `.github/workflows/ci.yml` executa, a cada push e pull request na `main`: `check:version`, `lint:ci`, `tsc --noEmit`, `test` e `build`.
+  1. O workflow `.github/workflows/ci.yml` executa, a cada push e pull request na `main`: `check:version`, `check:migrations`, `lint:ci`, `tsc --noEmit`, `test` e `build`.
   2. O resultado do CI é a **única evidência aceitável** sobre o estado de qualidade de um commit. Números de testes, contagens de avisos e status de build não devem ser afirmados em documentação sem correspondência com uma execução real.
   3. Avisos do linter são tratados como erro no CI (`oxlint src --deny-warnings`). O script `lint` local permanece permissivo para não atrapalhar o desenvolvimento.
   4. O script `pnpm run verify` reproduz localmente a mesma sequência do CI.
@@ -177,3 +177,42 @@
   3. A ativação ocorre via fluxo seguro no primeiro uso de recuperação/ativação de senha na interface, promovendo o status para `active` e auditando `ADMIN_ACTIVATED`.
   4. O sistema adota primitivo criptográfico único baseado em `(token_public_id, token_hash)` e proteção contra enumeração (tempo constante e resposta idêntica).
 - **Consequências:** Processo de bootstrap totalmente seguro, sem credenciais estáticas no repositório e integrado ao ciclo de vida canônico de segurança.
+
+---
+
+## ADR-019: Regras Rígidas de Execução Incremental de Migrations e Alocação de Ordinais do Domínio
+
+- **Status:** Aprovado e Mandatório.
+- **Contexto:** Tentativas anteriores de aplicar conjuntos amplos de migrations em lote sem validação intermediária e sem guarda estrita de nomenclatura/consistência resultaram em loops de correção (dois arquivos `0001`, dois `0002`, divergência de grafia entre create e drop). Para o Lote 1 e Lote 2 da Fase 2, é imperativo fixar antecipadamente a alocação de ordinais de todas as 14 collections e instituir a regra de execução estritamente unitária.
+- **Decisão:**
+  1. **Execução Estritamente Unitária (Uma por Vez):**
+     - Escrever exatamente **uma** migration por vez no diretório `pocketbase/migrations/`.
+     - Aplicar via ferramenta de backend (`apply_migrations`), inspecionar e confirmar pelo schema (`db_show_schema` / `db_describe_object`) que o efeito pretendido ocorreu no banco de dados.
+     - Somente após confirmação inequívoca no schema live escrever a próxima migration.
+     - **Proibição de Escrita em Lote:** É terminantemente proibido criar múltiplos arquivos `0001_*.js`, `0002_*.js`, etc., e aplicá-los de uma vez só.
+     - **Regra de Parada em Falha:** Se qualquer migration falhar ou apresentar erro no apply, parar imediatamente a execução e reportar a causa raiz em vez de tentar contornar com migrations adicionais ou mutações compensatórias.
+  2. **Convenção de Nomenclatura:**
+     - Todo arquivo de migration deve seguir rigorosamente o padrão `NNNN_snake_case.js` (4 dígitos ordinais padronizados com zeros à esquerda, seguidos de sublinhado e descrição em minúsculas).
+  3. **Guarda Automatizada de Integridade (`check:migrations`):**
+     - O script `scripts/check-migrations.mjs` integra o pipeline de validação (`pnpm run verify` e CI) e valida estritamente:
+       - Conformidade com o padrão `NNNN_snake_case.js`.
+       - Ausência de ordinais duplicados.
+       - Ausência de buracos na sequência cronológica de ordinais a partir de `0001`.
+       - Consistência de drops (nenhum drop pode referenciar collection não criada em migration anterior ou nativa).
+  4. **Alocação Prévia e Fixada dos Ordinais das 14 Collections:**
+     - A alocação numérica é imutável e deve ser respeitada antes da criação de qualquer arquivo:
+       - `0001_extend_users_and_bootstrap.js` -> `users` (extensão da auth nativa `_pb_users_auth_`)
+       - `0002_create_invitations.js` -> `invitations`
+       - `0003_create_audit_logs.js` -> `audit_logs`
+       - `0004_create_portfolios.js` -> `portfolios` _(ordinal já fixado)_
+       - `0005_create_institutions.js` -> `institutions` _(ordinal já fixado)_
+       - `0006_create_accounts.js` -> `accounts`
+       - `0007_create_account_balances.js` -> `account_balances`
+       - `0008_create_assets.js` -> `assets`
+       - `0009_create_positions.js` -> `positions`
+       - `0010_create_movements.js` -> `movements`
+       - `0011_create_transfers.js` -> `transfers`
+       - `0012_create_quotes.js` -> `quotes`
+       - `0013_create_wealth_goals.js` -> `wealth_goals`
+       - `0014_create_consolidations.js` -> `consolidations`
+- **Consequências:** Eliminação definitiva de ambiguidades de ordinais, garantia de rastreabilidade passo a passo do schema e prevenção absoluta de regressões e colisões no ciclo de persistência do Skip Cloud.

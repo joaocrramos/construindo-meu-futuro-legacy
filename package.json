@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:version": "node scripts/check-version-alignment.mjs",
-    "verify": "pnpm run check:version && pnpm run lint:ci && pnpm exec tsc --noEmit && pnpm test && pnpm run build"
+    "check:migrations": "node scripts/check-migrations.mjs",
+    "verify": "pnpm run check:version && pnpm run check:migrations && pnpm run lint:ci && pnpm exec tsc --noEmit && pnpm test && pnpm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

@@ -13,22 +13,23 @@ Este diretório destina-se a armazenar as migrations JavaScript do PocketBase (J
 
 ```
 pocketbase/migrations/
-├── LOTE 1 (Acesso, Identidade e Núcleo Contábil)
+├── LOTE 1 (Acesso, Identidade e Núcleo Contábil) — Conforme ADR-019
 │   ├── 0001_extend_users_and_bootstrap.js   # Extensão da auth users, role, status e registro pendente do admin
 │   ├── 0002_create_invitations.js          # Criação da collection invitations (role, token_hash, token_public_id)
 │   ├── 0003_create_audit_logs.js           # Criação da collection audit_logs com retenção de 365 dias / 7 anos
-│   ├── 0004_create_portfolios.js           # Agrupamentos patrimoniais com RLS por user_id
-│   ├── 0005_create_institutions.js         # Instituições financeiras e custodiantes
+│   ├── 0004_create_portfolios.js           # Agrupamentos patrimoniais com RLS por user_id (ordinal fixado)
+│   ├── 0005_create_institutions.js         # Instituições financeiras e custodiantes (ordinal fixado)
 │   ├── 0006_create_accounts.js             # Contas bancárias e domicílios de investimento
 │   ├── 0007_create_account_balances.js     # Projeção transacional de saldo de caixa por conta e moeda
 │   ├── 0008_create_assets.js               # Catálogo de ativos 100% por titular (user_id obrigatório)
-│   └── 0009_create_positions_and_movements.js # Livro-razão contábil e posições com custo médio e runInTransaction
+│   ├── 0009_create_positions.js            # Posições de custódia e custo médio ponderado
+│   └── 0010_create_movements.js            # Livro-razão contábil com runInTransaction
 │
-├── LOTE 2 (Transferências, Cotações, Metas e Consolidação)
-│   ├── 0010_create_transfers.js            # Transferências entre contas do mesmo titular e mesma moeda
-│   ├── 0011_create_quotes.js               # Histórico versionado de cotações com supersedência
-│   ├── 0012_create_wealth_goals.js         # Metas financeiras e de independência
-│   └── 0013_create_consolidations.js       # Fechamentos mensais multi-moeda e consolidações por carteira
+├── LOTE 2 (Transferências, Cotações, Metas e Consolidação) — Conforme ADR-019
+│   ├── 0011_create_transfers.js            # Transferências entre contas do mesmo titular e mesma moeda
+│   ├── 0012_create_quotes.js               # Histórico versionado de cotações com supersedência
+│   ├── 0013_create_wealth_goals.js         # Metas financeiras e de independência
+│   └── 0014_create_consolidations.js       # Fechamentos mensais multi-moeda e consolidações por carteira
 │
 └── README.md                               # Este arquivo de documentação e planejamento
 ```

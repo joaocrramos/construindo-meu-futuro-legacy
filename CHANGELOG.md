@@ -4,6 +4,33 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.30] - 2026-08-30 (Fechamento do Canário, Guarda de Migrations, Prova B2 e ADR do Lote 1)
+
+### Adicionado (Added)
+
+- **Guarda Automatizada de Migrations (`scripts/check-migrations.mjs`, `pnpm run check:migrations`)**:
+  - Script determinístico e integrado ao pipeline `pnpm run verify` e CI (ADR-019).
+  - Bloqueia e falha a esteira diante de:
+    1. Arquivos fora do padrão `NNNN_snake_case.js`.
+    2. Ordinais duplicados com mesmo prefixo numérico.
+    3. Buracos ou saltos na sequência cronológica a partir de `0001`.
+    4. Drops ou deleções de collections inexistentes em creates anteriores.
+- **Suíte de Testes Automatizados da Guarda de Migrations (`src/test/checkMigrations.test.ts`)**:
+  - 7 testes automatizados cobrindo diretório limpo, casos negativos de erro (ordinais duplicados, saltos, padrão de nomenclatura, drops inválidos) e cenário positivo válido.
+- **Registro da ADR-019 em `docs/DECISIONS.md`**:
+  - Regra de execução incremental estritamente unitária (uma migration por vez com validação no schema live).
+  - Alocação prévia e fixada dos ordinais das 14 collections de domínio (`0001` a `0014`), respeitando `0004 = portfolios` e `0005 = institutions`.
+- **Exercício e Comprovação Empírica do Protocolo B2**:
+  - Execução controlada de ciclo de persistência e deleção transacional/migration no Skip Cloud sem deixar resíduos.
+
+### Removido (Removed)
+
+- **Higienização de Artefatos do Canário**:
+  - Removidos `pocketbase/migrations/0004_drop_canary.js` e `pocketbase/migrations/0005_drop_canary.js`.
+  - `pocketbase/migrations/` mantido estritamente limpo, contendo apenas `README.md`.
+
+---
+
 ## [0.0.29] - 2026-08-30 (Fase 2 - Consolidação da Modelagem Relacional, ADRs e Plano de Execução)
 
 ### Adicionado (Added)
