@@ -38,83 +38,38 @@ Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A colu
 - Na prática, todos os arquivos de teste vivem em `src/test/` com os sufixos `.test.ts` e `.test.tsx`.
 - Não existe nenhum `it.skip`, `describe.skip`, `.only` ou `.todo` no projeto — portanto todos os casos declarados são coletados e executados.
 
-### 2.3 Nota de Correção de Contagem
-
-Versões anteriores deste documento registraram **20 testes**, e atribuíram **3 testes** a `formatters.test.ts`. Ambos os números estavam incorretos:
-
-- `formatters.test.ts` possui **11 casos `it`** distribuídos em 3 `describe` aninhados. O número 3 correspondia aos blocos de agrupamento, não aos testes.
-- O total correto é **36**, confirmado pela saída do runner (`Tests 36 passed (36)`).
-- Nenhum teste foi adicionado, removido ou renomeado para chegar a esse número: a divergência foi exclusivamente **erro de contagem em relatório anterior**, não perda de descoberta, não mudança de configuração e não diferença entre branches ou entre HEAD local e remoto.
-
 ---
 
-## 3. Categorização e Cobertura da Fundação
+## 3. Especificação da Infraestrutura de Validação da Fase 2 (G1–G3)
 
-### 3.1 Formatadores Financeiros (`src/test/formatters.test.ts`) — [Unitário / Frontend]
+Com o início da execução da Fase 2, serão introduzidos três novos pilares de teste automatizado:
 
-- Formatação de valores positivos em padrão `R$ 0,00` e números na casa de milhões.
-- Formatação correta de valores negativos com sinal e espaçamento adequado (`- R$ 450,75`).
-- Conversão segura de strings com vírgula ou ponto decimal.
-- Tratamento de nulos, strings vazias e `undefined` com fallback seguro (`—`).
-- Opção de supressão de símbolo (`showSymbol: false`).
-- Sufixo discriminatório de valor `(Bruto)` e `(Líquido)`.
-- Formatação percentual com sinal positivo explícito (`+15,42%`) e negativo (`-3,85%`).
-- Formatação de datas no padrão pt-BR (`dd/mm/aaaa`).
+### 3.1 Harness de Teste de Backend e Isolamento (G1 & G2)
 
-### 3.2 Tratamento Centralizado de Erros (`src/test/errorHandler.test.ts`) — [Unitário]
+- **Harness de Integração:** Mecanismo para provisionar banco descartável/isolado de teste, aplicar as migrations do Lote 1 e executar rotinas de autorização.
+- **Suíte de Isolamento RLS:** Teste automatizado com dois usuários autenticados simultâneos (Usuário A e Usuário B).
+  - O Usuário A tenta ler, mutar e assinar via realtime (`use-realtime`) registros pertencentes ao Usuário B em todas as collections (`portfolios`, `accounts`, `account_balances`, `assets`, `positions`, `movements`, `transfers`, `wealth_goals`, `consolidations`).
+  - O Usuário A tenta consultar via `expand` registros do Usuário B.
+  - **Critério de Aprovação:** 100% das tentativas transversais devem ser rejeitadas pelo RLS.
 
-- Mapeamento de erro HTTP 400 em "Dados inválidos" com extração de mensagens de campos.
-- Mapeamento de erro HTTP 401 em "Não autenticado / Sessão expirada".
-- Mapeamento de erro HTTP 403 em "Acesso negado" sem expor regras de RLS internas.
-- Mapeamento de erro HTTP 500 em "Instabilidade temporária".
-- Tratamento de exceções genéricas de rede (`Failed to fetch`).
+### 3.2 Teste-Tabela de Aritmética Financeira e Custo Médio (G3, ADR-011)
 
-### 3.3 Matriz de Navegação Estrutural (`src/test/navigation.test.ts`) — [Estrutural / Configuração]
+Suíte exaustiva de testes unitários de funções puras com aproximadamente **40 cenários matemáticos e contábeis**, cobrindo:
 
-- Validação das 4 áreas principais: `overview`, `wealth`, `admin` e `account`.
-- Validação de todos os subitens de Visão Geral (Dashboard, Resumo, Evolução, Distribuição, Alertas, Vencimentos, Metas, Atividades).
-- Validação dos 11 subitens de Patrimônio (Carteiras, Instituições, Contas, Ativos, Posições, Movimentações, Transferências, Cotações, Vencimentos, Metas, Consolidação).
-- Validação de proteção da seção Administração (`requireAdmin: true`).
-- Validação de todos os subitens de Conta.
-
-### 3.4 Inicialização do SDK PocketBase (`src/test/pocketbaseClient.test.ts`) — [Unitário]
-
-- Exportação correta da instância PocketBase.
-- Desativação do cancelamento automático para suporte a requisições concorrentes.
-
-### 3.5 Regressão de Autenticação e Segurança (`src/test/authRegression.test.tsx`) — [Frontend / Integração de Contexto]
-
-- Falha do PocketBase nunca resulta em login bem-sucedido.
-- Falha do PocketBase nunca cria sessão ou popula usuário.
-- Falha do PocketBase nunca grava token no store.
-- Falha do PocketBase nunca concede role.
-- Falha do PocketBase nunca concede acesso administrativo.
-- `isAdmin` nunca retorna verdadeiro sem papel administrativo de fonte confiável.
-- Senha incorreta nunca resulta em sucesso.
-- Ausência de sessão mockada e token fixo no estado inicial.
-
-### 3.6 Regressão de Fluxos Desabilitados (`src/test/disabledFlowsRegression.test.tsx`) — [Frontend / Telas]
-
-- Cadastro por convite (`Register.tsx`) com input desabilitado, botão desabilitado e aviso de implementação.
-- Recuperação de senha (`ForgotPassword.tsx`) sem simulação de envio de e-mail e com formulário desabilitado.
-- Primeiro acesso (`FirstAccess.tsx`) sem simulação de ativação ou timer de redirecionamento.
-- Alteração de senha (`Password.tsx`) com campos desabilitados e sem sucesso simulado.
-- Atualização de perfil (`Profile.tsx`) com campos desabilitados e sem mensagem falsa de salvamento.
-
-### 3.7 Regressão do Guard de Rotas (`src/test/protectedRouteRegression.test.tsx`) — [Frontend / Guard]
-
-Cobertura **direta** do `ProtectedRoute`, montando o componente dentro de um roteador com destinos de redirecionamento reais. O hook `useAuth` é mockado para exercer cada estado isoladamente.
-
-- Usuário anônimo é redirecionado para `/login` e não vê o conteúdo protegido.
-- Durante o carregamento da autenticação, nada é liberado nem redirecionado.
-- Usuário autenticado sem papel admin acessa rota comum.
-- Usuário autenticado sem papel admin é redirecionado para `/dashboard` em rota `requireAdmin`.
-- Usuário autenticado com papel admin acessa rota `requireAdmin`.
-- Usuário anônimo com `isAdmin` verdadeiro **nunca** acessa rota administrativa (defesa em profundidade).
-
-### 3.8 Classificação e Política sobre Arquivos de Plataforma (`src/lib/skipAi.ts`)
-
-Conforme documentado em `docs/DEVELOPMENT_WORKFLOW.md` e na atualização da ADR-008 (`docs/DECISIONS.md`), arquivos utilitários e de infraestrutura providos pela plataforma Skip (como `src/lib/skipAi.ts`) são scaffolding gerenciado de infraestrutura. Eles não são importados pelo código de aplicação do produto, são eliminados pelo tree-shaking do Vite durante o build de produção e não causam impacto em runtime. O teste `deadCodeRegression.test.ts` foi descontinuado para quebrar o laço de falsos-positivos na sincronização.
+1. Compra simples à vista.
+2. Compra com taxa de corretagem e emolumentos somados ao custo total.
+3. Venda parcial com apuração correta de custo proporcional e manutenção do preço médio.
+4. Lançamento de proventos (dividendos e JCP com retenção de IR).
+5. Despesas avulsas e taxas de custódia.
+6. Depósito e retirada de caixa.
+7. Transferência entre contas do mesmo titular com taxa.
+8. Estorno de compra (recompondo caixa e subtraindo lote de custódia).
+9. Estorno de venda (disparando recomputação integral e restaurando o custo médio histórico exato).
+10. Sequência mista: Compra A -> Compra B -> Venda Parcial -> Compra C -> Estorno da Venda -> Estorno da Compra B.
+11. Bloqueio estrito de posição negativa (rejeição de venda que excede a custódia).
+12. Bloqueio estrito de saldo de caixa negativo em conta não autorizada.
+13. Deduplicação por `(user_id, idempotency_key)`.
+14. Paridade absoluta entre cálculo incremental e recálculo integral (`recalculatePositions`).
 
 ---
 
@@ -125,15 +80,8 @@ Conforme documentado em `docs/DEVELOPMENT_WORKFLOW.md` e na atualização da ADR
 | **Unitários**                   | **Executados e Aprovados (20 testes)** | Testam funções puras e utilitários isolados (`formatters`: 13, `errorHandler`: 5, `pocketbaseClient`: 2).                                                 |
 | **Frontend / Regressão**        | **Executados e Aprovados (23 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 6, `protectedRouteRegression`: 6, `errorBoundary`: 3). |
 | **Estruturais**                 | **Executados e Aprovados (5 testes)**  | Validam a integridade da árvore e integridade estrutural (`navigation`: 5).                                                                               |
-| **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2).                     |
-| **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright).               |
-
-### 4.1 Limitações de Cobertura e de Comprovação
-
-- **Os testes são revalidados automaticamente pelo CI** (`.github/workflows/ci.yml`) a cada push e pull request na `main`, junto com alinhamento de versão, lint, tipagem e build. O resultado do CI é a evidência de referência sobre o estado da suíte em um commit — os números da seção 2 devem ser lidos como o retrato da última execução registrada, não como garantia perpétua. Para reproduzir localmente a mesma sequência, use `pnpm run verify`.
-- **Autenticação real não é testada** — os testes de regressão usam `vi.spyOn` sobre o SDK do PocketBase e provam apenas que uma falha do backend nunca produz sucesso, sessão, token ou papel. Não existe teste contra um PocketBase real.
-- **Não há teste de banco vazio nem de Resend**, porque não existem collections de domínio nem integração de e-mail nesta fase.
-- **Não há medição de cobertura** (`coverage`) configurada.
+| **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação de Evidência:_ A base atual não possui migrations aplicadas ou dados de domínio persistidos. Será implementada no Lote 1 da Fase 2.            |
+| **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação de Evidência:_ Depende de ambiente com banco de dados povoado e navegadores reais (planejado para etapas posteriores).                         |
 
 ---
 
@@ -145,8 +93,8 @@ Para rodar todos os testes com o runner oficial:
 pnpm test
 ```
 
-Para rodar em modo contínuo durante o desenvolvimento:
+Para rodar a esteira completa de verificação do projeto:
 
 ```bash
-pnpm run test:watch
+pnpm run verify
 ```

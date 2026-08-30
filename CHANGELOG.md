@@ -4,6 +4,56 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.29] - 2026-08-30 (Fase 2 - Consolidação da Modelagem Relacional, ADRs e Plano de Execução)
+
+### Adicionado (Added)
+
+- **Consolidação Formal do Schema e Modelagem Relacional (`docs/DATABASE_SCHEMA.md`)**:
+  - Especificação completa e unificada das 14 collections de domínio, campos com tipagem e restrições, convenções numéricas (`_cents`, `_e8` com limite $\pm 10^{15}$), regras RLS e criação Backend-Only (`movements`, `transfers`, `quotes`, `invitations`, `positions`, `account_balances`).
+  - **Correções Estruturais Integradas (C1–C7)**:
+    - _C1_: Chave e índice único de `consolidations` expandidos para `(user_id, basis_date, portfolio_id, origin, version)` suportando consolidações por carteira ou gerais e $N$ correções versionadas.
+    - _C2_: Escopo estrito de `idempotency_key` por titular em `(user_id, idempotency_key)` para `movements` e `transfers`.
+    - _C3_: Prevenção estrutural de estorno duplo via índice único parcial em `reversal_of_id` quando `movement_type = 'reversal'`.
+    - _C4_: Fuso horário de negócio padronizado em `America/Sao_Paulo` (ADR-009).
+    - _C5_: Suporte multi-moeda em `consolidations` com estrutura `total_cents_by_currency` em JSON.
+    - _C6_: Criação da entidade formal de projeção de saldo de caixa `account_balances` mantida inline pelo backend (ADR-012).
+    - _C7_: Proteção mandatória de `emailVisibility` no hook `protect_admin_fields` para impedir vazamento em `expand`.
+  - **Custo Médio e Posições (D1–D3)**:
+    - _D1_: Especificação da não-invertibilidade contábil por delta e recomputação integral obrigatória em estornos (ADR-013).
+    - _D2_: Atualização inline e atômica de posições e saldos dentro de `$app.runInTransaction` no `createMovement`.
+    - _D3_: Especificação da rotina pública `recalculatePositions` como operação de primeira classe com paridade garantida.
+  - **Bootstrap do Administrador e Segurança (E1–E10, ADR-017)**:
+    - E-mail injetado via secret `BOOTSTRAP_ADMIN_EMAIL`, registro inicial `status='pending'` sem efeitos colaterais na migration, ativação de uso único no primeiro acesso, proteção anti-enumeração com tempo constante e rate limit, e primitivo criptográfico único `(token_public_id, token_hash)`.
+  - **Catálogo Canônico de Códigos de Erro de Domínio (F2, ADR-016)**:
+    - 22 códigos estáveis padronizados (`INSUFFICIENT_BALANCE`, `NEGATIVE_POSITION`, `DUPLICATE_IDEMPOTENCY_KEY`, `DUPLICATE_REVERSAL`, etc.).
+  - **Desacoplamento Arquitetural (F3, ADR-010, ADR-011)**:
+    - Proibição de importação do SDK do PocketBase em páginas (`src/pages/**`), restringindo o acesso a `src/lib/data/*`.
+    - Implementação do motor contábil como funções puras em TypeScript para testes ultrarrápidos em memória.
+  - **Resolução de Incoerências (H1–H3)**:
+    - _H1_: Ativos 100% isolados por titular (`user_id` obrigatório); catálogo global descartado do MVP (ADR-014).
+    - _H2_: Correção de dependências: `positions` e `movements` dependem de `accounts` e `assets` (não de `portfolios`).
+    - _H3_: Confirmação de `maturity_date` como atributo de posição de custódia.
+- **Novas Decisões de Arquitetura Registradas (`docs/DECISIONS.md`)**:
+  - ADR-009: Fuso Horário Canônico de Negócio (`America/Sao_Paulo`).
+  - ADR-010: Desacoplamento de Páginas e Acesso a Dados (Isolamento do SDK PB).
+  - ADR-011: Lógica de Domínio como Funções Puras em TypeScript.
+  - ADR-012: Projeção Persistida de Saldo de Caixa (`account_balances`).
+  - ADR-013: Recomputação Obrigatória de Posição em Estornos.
+  - ADR-014: Catálogo Estrito de Ativos por Titular no MVP.
+  - ADR-015: Gestão Multi-Moeda em Consolidações Patrimoniais.
+  - ADR-016: Catálogo Canônico de Códigos de Erro de Domínio.
+  - ADR-017: Arquitetura Segura de Bootstrap do Administrador.
+  - ADR-018: Execução da Fase 2 em Dois Lotes com Validação Intermediária.
+- **Atualização dos Guias Operacionais e de Governança**:
+  - `docs/SECURITY.md`: Políticas de segurança alinhadas ao novo schema e regras de bootstrap.
+  - `docs/RESET_DEVELOPMENT.md`: Procedimento de snapshot, backup, restore nativo e limpeza controlada (investigação B2).
+  - `docs/TESTING.md`: Especificação do harness de integração, suíte de isolamento RLS e tabela de 40 cenários de aritmética (G1–G3).
+  - `pocketbase/migrations/README.md`: Sequência canônica de migrations dividida nos Lotes 1 e 2.
+- **Governança de Banco de Dados**:
+  - Banco de dados permanece 100% intacto: 0 migrations aplicadas, 0 collections de domínio criadas, 0 usuários, 0 seeds e 0 e-mails enviados.
+
+---
+
 ## [0.0.28] - 2026-08-29 (Fase 1.5 - Correções de Não Conformidades, Sincronização e Governança de Plataforma)
 
 ### Corrigido (Fixed)
