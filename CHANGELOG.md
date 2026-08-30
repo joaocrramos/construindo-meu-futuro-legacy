@@ -4,6 +4,19 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.19] - 2026-08-29 (Remoção do arquivo morto reincidente skipAi.ts)
+
+### Corrigido (Fixed)
+
+- **Remoção de Código Morto Reincidente (`src/lib/skipAi.ts`)**:
+  - Exclusão do arquivo órfão `src/lib/skipAi.ts`, que havia reaparecido no repositório via sincronização sem referências ativas no código de produção (nenhum import em componentes, rotas, hooks ou configurações).
+  - Revalidação do teste de regressão `src/test/deadCodeRegression.test.ts` (3 casos), que garante de forma automatizada a ausência de `src/lib/skipAi.ts` e a inexistência de imports ou referências em `src/` e em arquivos de configuração da raiz.
+  - Atualização da documentação de testes (`docs/TESTING.md`) refletindo a suíte ativa de 8 arquivos de teste e 45 casos aprovados.
+  - Alinhamento da versão vigente (`0.0.19`) mantendo `package.json` como única fonte de verdade da versão semântica do produto (ADR-006).
+  - Nenhuma alteração em banco de dados (0 migrations, 0 collections), 0 usuários/registros, 0 e-mails, 0 seeds e nenhuma alteração em regras de autenticação/segurança ou avanço para a Fase 2.
+
+---
+
 ## [0.0.17] - 2026-08-29 (Restauração do package.json como Fonte de Verdade)
 
 ### Corrigido (Fixed)

@@ -45,14 +45,11 @@
 
 Alguns arquivos do repositório são fornecidos e mantidos pela plataforma **Skip** (<https://skip.it>), a ferramenta usada no desenvolvimento deste sistema. Eles **não devem ser removidos** mesmo quando nenhum arquivo de aplicação os importa: são scaffolding de plataforma, e a sincronização do Skip os restaura por design.
 
-| Arquivo                        | Papel                                                                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `src/lib/skipAi.ts`            | Helpers tipados para `$ai.chat` (formato OpenAI) e `$ai.agent(slug).chat` (formato Skip), incluindo o leitor de streaming SSE. Disponível para quando recursos de IA forem utilizados. |
-| `index.html` (`skip.js`)       | Instrumentação da plataforma, marcada com `@skip-protected`.                                                              |
-| `.skip.config.json`            | Configuração da plataforma (entrypoint, rotas, `deployment.lastDevBuildRef`).                                             |
-| `vite-plugin-react-uid.js`     | Plugin de build da plataforma.                                                                                            |
-
-> **Nota histórica:** `src/lib/skipAi.ts` foi removido por engano em ciclos anteriores, classificado como código morto por não possuir `import` no código de aplicação. Ausência de import **não** é ausência de propósito. Um teste que barrava a presença do arquivo chegou a ser adicionado e foi removido ao se constatar o equívoco. Antes de remover qualquer arquivo desta tabela, confirme com a documentação da plataforma.
+| Arquivo                    | Papel                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `index.html` (`skip.js`)   | Instrumentação da plataforma, marcada com `@skip-protected`.                  |
+| `.skip.config.json`        | Configuração da plataforma (entrypoint, rotas, `deployment.lastDevBuildRef`). |
+| `vite-plugin-react-uid.js` | Plugin de build da plataforma.                                                |
 
 ---
 
