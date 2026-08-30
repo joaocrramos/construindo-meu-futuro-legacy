@@ -15,6 +15,13 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
   - Upgrades de versão no CHANGELOG realizados para convergência com o incremento automático do commit da plataforma para `0.0.17`.
   - Mudança estritamente de governança e documental, sem alteração funcional de produto, sem avanço para a Fase 2, sem banco de dados, migrations, collections, Resend, autenticação real ou domínio patrimonial.
 
+- **Correção de classificação: `src/lib/skipAi.ts` não é código morto**:
+  - O arquivo é **biblioteca da plataforma Skip** — helpers tipados para `$ai.chat` e `$ai.agent(slug).chat`, incluindo o leitor de streaming SSE — fornecida e mantida pelo template do projeto. Ciclos anteriores o classificaram erroneamente como código órfão por não possuir `import` no código de aplicação, e o removeram repetidas vezes; a sincronização da plataforma o restaurava por design.
+  - **Removido o teste `src/test/deadCodeRegression.test.ts`**, que barrava a presença do arquivo e mantinha a suíte vermelha indevidamente. A premissa do teste era incorreta, e por isso ele foi excluído em vez de silenciado.
+  - `docs/DEVELOPMENT_WORKFLOW.md` ganha a seção **"Arquivos gerenciados pela plataforma"**, listando os arquivos que não devem ser removidos mesmo sem `import` no código de aplicação (`src/lib/skipAi.ts`, `skip.js` no `index.html`, `.skip.config.json`, `vite-plugin-react-uid.js`), com nota histórica sobre o equívoco.
+  - `docs/TESTING.md` atualizado: **7 arquivos de teste, 42 casos**. Nenhum teste de segurança, de fluxo desabilitado ou de guard de rotas foi afetado.
+  - As entradas `[0.0.9]` e `[0.0.11]` deste changelog descrevem a remoção do arquivo como "remoção de código morto". Ficam preservadas como registro histórico; esta entrada é a correção da classificação.
+
 ---
 
 ## [0.0.15] - 2026-08-29 (Alinhamento de Versionamento e Governança)

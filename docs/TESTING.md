@@ -12,8 +12,8 @@
 
 Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de estimativa ou contagem manual:
 
-- **Arquivos de Teste (Test Files):** 8 arquivos, 8 aprovados
-- **Total de Testes:** **45 testes** — 45 aprovados, 0 falhos, 0 pulados
+- **Arquivos de Teste (Test Files):** 7 arquivos, 7 aprovados
+- **Total de Testes:** **42 testes** — 42 aprovados, 0 falhos, 0 pulados
 
 ### 2.1 Detalhamento por Arquivo de Teste
 
@@ -28,8 +28,7 @@ Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A colu
 | `src/test/authRegression.test.tsx`           | Frontend / Contexto  |                   1 |          8 | 8/8    |
 | `src/test/disabledFlowsRegression.test.tsx`  | Frontend / Telas     |                   1 |          5 | 5/5    |
 | `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard     |                   1 |          6 | 6/6    |
-| `src/test/deadCodeRegression.test.ts`        | Estrutural / Higiene |                   1 |          3 | 3/3    |
-| **TOTAL**                                    |                      |              **11** |     **45** | 45/45  |
+| **TOTAL**                                    |                      |              **10** |     **42** | 42/42  |
 
 ### 2.2 Como os Testes São Descobertos
 
@@ -112,11 +111,11 @@ Cobertura **direta** do `ProtectedRoute`, montando o componente dentro de um rot
 - Usuário autenticado com papel admin acessa rota `requireAdmin`.
 - Usuário anônimo com `isAdmin` verdadeiro **nunca** acessa rota administrativa (defesa em profundidade).
 
-### 3.8 Regressão de Código Órfão (`src/test/deadCodeRegression.test.ts`) — [Estrutural / Higiene]
+### 3.8 Nota — teste de código órfão removido
 
-- `src/lib/skipAi.ts` não existe no repositório.
-- Nenhum arquivo de `src/` referencia o símbolo `skipAi`.
-- Nenhum arquivo de configuração da raiz referencia o símbolo `skipAi`.
+Uma versão anterior deste documento descrevia um teste `deadCodeRegression.test.ts`, que falhava caso `src/lib/skipAi.ts` estivesse presente. **O teste foi removido**: a premissa era incorreta.
+
+`src/lib/skipAi.ts` é **biblioteca da plataforma Skip** (helpers tipados para `$ai.chat` e `$ai.agent(slug).chat`), fornecida e mantida pelo template do projeto. A ausência de `import` no código de aplicação não significa que o arquivo seja código morto — ele é scaffolding de plataforma, disponível para quando recursos de IA forem utilizados, e é restaurado pela sincronização do Skip por design. Ver `docs/DEVELOPMENT_WORKFLOW.md`, seção "Arquivos gerenciados pela plataforma".
 
 O arquivo é um artefato de template sem uso no projeto; foi removido três vezes e reintroduzido duas por sincronização automática da plataforma. Este teste faz a reincidência falhar o CI no commit que a traz de volta. Se algum dia o módulo passar a ser necessário, o teste deve ser removido em commit deliberado que documente o uso — nunca silenciado com `skip`.
 
@@ -128,7 +127,7 @@ O arquivo é um artefato de template sem uso no projeto; foi removido três veze
 | :------------------------------ | :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Unitários**                   | **Executados e Aprovados (18 testes)** | Testam funções puras e utilitários isolados (`formatters`: 11, `errorHandler`: 5, `pocketbaseClient`: 2).                                   |
 | **Frontend / Regressão**        | **Executados e Aprovados (19 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 5, `protectedRouteRegression`: 6).       |
-| **Estruturais**                 | **Executados e Aprovados (8 testes)**  | Validam a árvore de navegação e a ausência de código órfão (`navigation`: 5, `deadCodeRegression`: 3).                                      |
+| **Estruturais**                 | **Executados e Aprovados (5 testes)**  | Validam a integridade da árvore e a estrutura declarativa de menus e rotas (`navigation`: 5).                                               |
 | **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação:_ A fundação do projeto não possui collections de negócio ou migrations aplicadas no PocketBase (planejado para a Fase 2).       |
 | **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação:_ Depende de navegadores reais e ambiente completo com banco de dados povoado (planejado para fases posteriores com Playwright). |
 
