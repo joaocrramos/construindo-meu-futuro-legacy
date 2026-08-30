@@ -216,3 +216,16 @@
        - `0013_create_wealth_goals.js` -> `wealth_goals`
        - `0014_create_consolidations.js` -> `consolidations`
 - **Consequências:** Eliminação definitiva de ambiguidades de ordinais, garantia de rastreabilidade passo a passo do schema e prevenção absoluta de regressões e colisões no ciclo de persistência do Skip Cloud.
+
+---
+
+## ADR-020: Independência de Espaços entre Ordinais do Repositório e a Tabela Interna `_migrations`
+
+- **Status:** Aprovado e Mandatório.
+- **Contexto:** Durante a fase de investigação de infraestrutura, foram executadas 7 migrations de teste/canário e probes (`0001_canary_test.js` a `0007_b2_probe_cleanup.js`), registradas na tabela do sistema `_migrations` do PocketBase. Foi necessário definir se a sequência de migrations do repositório (`0001` a `0014`, fixada na ADR-019) entraria em conflito com as entradas registradas no backend.
+- **Decisão:**
+  1. **Espaços de Identificação Independentes:** Os ordinais do repositório (`0001` a `0014`, ADR-019) e as linhas da tabela `_migrations` do PocketBase constituem espaços de identificação independentes. A tabela `_migrations` chaveia unicamente pela coluna `file` (nome exato do arquivo, ex: `0001_extend_users_and_bootstrap.js`) e não pelo ordinal isolado.
+  2. **Preservação do Histórico e Integridade:** As 7 entradas de canário/probe no backend permanecem intocadas como registro histórico de auditoria e desenvolvimento. Nada é apagado da tabela `_migrations`.
+  3. **Vedação de Edição Manual:** Fica terminantemente vedado editar, truncar ou manipular a tabela `_migrations` manualmente (via SQL direto ou scripts ad-hoc). Toda evolução de banco é governada exclusivamente pelo fluxo canônico de migrations via ferramenta de backend (`apply_migrations`).
+  4. **Referência Operacional:** Esta decisão complementa as diretrizes operacionais descritas em `docs/RESET_DEVELOPMENT.md`.
+- **Consequências:** O repositório inicia seu Lote 1 canônico a partir do ordinal `0001_extend_users_and_bootstrap.js` de forma limpa, previsível e em total conformidade com a ADR-019 e a guarda `check:migrations`, enquanto o backend aplica com sucesso a nova migration sem colisão de nome de arquivo (`file`).

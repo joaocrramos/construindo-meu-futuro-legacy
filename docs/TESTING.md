@@ -12,8 +12,8 @@
 
 Números obtidos da saída real do runner (`pnpm test` / `vitest run`), não de estimativa ou contagem manual:
 
-- **Arquivos de Teste (Test Files):** 8 arquivos, 8 aprovados
-- **Total de Testes:** **48 testes** — 48 aprovados, 0 falhos, 0 pulados
+- **Arquivos de Teste (Test Files):** 9 arquivos, 9 aprovados
+- **Total de Testes:** **56 testes** — 56 aprovados, 0 falhos, 0 pulados
 
 ### 2.1 Detalhamento por Arquivo de Teste
 
@@ -21,15 +21,16 @@ Um arquivo de teste corresponde a um "Test File" no relatório do Vitest. A colu
 
 | Arquivo de Teste                             | Tipo                   |   Blocos `describe` | Casos `it` | Status |
 | :------------------------------------------- | :--------------------- | ------------------: | ---------: | :----- |
-| `src/test/formatters.test.ts`                | Unitário               | 4 (1 + 3 aninhados) |     **13** | 13/13  |
-| `src/test/errorHandler.test.ts`              | Unitário               |                   1 |          5 | 5/5    |
-| `src/test/pocketbaseClient.test.ts`          | Unitário               |                   1 |          2 | 2/2    |
-| `src/test/errorBoundary.test.tsx`            | Frontend / Resiliência |                   1 |          3 | 3/3    |
-| `src/test/navigation.test.ts`                | Estrutural             |                   1 |          5 | 5/5    |
 | `src/test/authRegression.test.tsx`           | Frontend / Contexto    |                   1 |          8 | 8/8    |
+| `src/test/checkMigrations.test.ts`           | Governança / Script    |                   1 |          8 | 8/8    |
 | `src/test/disabledFlowsRegression.test.tsx`  | Frontend / Telas       |                   1 |          6 | 6/6    |
+| `src/test/errorBoundary.test.tsx`            | Frontend / Resiliência |                   1 |          3 | 3/3    |
+| `src/test/errorHandler.test.ts`              | Unitário               |                   1 |          5 | 5/5    |
+| `src/test/formatters.test.ts`                | Unitário               | 4 (1 + 3 aninhados) |     **13** | 13/13  |
+| `src/test/navigation.test.ts`                | Estrutural             |                   1 |          5 | 5/5    |
+| `src/test/pocketbaseClient.test.ts`          | Unitário               |                   1 |          2 | 2/2    |
 | `src/test/protectedRouteRegression.test.tsx` | Frontend / Guard       |                   1 |          6 | 6/6    |
-| **TOTAL**                                    |                        |              **11** |     **48** | 48/48  |
+| **TOTAL**                                    |                        |              **12** |     **56** | 56/56  |
 
 ### 2.2 Como os Testes São Descobertos
 
@@ -79,7 +80,7 @@ Suíte exaustiva de testes unitários de funções puras com aproximadamente **4
 | :------------------------------ | :------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Unitários**                   | **Executados e Aprovados (20 testes)** | Testam funções puras e utilitários isolados (`formatters`: 13, `errorHandler`: 5, `pocketbaseClient`: 2).                                                 |
 | **Frontend / Regressão**        | **Executados e Aprovados (23 testes)** | Testam componentes React em jsdom com mock do SDK (`authRegression`: 8, `disabledFlowsRegression`: 6, `protectedRouteRegression`: 6, `errorBoundary`: 3). |
-| **Estruturais**                 | **Executados e Aprovados (5 testes)**  | Validam a integridade da árvore e integridade estrutural (`navigation`: 5).                                                                               |
+| **Estruturais / Governança**    | **Executados e Aprovados (13 testes)** | Validam a integridade da árvore e integridade estrutural (`navigation`: 5) e integridade de migrations (`checkMigrations`: 8).                            |
 | **Integração Real com Backend** | **Não existente / Não executado**      | _Limitação de Evidência:_ A base atual não possui migrations aplicadas ou dados de domínio persistidos. Será implementada no Lote 1 da Fase 2.            |
 | **End-to-End (E2E)**            | **Não existente / Não executado**      | _Limitação de Evidência:_ Depende de ambiente com banco de dados povoado e navegadores reais (planejado para etapas posteriores).                         |
 

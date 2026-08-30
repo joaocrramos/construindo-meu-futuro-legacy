@@ -4,6 +4,38 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.32] - 2026-08-30 (Ajustes Documentais e Início do Lote 1 com Migration 0001)
+
+### Adicionado (Added)
+
+- **Início do Lote 1 de Migrations (ADR-019)**:
+  - Implementada e aplicada a migration `pocketbase/migrations/0001_extend_users_and_bootstrap.js`.
+  - Extensão da collection nativa `users` (`_pb_users_auth_`) com os campos:
+    - `role`: `select` (`['admin', 'user']`, obrigatório, maxSelect: 1)
+    - `status`: `select` (`['active', 'suspended', 'pending']`, obrigatório, maxSelect: 1)
+    - `must_change_password`: `bool` (opcional)
+    - `phone`: `text` (opcional, max: 30)
+    - `last_login`: `date` (opcional)
+  - Regras de RLS configuradas em `users` em total conformidade com `docs/DATABASE_SCHEMA.md`:
+    - `listRule`: `@request.auth.id != '' && (@request.auth.role = 'admin' || id = @request.auth.id)`
+    - `viewRule`: `@request.auth.id != '' && (@request.auth.role = 'admin' || id = @request.auth.id)`
+    - `createRule`: `@request.auth.role = 'admin'`
+    - `updateRule`: `@request.auth.id != '' && (@request.auth.role = 'admin' || id = @request.auth.id)`
+    - `deleteRule`: `@request.auth.role = 'admin'`
+  - Mecanismo seguro e replayável de bootstrap do administrador a partir de `BOOTSTRAP_ADMIN_EMAIL` (`status='pending'`, `must_change_password=true`, senha aleatória de alta entropia inutilizável, sem logs e sem efeitos colaterais).
+- **Registro da ADR-020 (`docs/DECISIONS.md`)**:
+  - Formalizada a independência de espaços entre os ordinais de migrations do repositório (`0001` a `0014`, ADR-019) e os registros da tabela interna `_migrations` do PocketBase (chaveados por nome de arquivo `file`).
+  - Preservação histórica dos registros e vedação expressa de edição manual de `_migrations`.
+
+### Corrigido (Fixed)
+
+- **Contagem e Documentação de Testes (`docs/TESTING.md`)**:
+  - Atualizada a contagem de testes para **56 testes aprovados em 9 arquivos de teste** (saída real do Vitest), incluindo as seções `checkMigrations` (8 testes) e `errorBoundary` (3 testes).
+- **Alinhamento do Título da Versão [0.0.30] no CHANGELOG.md**:
+  - Corrigido o título da seção `[0.0.30]` para refletir com precisão o corpo ("Limitação B2 Não Comprovada" em vez de "Prova B2").
+
+---
+
 ## [0.0.31] - 2026-08-30 (Correção CI, Refinamento da Guarda de Migrations e Investigação \_migrations)
 
 ### Corrigido (Fixed)
@@ -28,7 +60,7 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
-## [0.0.30] - 2026-08-30 (Fechamento do Canário, Guarda de Migrations, Prova B2 e ADR do Lote 1)
+## [0.0.30] - 2026-08-30 (Fechamento do Canário, Guarda de Migrations, Limitação B2 Não Comprovada e ADR do Lote 1)
 
 ### Adicionado (Added)
 
@@ -44,8 +76,7 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 - **Registro da ADR-019 em `docs/DECISIONS.md`**:
   - Regra de execução incremental estritamente unitária (uma migration por vez com validação no schema live).
   - Alocação prévia e fixada dos ordinais das 14 collections de domínio (`0001` a `0014`), respeitando `0004 = portfolios` e `0005 = institutions`.
-- **Exercício e Comprovação Empírica do Protocolo B2**:
-  - B2: LIMITAÇÃO CONHECIDA NÃO COMPROVADA (mecanismo nativo indisponível para agentes).
+- **Exercício do Protocolo B2**: - B2: LIMITAÇÃO CONHECIDA NÃO COMPROVADA (mecanismo nativo indisponível para agentes).
 
 ### Removido (Removed)
 
