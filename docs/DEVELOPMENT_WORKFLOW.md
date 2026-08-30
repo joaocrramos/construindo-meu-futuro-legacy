@@ -45,11 +45,12 @@
 
 Alguns arquivos do repositório são fornecidos e mantidos pela plataforma **Skip** (<https://skip.it>), a ferramenta usada no desenvolvimento deste sistema. Eles **não devem ser removidos** mesmo quando nenhum arquivo de aplicação os importa: são scaffolding de plataforma, e a sincronização do Skip os restaura por design.
 
-| Arquivo                    | Papel                                                                         |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `index.html` (`skip.js`)   | Instrumentação da plataforma, marcada com `@skip-protected`.                  |
-| `.skip.config.json`        | Configuração da plataforma (entrypoint, rotas, `deployment.lastDevBuildRef`). |
-| `vite-plugin-react-uid.js` | Plugin de build da plataforma.                                                |
+| Arquivo                    | Papel                                                                                                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.html` (`skip.js`)   | Instrumentação da plataforma, marcada com `@skip-protected`.                                                                              |
+| `.skip.config.json`        | Configuração da plataforma (entrypoint, rotas, `deployment.lastDevBuildRef`).                                                             |
+| `vite-plugin-react-uid.js` | Plugin de build da plataforma.                                                                                                            |
+| `src/lib/skipAi.ts`        | Helper de streaming/agentes Skip gerido pela infraestrutura; não importado pelo produto, removido pelo tree-shaking no build de produção. |
 
 ---
 

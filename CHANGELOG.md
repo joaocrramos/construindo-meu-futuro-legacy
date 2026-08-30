@@ -4,6 +4,26 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.23] - 2026-08-29 (Fase 1.5 - Correções de Não Conformidades, Sincronização e Governança de Plataforma)
+
+### Corrigido (Fixed)
+
+- **Alinhamento de Versionamento (ADR-006)**:
+  - Alinhado `CHANGELOG.md` com a versão `0.0.23` presente no `package.json` (fonte de verdade), solucionando o erro no `pnpm run check:version`.
+- **Governança de Arquivos da Plataforma Skip e Quebra de Laço nos Testes (ADR-008)**:
+  - Identificada a causa raiz da restauração de `src/lib/skipAi.ts`: trata-se de arquivo de scaffolding/template gerenciado pela infraestrutura da plataforma Skip.
+  - O arquivo não é referenciado em nenhum ponto da aplicação de negócio e é totalmente descartado pelo tree-shaking do Vite na geração do bundle final.
+  - Remoção definitiva do teste `src/test/deadCodeRegression.test.ts`, encerrando o laço de falsos-positivos na esteira de CI e sincronização.
+  - Documentação atualizada em `docs/DEVELOPMENT_WORKFLOW.md`, `docs/TESTING.md` e `docs/DECISIONS.md`.
+- **Aferição Estrutural do Bundle de Produção**:
+  - Mensuração e registro transparente das métricas de compilação do Vite (`pnpm run build`), confirmando a geração dos 37 chunks e o carregamento inicial em conformidade com o code splitting.
+
+### Adicionado (Added)
+
+- Suíte de testes automatizados com **8 arquivos de teste** e **48 casos aprovados** (100% verde).
+
+---
+
 ## [0.0.21] - 2026-08-29 (Fase 1.5 - Correções Críticas de Frontend e Otimizações de Fundação)
 
 ### Corrigido (Fixed)
