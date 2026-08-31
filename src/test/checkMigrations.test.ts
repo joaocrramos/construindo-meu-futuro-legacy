@@ -1,46 +1,47 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { execSync } from 'node:child_process'
-import { writeFileSync, unlinkSync, existsSync } from 'node:fs'
+import { writeFileSync, rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 const repoRoot = process.cwd()
-const migrationsDir = join(repoRoot, 'pocketbase', 'migrations')
 const scriptPath = join(repoRoot, 'scripts', 'check-migrations.mjs')
 
-function runCheck() {
-  try {
-    const stdout = execSync(`node "${scriptPath}"`, {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: 'pipe',
-    })
-    return { status: 0, stdout, stderr: '' }
-  } catch (error: any) {
-    return {
-      status: error.status ?? 1,
-      stdout: error.stdout?.toString() || '',
-      stderr: error.stderr?.toString() || error.message,
+describe('check:migrations guard script', () => {
+  let tempDir: string
+
+  const runCheck = (targetDir: string = tempDir) => {
+    try {
+      const stdout = execSync(`node "${scriptPath}"`, {
+        cwd: repoRoot,
+        env: { ...process.env, MIGRATIONS_DIR: targetDir },
+        encoding: 'utf8',
+        stdio: 'pipe',
+      })
+      return { status: 0, stdout, stderr: '' }
+    } catch (error: any) {
+      return {
+        status: error.status ?? 1,
+        stdout: error.stdout?.toString() || '',
+        stderr: error.stderr?.toString() || error.message,
+      }
     }
   }
-}
-
-describe('check:migrations guard script', () => {
-  const tempFiles: string[] = []
 
   const createTempMigration = (fileName: string, content: string) => {
-    const filePath = join(migrationsDir, fileName)
+    const filePath = join(tempDir, fileName)
     writeFileSync(filePath, content, 'utf8')
-    tempFiles.push(filePath)
     return filePath
   }
 
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'pb-migrations-test-'))
+  })
+
   afterEach(() => {
-    for (const filePath of tempFiles) {
-      if (existsSync(filePath)) {
-        unlinkSync(filePath)
-      }
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
     }
-    tempFiles.length = 0
   })
 
   it('passa com diretório limpo (apenas README.md)', () => {
@@ -143,8 +144,6 @@ describe('check:migrations guard script', () => {
     )
     const res = runCheck()
     expect(res.status).toBe(0)
-    expect(res.stdout).toContain(
-      'Todas as 2 migrations em pocketbase/migrations/ atendem aos critérios',
-    )
+    expect(res.stdout).toContain('Todas as 2 migrations')
   })
 })

@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
-const migrationsDir = join(repoRoot, 'pocketbase', 'migrations')
+const migrationsDir = process.env.MIGRATIONS_DIR || join(repoRoot, 'pocketbase', 'migrations')
 
 const FILE_PATTERN = /^(\d{4})_([a-z0-9]+(?:_[a-z0-9]+)*)\.js$/
 
