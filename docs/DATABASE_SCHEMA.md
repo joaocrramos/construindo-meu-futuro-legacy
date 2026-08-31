@@ -2,7 +2,7 @@
 
 Este documento é a **especificação formal única e definitiva da modelagem de dados** para o backend **PocketBase (SQLite)** do projeto **Construindo Meu Futuro**.
 
-Ele consolida todas as decisões arquiteturais aprovadas (A1–A4, ADRs), correções estruturais de schema (C1–C7), formulação de custo médio e posições (D1–D3), estratégia de bootstrap do administrador (E1–E10), catálogo canônico de códigos de erro de domínio (F2), diretrizes backend-only (F1) e resolução de dependências e titularidade de ativos (H1–H3).
+Ele consolida todas as decisões arquiteturais aprovadas (A1–A4, ADRs), correções estruturais de schema (C1–C7), formulação de custo médio e posições (D1–D3), provisionamento do administrador inicial (ADR-017 revisada), catálogo canônico de códigos de erro de domínio (F2), diretrizes backend-only (F1) e resolução de dependências e titularidade de ativos (H1–H3).
 
 ---
 
@@ -483,18 +483,16 @@ Rotina pública no módulo de domínio e endpoint seguro de manutenção. Reexec
 
 ---
 
-## 6. Fluxo e Bootstrap do Administrador (E1–E10)
+## 6. Fluxo e Provisionamento do Administrador Inicial (ADR-017 Revisada)
 
-1. **E-mail via Segredo (E1):** O endereço do administrador provém do segredo `BOOTSTRAP_ADMIN_EMAIL` (`$os.getenv('BOOTSTRAP_ADMIN_EMAIL')` ou `$secrets.get`). Nunca fixo em migration versionada.
-2. **Criação sem Efeitos Colaterais (E2):** A migration inicial insere o registro com `role='admin'`, `status='pending'`, `must_change_password=true` e senha aleatória de alta entropia inutilizável.
-3. **Disparo no Primeiro Acesso / Esqueci Minha Senha (E3–E4):** O administrador solicita o link na tela pública. Se o e-mail coincidir com `BOOTSTRAP_ADMIN_EMAIL` e `status == 'pending'`, o consumo do token ativa a conta (`status='active'`), define a senha, limpa `must_change_password` e audita `ADMIN_ACTIVATED`. Usos subsequentes atuam apenas como redefinição normal de senha.
-4. **Anti-Enumeração e Rate Limiting (E5–E6):** Resposta HTTP e tempo idênticos para e-mails cadastrados e não-cadastrados, com limitação estrita de taxa (Rate Limit).
-5. **Primitivo Único de Token (E7):** Sistema único baseado em `(token_public_id, token_hash)` com comparação em tempo constante (`crypto/subtle` ou `$security.sha256`), reutilizado tanto para convites quanto para recuperação de conta.
-6. **Fallback de Desenvolvimento (E8):** Se o provedor de e-mail (Resend) não estiver provisionado em ambiente local/desenvolvimento, o endpoint expõe o link seguro nos logs do console do backend.
-7. **Avaliação da Unificação com `invitations.role` (E9):** A collection `invitations` possui o campo `role: select ['admin', 'user']`. O bootstrap do administrador pode operar pelo mesmo mecanismo canônico de `invitations` com `role='admin'`, unificando a superfície de teste e auditoria.
-8. **Consolidação de Telas Públicas (E10):**
-   - `/forgot-password`: Solicitação pública com e-mail (etapa 1).
-   - `/first-access`: Consumo de token e definição da senha definitiva (etapa 2).
+1. **Provisionamento Manual:** O primeiro usuário administrador é provisionado manualmente pelo proprietário da instância diretamente no painel de superusuário do PocketBase, com `role='admin'` e `status='active'`. Nenhuma migration cria usuários.
+2. **Convites e Expansão:** Uma vez ativo, o administrador cria novos usuários e administradores adicionais exclusivamente via emissão de convites na collection `invitations` (_Invite-Only_).
+3. **Anti-Enumeração e Rate Limiting:** Resposta HTTP e tempo idênticos para e-mails cadastrados e não-cadastrados, com limitação estrita de taxa (Rate Limit).
+4. **Primitivo Único de Token:** Sistema baseado em `(token_public_id, token_hash)` com comparação em tempo constante (`crypto/subtle` ou `$security.sha256`) para convites e recuperação de conta.
+5. **Fallback de Desenvolvimento:** Se o provedor de e-mail (Resend) não estiver provisionado em ambiente local/desenvolvimento, o endpoint expõe o link seguro nos logs do console do backend.
+6. **Consolidação de Telas Públicas:**
+   - `/forgot-password`: Solicitação pública com e-mail para redefinição de senha.
+   - `/first-access`: Consumo de token de convite e definição da senha definitiva.
 
 ---
 

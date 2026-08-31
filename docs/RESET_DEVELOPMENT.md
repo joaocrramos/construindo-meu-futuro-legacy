@@ -71,7 +71,7 @@ Em caso de necessidade de reversão antes ou durante a aplicação de migrations
 - O schema do banco de dados e todas as collections criadas.
 - Todas as migrations registradas na tabela do sistema.
 - Todos os arquivos de pb_hooks, rotas e regras de RLS.
-- O registro do Administrador (`BOOTSTRAP_ADMIN_EMAIL`).
+- Os registros de usuários e contas de Administrador.
 - A trilha de auditoria essencial de governança.
 
 ### 4.3 O Que É Higienizado em Ambiente Autorizado

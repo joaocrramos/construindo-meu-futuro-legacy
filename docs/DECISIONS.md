@@ -169,16 +169,15 @@
 
 ---
 
-## ADR-017: Arquitetura Segura de Bootstrap do Administrador
+## ADR-017: Provisionamento Manual do Administrador Inicial (Sem Criação de Usuários por Migration)
 
-- **Status:** Aprovado.
-- **Contexto:** O sistema é _Invite-Only_ e não permite registro público. Provisionar um administrador inicial com credenciais hardcoded em migrations ou logs compromete a segurança e a reprodutibilidade dos deploys.
+- **Status:** Aprovado (Revisado).
+- **Contexto:** O sistema é _Invite-Only_ e não permite registro público. Tentativas de automatizar a criação de usuários administradores via migrations de banco geram complexidade desnecessária, dependência de segredos de ambiente na execução de schema e fazem o repositório descrever um estado de banco que não reflete a realidade operacional.
 - **Decisão:**
-  1. O e-mail do admin provém exclusivamente do segredo `BOOTSTRAP_ADMIN_EMAIL`.
-  2. A migration inicial insere o registro com `status='pending'` e senha inoperante sem disparar efeitos colaterais externos.
-  3. A ativação ocorre via fluxo seguro no primeiro uso de recuperação/ativação de senha na interface, promovendo o status para `active` e auditando `ADMIN_ACTIVATED`.
-  4. O sistema adota primitivo criptográfico único baseado em `(token_public_id, token_hash)` e proteção contra enumeração (tempo constante e resposta idêntica).
-- **Consequências:** Processo de bootstrap totalmente seguro, sem credenciais estáticas no repositório e integrado ao ciclo de vida canônico de segurança.
+  1. O administrador inicial é provisionado manualmente pelo proprietário da instância diretamente no painel de superusuário do PocketBase.
+  2. Nenhuma migration cria, insere ou muta registros de usuários. As migrations limitam-se estritamente à definição e evolução estrutural do schema (campos, tipos, índices e regras de RLS).
+  3. Uma vez criado o administrador inicial no painel de superusuário com `role='admin'` e `status='active'`, todos os demais usuários e administradores adicionais ingressam exclusivamente pelo fluxo canônico de convites (_Invite-Only_).
+- **Consequências:** As migrations tornam-se puramente idempotentes e livres de efeitos colaterais. Elimina-se a necessidade de variáveis de bootstrap de administrador, simplificando a governança de ambiente e garantindo conformidade estrita entre a especificação e o banco real.
 
 ---
 

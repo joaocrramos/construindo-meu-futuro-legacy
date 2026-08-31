@@ -53,7 +53,7 @@ pocketbase/migrations/
 
 ## 3. Diretrizes Rígidas de Implementação
 
-1. **Sem Senhas ou Segredos no Código:** Migrations nunca devem conter senhas fixas, tokens de API ou credenciais em texto claro. O e-mail do admin provém do segredo `BOOTSTRAP_ADMIN_EMAIL`.
+1. **Sem Senhas ou Segredos no Código:** Migrations nunca devem conter senhas fixas, tokens de API, credenciais em texto claro ou criação de registros de usuários (ADR-017 revisada).
 2. **Autodate Mandatório:** Toda collection do tipo `base` deve conter explicitamente os campos `created` e `updated` do tipo `autodate`.
 3. **Idempotência e Segurança:** Operações de persistência com `try/catch` defensivo e transações atômicas com `$app.runInTransaction`.
 4. **Criação Backend-Only (F1):** `createRule = null` ou restrito para `movements`, `transfers`, `quotes`, `invitations`, `positions` e `account_balances`.

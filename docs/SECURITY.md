@@ -76,9 +76,8 @@ Eventos sensíveis são gravados de forma imutável na collection `audit_logs`.
 
 ---
 
-## 5. Bootstrap do Administrador Inicial (E1–E10, ADR-017)
+## 5. Provisionamento do Administrador Inicial (ADR-017 Revisada)
 
-- **Sem Credenciais Estáticas:** Nenhum e-mail ou senha administrativa é incluído em arquivos versionados.
-- **Fonte via Segredo:** O e-mail inicial é injetado via secret `BOOTSTRAP_ADMIN_EMAIL`.
-- **Ativação por Fluxo de Uso Único:** A migration cria o registro inicial com `status='pending'` e senha inoperante. O administrador ativa o acesso na tela de Primeiro Acesso / Recuperação, promovendo o status para `active` e registrando `ADMIN_ACTIVATED`.
+- **Sem Criação de Usuários por Migration:** Nenhuma migration insere, muta ou remove registros de usuários. O administrador inicial é provisionado manualmente pelo proprietário da instância diretamente no painel de superusuário do PocketBase com `role='admin'` e `status='active'`.
+- **Expansão Exclusiva por Convites (Invite-Only):** Novos usuários e administradores ingressam exclusivamente por emissão de convites através da collection `invitations`.
 - **Anti-Enumeração e Rate Limiting:** A resposta a solicitações públicas de ativação/recuperação é temporalmente e textualmente idêntica para contas existentes e inexistentes, com limite de requisições por IP.

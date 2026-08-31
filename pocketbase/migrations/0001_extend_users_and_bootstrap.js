@@ -1,3 +1,4 @@
+// Bootstrap removido: o administrador inicial é provisionado manualmente pelo proprietário no painel de superusuário (ADR-017 revisada).
 migrate(
   (app) => {
     const users = app.findCollectionByNameOrId('_pb_users_auth_')
@@ -64,50 +65,6 @@ migrate(
     users.deleteRule = "@request.auth.role = 'admin'"
 
     app.save(users)
-
-    // 2. Bootstrap do Administrador a partir do segredo BOOTSTRAP_ADMIN_EMAIL
-    let adminEmail = ''
-    try {
-      if (
-        typeof $secrets !== 'undefined' &&
-        $secrets &&
-        typeof $secrets.has === 'function' &&
-        $secrets.has('BOOTSTRAP_ADMIN_EMAIL')
-      ) {
-        adminEmail = $secrets.get('BOOTSTRAP_ADMIN_EMAIL') || ''
-      }
-    } catch (_) {}
-    if (!adminEmail) {
-      try {
-        if (typeof $os !== 'undefined' && $os && typeof $os.getenv === 'function') {
-          adminEmail = $os.getenv('BOOTSTRAP_ADMIN_EMAIL') || ''
-        }
-      } catch (_) {}
-    }
-
-    if (adminEmail && adminEmail.trim() !== '') {
-      const cleanEmail = adminEmail.trim().toLowerCase()
-      let existingUser = null
-      try {
-        existingUser = app.findAuthRecordByEmail('_pb_users_auth_', cleanEmail)
-      } catch (_) {
-        existingUser = null
-      }
-
-      if (!existingUser) {
-        const record = new Record(users)
-        record.setEmail(cleanEmail)
-        // Senha aleatória de alta entropia inutilizável, sem log e sem exibição
-        const unusablePassword = $security.randomString(40) + 'A1!'
-        record.setPassword(unusablePassword)
-        record.setVerified(false)
-        record.set('name', 'Administrador')
-        record.set('role', 'admin')
-        record.set('status', 'pending')
-        record.set('must_change_password', true)
-        app.save(record)
-      }
-    }
   },
   (app) => {
     const users = app.findCollectionByNameOrId('_pb_users_auth_')
@@ -129,33 +86,5 @@ migrate(
     users.deleteRule = 'id = @request.auth.id'
 
     app.save(users)
-
-    // Remover usuário admin criado no bootstrap se existir
-    let adminEmail = ''
-    try {
-      if (
-        typeof $secrets !== 'undefined' &&
-        $secrets &&
-        typeof $secrets.has === 'function' &&
-        $secrets.has('BOOTSTRAP_ADMIN_EMAIL')
-      ) {
-        adminEmail = $secrets.get('BOOTSTRAP_ADMIN_EMAIL') || ''
-      }
-    } catch (_) {}
-    if (!adminEmail) {
-      try {
-        if (typeof $os !== 'undefined' && $os && typeof $os.getenv === 'function') {
-          adminEmail = $os.getenv('BOOTSTRAP_ADMIN_EMAIL') || ''
-        }
-      } catch (_) {}
-    }
-
-    if (adminEmail && adminEmail.trim() !== '') {
-      const cleanEmail = adminEmail.trim().toLowerCase()
-      try {
-        const record = app.findAuthRecordByEmail('_pb_users_auth_', cleanEmail)
-        app.delete(record)
-      } catch (_) {}
-    }
   },
 )
