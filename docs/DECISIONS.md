@@ -70,7 +70,9 @@
   3. Avisos do linter são tratados como erro no CI (`oxlint src --deny-warnings`). O script `lint` local permanece permissivo para não atrapalhar o desenvolvimento.
   4. O script `pnpm run verify` reproduz localmente a mesma sequência do CI.
   5. Contadores internos da plataforma de deploy **não** constituem evidência de que lint, tipos, testes ou build foram executados com sucesso.
+  6. **Regra de Reporte:** Relatórios de execução não devem conter saída de comando colada como evidência. O resultado do CI é a evidência de referência. Um relatório informa apenas: push realizado, número do run e conclusão. Contagens de teste, versões e saídas de terminal em texto livre não constituem prova e não devem ser reproduzidas.
 - **Consequências:** Regressões de qualidade passam a falhar no commit que as introduz. A documentação deixa de ser a fonte primária sobre o estado da suíte e passa a refletir o que o CI comprova.
+- **Nota de Causa:** Em 2026-08-30 um relatório trouxe bloco de verify fabricado citando "0.0.12" — número presente no corpo da mensagem do commit 2c85424, no histórico do próprio repositório. A saída foi reconstruída de texto lido, não de execução.
 
 ---
 
@@ -182,14 +184,15 @@
 
 ## ADR-019: Regras Rígidas de Execução Incremental de Migrations e Alocação de Ordinais do Domínio
 
-- **Status:** Aprovado e Mandatório.
-- **Contexto:** Tentativas anteriores de aplicar conjuntos amplos de migrations em lote sem validação intermediária e sem guarda estrita de nomenclatura/consistência resultaram em loops de correção (dois arquivos `0001`, dois `0002`, divergência de grafia entre create e drop). Para o Lote 1 e Lote 2 da Fase 2, é imperativo fixar antecipadamente a alocação de ordinais de todas as 14 collections e instituir a regra de execução estritamente unitária.
+- **Status:** Aprovado e Mandatório (Atualizado pela ADR-021).
+- **Contexto:** Tentativas anteriores de aplicar conjuntos amplos de migrations em lote sem validação intermediária e sem guarda estrita de nomenclatura/consistência resultaram em loops de correção (dois arquivos `0001`, dois `0002`, divergência de grafia entre create e drop). Para o Lote 1 e Lote 2 da Fase 2, é imperativo fixar antecipadamente a alocação de ordinais de todas as 14 collections e instituir a regra de execução estritamente unitária e revisada.
 - **Decisão:**
-  1. **Execução Estritamente Unitária (Uma por Vez):**
-     - Escrever exatamente **uma** migration por vez no diretório `pocketbase/migrations/`.
-     - Aplicar via ferramenta de backend (`apply_migrations`), inspecionar e confirmar pelo schema (`db_show_schema` / `db_describe_object`) que o efeito pretendido ocorreu no banco de dados.
-     - Somente após confirmação inequívoca no schema live escrever a próxima migration.
-     - **Proibição de Escrita em Lote:** É terminantemente proibido criar múltiplos arquivos `0001_*.js`, `0002_*.js`, etc., e aplicá-los de uma vez só.
+  1. **Revisão Obrigatória em Drafts e Movimentação Aprovada:**
+     - A regra anterior ("uma por vez, confirmar no schema antes da próxima") não é executável porque não há passo de decisão entre commit e aplicação de migrations em `pocketbase/migrations/`.
+     - Toda migration deve ser escrita e revisada no diretório `pocketbase/drafts/`.
+     - Uma migration só é movida para `pocketbase/migrations/` após aprovação explícita.
+     - A movimentação de `pocketbase/drafts/` para `pocketbase/migrations/` é o ato deliberado de aplicar.
+     - **Proibição de Escrita em Lote:** É terminantemente proibido criar múltiplos arquivos `0001_*.js`, `0002_*.js`, etc., diretamente em `pocketbase/migrations/`.
      - **Regra de Parada em Falha:** Se qualquer migration falhar ou apresentar erro no apply, parar imediatamente a execução e reportar a causa raiz em vez de tentar contornar com migrations adicionais ou mutações compensatórias.
   2. **Convenção de Nomenclatura:**
      - Todo arquivo de migration deve seguir rigorosamente o padrão `NNNN_snake_case.js` (4 dígitos ordinais padronizados com zeros à esquerda, seguidos de sublinhado e descrição em minúsculas).
@@ -229,3 +232,18 @@
   3. **Vedação de Edição Manual:** Fica terminantemente vedado editar, truncar ou manipular a tabela `_migrations` manualmente (via SQL direto ou scripts ad-hoc). Toda evolução de banco é governada exclusivamente pelo fluxo canônico de migrations via ferramenta de backend (`apply_migrations`).
   4. **Referência Operacional:** Esta decisão complementa as diretrizes operacionais descritas em `docs/RESET_DEVELOPMENT.md`.
 - **Consequências:** O repositório inicia seu Lote 1 canônico a partir do ordinal `0001_extend_users_and_bootstrap.js` de forma limpa, previsível e em total conformidade com a ADR-019 e a guarda `check:migrations`, enquanto o backend aplica com sucesso a nova migration sem colisão de nome de arquivo (`file`).
+
+---
+
+## ADR-021: Irreversibilidade de Migrations e Protocolo de Revisão em `pocketbase/drafts/`
+
+- **Status:** Aprovado e Mandatório.
+- **Contexto:** Durante o planejamento e execução da Fase 2 (Lote 2), foi identificado um conjunto crítico de achados de infraestrutura que altera fundamentalmente a avaliação de risco:
+  1. Não existe ferramenta de rollback de migration em nenhum conjunto disponível (confirmado: o conjunto do agente não tem apply/revert; não há função de backend nem hook).
+  2. O restore de snapshot (B2) segue não comprovado.
+  3. A aplicação de migration ocorre sem gate humano.
+- **Decisão:**
+  - **Consequência da Irreversibilidade:** TODA migration é operação irreversível. A corretude precisa ser garantida antes do arquivo chegar em `pocketbase/migrations/`, não confirmada depois.
+  - **Mecanismo de Proteção (Protocolo de Drafts):** Migrations passam a ser escritas e revisadas em `pocketbase/drafts/` e só são movidas para `pocketbase/migrations/` após aprovação explícita. A movimentação é o ato de aplicar.
+  - **Atualização da ADR-019:** A regra "uma por vez, confirmar no schema antes da próxima" não é executável, porque não há passo de decisão entre commit e aplicação. Substitui-se pela regra de revisão obrigatória em `pocketbase/drafts/`.
+- **Consequências:** Elimina-se o risco de aplicação prematura ou acidental de migrations irreversíveis no banco live. Nenhuma alteração de schema chega ao diretório monitorado sem validação prévia em draft e aprovação formal.
