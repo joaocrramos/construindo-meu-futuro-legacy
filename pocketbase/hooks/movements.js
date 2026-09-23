@@ -281,6 +281,34 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
       finalCreatedDate = movRecord.getString('created')
       finalUpdatedDate = movRecord.getString('updated')
 
+      // Registrar auditoria em audit_logs para nova movimentação
+      try {
+        const auditCol = txApp.findCollectionByNameOrId('audit_logs')
+        const log = new Record(auditCol)
+        log.set('user_id', userId)
+        log.set('event_type', 'MOVEMENT_CREATED')
+        log.set('severity', 'info')
+        log.set('entity', 'movements')
+        log.set('entity_id', movRecord.id)
+        log.set(
+          'summary',
+          `Movimentação ${movementType} criada (Líquido: R$ ${(netAmountCents / 100).toFixed(2)})`,
+        )
+        log.set('details', {
+          movement_id: movRecord.id,
+          movement_type: movementType,
+          account_id: accountId,
+          asset_id: assetId || null,
+          gross_amount_cents: grossAmountCents,
+          net_amount_cents: netAmountCents,
+          quantity_e8: quantityE8,
+          date: dateStr,
+        })
+        txApp.save(log)
+      } catch (auditErr) {
+        console.log('AUDIT_LOG_ERROR_MOVEMENT_CREATED: ' + auditErr.message)
+      }
+
       // 2. Atualizar account_balances
       const currency = accountRec.getString('currency') || 'BRL'
       let balanceRec = null
@@ -423,6 +451,34 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
         posRec.set('total_cost_cents', accTotalCostCents)
         posRec.set('last_recalculated_at', new Date().toISOString())
         txApp.saveNoValidate(posRec)
+      }
+
+      // Registrar auditoria em audit_logs para atualização de movimentação
+      try {
+        const auditCol = txApp.findCollectionByNameOrId('audit_logs')
+        const log = new Record(auditCol)
+        log.set('user_id', userId)
+        log.set('event_type', 'MOVEMENT_UPDATED')
+        log.set('severity', 'info')
+        log.set('entity', 'movements')
+        log.set('entity_id', movementId)
+        log.set(
+          'summary',
+          `Movimentação ${movementType} editada (Líquido: R$ ${(netAmountCents / 100).toFixed(2)})`,
+        )
+        log.set('details', {
+          movement_id: movementId,
+          movement_type: movementType,
+          account_id: accountId,
+          asset_id: assetId || null,
+          gross_amount_cents: grossAmountCents,
+          net_amount_cents: netAmountCents,
+          quantity_e8: quantityE8,
+          date: dateStr,
+        })
+        txApp.save(log)
+      } catch (auditErr) {
+        console.log('AUDIT_LOG_ERROR_MOVEMENT_UPDATED: ' + auditErr.message)
       }
     })
   } catch (err) {
