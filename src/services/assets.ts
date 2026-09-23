@@ -18,6 +18,8 @@ export interface AssetRecord {
   sub_type?: string
   currency: string
   cnpj_issuer?: string
+  due_date?: string
+  indexer_rate?: string
   is_active: boolean
   created: string
   updated: string
@@ -30,6 +32,8 @@ export interface CreateAssetPayload {
   sub_type?: string
   currency?: string
   cnpj_issuer?: string
+  due_date?: string
+  indexer_rate?: string
   is_active?: boolean
 }
 
@@ -40,6 +44,8 @@ export interface UpdateAssetPayload {
   sub_type?: string
   currency?: string
   cnpj_issuer?: string
+  due_date?: string
+  indexer_rate?: string
   is_active?: boolean
 }
 

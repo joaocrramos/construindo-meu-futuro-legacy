@@ -44,20 +44,25 @@ export default function DueDatesOverviewPage() {
   const accountMap = React.useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts])
   const assetMap = React.useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets])
 
-  // Filtra e classifica posições que possuem data de vencimento registrada
+  // Filtra e classifica posições que possuem data de vencimento registrada (diretamente na posição ou pelo ativo cadastrado)
   const maturitiesList = React.useMemo(() => {
     const nowStr = new Date().toISOString().slice(0, 10)
 
     const list = positions
-      .filter((p) => Boolean(p.maturity_date) && p.quantity_e8 > 0)
+      .filter((p) => {
+        const ast = p.expand?.asset_id || assetMap.get(p.asset_id)
+        const effectiveDueDate = p.maturity_date || ast?.due_date
+        return Boolean(effectiveDueDate) && p.quantity_e8 > 0
+      })
       .map((p) => {
         const acc = p.expand?.account_id || accountMap.get(p.account_id)
         const ast = p.expand?.asset_id || assetMap.get(p.asset_id)
-        const matDate = p.maturity_date || ''
+        const matDate = (p.maturity_date || ast?.due_date || '').slice(0, 10)
         const isExpired = matDate < nowStr
         const daysRemaining = Math.ceil(
           (new Date(matDate).getTime() - new Date(nowStr).getTime()) / (1000 * 60 * 60 * 24),
         )
+        const effectiveIndexer = p.indexer || ast?.indexer_rate || '—'
 
         return {
           id: p.id,
@@ -68,7 +73,7 @@ export default function DueDatesOverviewPage() {
           ticker: ast?.ticker || 'Ativo',
           assetName: ast?.name || '',
           assetClass: ast?.asset_class ? ASSET_CLASS_LABELS[ast.asset_class] : '—',
-          indexer: p.indexer || '—',
+          indexer: effectiveIndexer,
           quantityE8: p.quantity_e8,
           costCents: p.total_cost_cents || 0,
         }

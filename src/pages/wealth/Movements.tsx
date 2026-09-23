@@ -77,6 +77,9 @@ export default function MovementsPage() {
   const [feesInput, setFeesInput] = React.useState('0')
   // Para sell e outros tipos com imposto:
   const [taxesInput, setTaxesInput] = React.useState('0')
+  // Campos de Renda Fixa: Data de Vencimento e Indexador/Taxa
+  const [dueDateInput, setDueDateInput] = React.useState('')
+  const [indexerRateInput, setIndexerRateInput] = React.useState('')
   const [idempotencyKey, setIdempotencyKey] = React.useState('')
   const [notes, setNotes] = React.useState('')
 
@@ -125,9 +128,27 @@ export default function MovementsPage() {
     setSettlementFeesInput('0')
     setFeesInput('0')
     setTaxesInput('0')
+    setDueDateInput(activeAsset?.due_date ? activeAsset.due_date.substring(0, 10) : '')
+    setIndexerRateInput(activeAsset?.indexer_rate || '')
     setIdempotencyKey('')
     setNotes('')
     setOpenModal(true)
+  }
+
+  // Sincroniza campos padrão de renda fixa quando o usuário seleciona um ativo com due_date ou indexer_rate
+  const handleAssetSelect = (newAssetId: string) => {
+    setAssetId(newAssetId)
+    if (newAssetId && newAssetId !== 'none') {
+      const ast = assets.find((a) => a.id === newAssetId)
+      if (ast?.asset_class === 'fixed_income') {
+        if (ast.due_date && !dueDateInput) {
+          setDueDateInput(ast.due_date.substring(0, 10))
+        }
+        if (ast.indexer_rate && !indexerRateInput) {
+          setIndexerRateInput(ast.indexer_rate)
+        }
+      }
+    }
   }
 
   const handleOpenEdit = (mov: MovementRecord) => {
@@ -176,6 +197,8 @@ export default function MovementsPage() {
     const taxesBrl = centsToBrl(mov.taxes_cents)
     setTaxesInput(taxesBrl > 0 ? taxesBrl.toFixed(2).replace('.', ',') : '0')
 
+    setDueDateInput(mov.due_date ? mov.due_date.substring(0, 10) : '')
+    setIndexerRateInput(mov.indexer_rate || '')
     setIdempotencyKey(mov.idempotency_key || '')
     setNotes(mov.notes || '')
     setOpenModal(true)
@@ -285,6 +308,8 @@ export default function MovementsPage() {
           fees_cents: feesCents,
           taxes_cents: taxesCents,
           net_amount_cents: calculatedNetCents,
+          due_date: isFixedIncome && dueDateInput ? dueDateInput : null,
+          indexer_rate: isFixedIncome && indexerRateInput.trim() ? indexerRateInput.trim() : null,
           notes: notes.trim() || null,
         })
         toast.success('Movimentação atualizada com sucesso!')
@@ -300,6 +325,9 @@ export default function MovementsPage() {
           fees_cents: feesCents,
           taxes_cents: taxesCents,
           net_amount_cents: calculatedNetCents,
+          due_date: isFixedIncome && dueDateInput ? dueDateInput : undefined,
+          indexer_rate:
+            isFixedIncome && indexerRateInput.trim() ? indexerRateInput.trim() : undefined,
           idempotency_key: idempotencyKey.trim() || undefined,
           notes: notes.trim() || undefined,
         })
@@ -446,7 +474,7 @@ export default function MovementsPage() {
                   <Label htmlFor="movAsset" className="text-xs font-semibold">
                     Ativo {isAssetRequired ? '*' : '(Opcional)'}
                   </Label>
-                  <Select value={assetId} onValueChange={(val) => setAssetId(val)}>
+                  <Select value={assetId} onValueChange={handleAssetSelect}>
                     <SelectTrigger
                       id="movAsset"
                       aria-label="Ativo"
@@ -526,6 +554,34 @@ export default function MovementsPage() {
                             value={quantityInput}
                             onChange={(e) => setQuantityInput(e.target.value)}
                             className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movDueDate" className="text-xs font-semibold">
+                            Data de Vencimento
+                          </Label>
+                          <Input
+                            id="movDueDate"
+                            type="date"
+                            value={dueDateInput}
+                            onChange={(e) => setDueDateInput(e.target.value)}
+                            className="h-9 text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movIndexerRate" className="text-xs font-semibold">
+                            Indexador / Taxa
+                          </Label>
+                          <Input
+                            id="movIndexerRate"
+                            placeholder="Ex.: 120% do CDI, IPCA + 6,5%"
+                            value={indexerRateInput}
+                            onChange={(e) => setIndexerRateInput(e.target.value)}
+                            className="h-9 text-xs"
                           />
                         </div>
                       </div>

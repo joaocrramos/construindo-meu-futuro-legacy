@@ -51,6 +51,8 @@ export default function AssetsPage() {
   const [subType, setSubType] = React.useState('')
   const [currency, setCurrency] = React.useState('BRL')
   const [cnpjIssuer, setCnpjIssuer] = React.useState('')
+  const [dueDate, setDueDate] = React.useState('')
+  const [indexerRate, setIndexerRate] = React.useState('')
   const [isActive, setIsActive] = React.useState(true)
 
   // Alternância de status
@@ -80,6 +82,8 @@ export default function AssetsPage() {
     setSubType('')
     setCurrency('BRL')
     setCnpjIssuer('')
+    setDueDate('')
+    setIndexerRate('')
     setIsActive(true)
     setOpenModal(true)
   }
@@ -92,6 +96,8 @@ export default function AssetsPage() {
     setSubType(item.sub_type || '')
     setCurrency(item.currency || 'BRL')
     setCnpjIssuer(item.cnpj_issuer || '')
+    setDueDate(item.due_date ? item.due_date.substring(0, 10) : '')
+    setIndexerRate(item.indexer_rate || '')
     setIsActive(item.is_active)
     setOpenModal(true)
   }
@@ -117,6 +123,9 @@ export default function AssetsPage() {
           sub_type: subType.trim() || undefined,
           currency: currency.trim().toUpperCase() || 'BRL',
           cnpj_issuer: cnpjIssuer.trim() || undefined,
+          due_date: assetClass === 'fixed_income' && dueDate ? dueDate : undefined,
+          indexer_rate:
+            assetClass === 'fixed_income' && indexerRate.trim() ? indexerRate.trim() : undefined,
           is_active: isActive,
         })
         toast.success('Ativo atualizado com sucesso!')
@@ -128,6 +137,9 @@ export default function AssetsPage() {
           sub_type: subType.trim() || undefined,
           currency: currency.trim().toUpperCase() || 'BRL',
           cnpj_issuer: cnpjIssuer.trim() || undefined,
+          due_date: assetClass === 'fixed_income' && dueDate ? dueDate : undefined,
+          indexer_rate:
+            assetClass === 'fixed_income' && indexerRate.trim() ? indexerRate.trim() : undefined,
           is_active: isActive,
         })
         toast.success('Ativo criado com sucesso!')
@@ -324,6 +336,35 @@ export default function AssetsPage() {
                 />
               </div>
             </div>
+
+            {assetClass === 'fixed_income' && (
+              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-md border border-border">
+                <div className="space-y-1.5">
+                  <Label htmlFor="assetDueDate" className="text-xs font-semibold">
+                    Data de Vencimento
+                  </Label>
+                  <Input
+                    id="assetDueDate"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="assetIndexerRate" className="text-xs font-semibold">
+                    Indexador / Taxa
+                  </Label>
+                  <Input
+                    id="assetIndexerRate"
+                    placeholder="Ex.: 120% do CDI, IPCA + 6,5%"
+                    value={indexerRate}
+                    onChange={(e) => setIndexerRate(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 pt-1">
               <Checkbox

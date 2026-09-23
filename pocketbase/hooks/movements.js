@@ -16,6 +16,8 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
   const dateStr = (body.date || '').trim()
   const idempotencyKey = (body.idempotency_key || '').trim() || null
   const notes = (body.notes || '').trim() || null
+  const dueDate = (body.due_date || '').trim() || null
+  const indexerRate = (body.indexer_rate || '').trim() || null
 
   const validMovementTypes = [
     'deposit',
@@ -271,6 +273,12 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
       movRecord.set('is_reversed', false)
       if (notes) {
         movRecord.set('notes', notes)
+      }
+      if (dueDate) {
+        movRecord.set('due_date', dueDate)
+      }
+      if (indexerRate) {
+        movRecord.set('indexer_rate', indexerRate)
       }
 
       // O validador "required" nativo do PocketBase trata 0 numérico como valor em branco (IsZero).
@@ -637,6 +645,14 @@ routerAdd('PUT', '/backend/v1/movements/{id}', (e) => {
     body.notes !== undefined
       ? (body.notes || '').trim() || null
       : originalMov.getString('notes') || null
+  const dueDate =
+    body.due_date !== undefined
+      ? (body.due_date || '').trim() || null
+      : originalMov.getString('due_date') || null
+  const indexerRate =
+    body.indexer_rate !== undefined
+      ? (body.indexer_rate || '').trim() || null
+      : originalMov.getString('indexer_rate') || null
   const originalIdempotencyKey = originalMov.getString('idempotency_key') || null
 
   const validMovementTypes = [
@@ -845,6 +861,16 @@ routerAdd('PUT', '/backend/v1/movements/{id}', (e) => {
         movRecord.set('notes', notes)
       } else {
         movRecord.set('notes', null)
+      }
+      if (dueDate) {
+        movRecord.set('due_date', dueDate)
+      } else {
+        movRecord.set('due_date', null)
+      }
+      if (indexerRate) {
+        movRecord.set('indexer_rate', indexerRate)
+      } else {
+        movRecord.set('indexer_rate', null)
       }
 
       txApp.saveNoValidate(movRecord)

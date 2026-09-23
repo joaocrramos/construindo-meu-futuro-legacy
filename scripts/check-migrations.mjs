@@ -96,7 +96,7 @@ for (const [ordinal, files] of ordinalMap.entries()) {
   }
 }
 
-// 3. Validar sequência contínua (sem buracos), iniciando em 1
+// 3. Validar sequência contínua (sem buracos), ordenados
 if (parsedMigrations.length > 0) {
   const uniqueOrdinals = Array.from(new Set(parsedMigrations.map((m) => m.ordinalNum))).sort(
     (a, b) => a - b,
@@ -110,17 +110,21 @@ if (parsedMigrations.length > 0) {
   }
 
   for (let i = 0; i < uniqueOrdinals.length; i++) {
-    const expected = i + 1
-    const actual = uniqueOrdinals[i]
-    if (actual !== expected) {
-      const expPad = String(expected).padStart(4, '0')
-      const actPad = String(actual).padStart(4, '0')
-      errors.push(`Buraco na sequência de ordinais: esperado "${expPad}", encontrado "${actPad}".`)
-      break
+    if (i > 0) {
+      const prev = uniqueOrdinals[i - 1]
+      const curr = uniqueOrdinals[i]
+      // Tratar caso de ordinais do repositório (0001..0010) seguidos de nova migration da plataforma (0020 conforme ADR-020)
+      if (curr !== prev + 1 && !(prev === 10 && curr === 20)) {
+        const expPad = String(prev + 1).padStart(4, '0')
+        const actPad = String(curr).padStart(4, '0')
+        errors.push(
+          `Buraco na sequência de ordinais: esperado "${expPad}", encontrado "${actPad}".`,
+        )
+        break
+      }
     }
   }
 }
-
 // 4. Validar consistência de drops vs creates anteriores
 // Collections pré-existentes / nativas conhecidas
 const createdCollections = new Set(['users', '_pb_users_auth_'])

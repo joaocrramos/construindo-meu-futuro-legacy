@@ -20,19 +20,21 @@ export interface MovementRecord {
   account_id: string
   asset_id?: string
   movement_type: MovementType
-  date: string
-  quantity_e8?: number
-  unit_price_cents?: number
+  date: string // ISO date string
+  quantity_e8: number
+  unit_price_cents: number
   gross_amount_cents: number
   fees_cents: number
   taxes_cents: number
   net_amount_cents: number
+  due_date?: string
+  indexer_rate?: string
   idempotency_key?: string
-  is_reversed?: boolean
+  is_reversed: boolean
+  reversal_of_id?: string
   notes?: string
   created: string
   updated: string
-  reversal_of_id?: string
   expand?: {
     account_id?: AccountRecord
     asset_id?: AssetRecord
@@ -50,6 +52,8 @@ export interface CreateMovementPayload {
   fees_cents?: number
   taxes_cents?: number
   net_amount_cents?: number
+  due_date?: string
+  indexer_rate?: string
   idempotency_key?: string
   notes?: string
 }
@@ -65,9 +69,10 @@ export interface UpdateMovementPayload {
   fees_cents?: number
   taxes_cents?: number
   net_amount_cents?: number
+  due_date?: string | null
+  indexer_rate?: string | null
   notes?: string | null
 }
-
 export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
   deposit: 'Aporte / Depósito',
   withdrawal: 'Resgate / Saque',
@@ -272,6 +277,8 @@ export async function createMovement(payload: CreateMovementPayload): Promise<Mo
         fees_cents: fees,
         taxes_cents: taxes,
         net_amount_cents: calculatedNet,
+        due_date: payload.due_date,
+        indexer_rate: payload.indexer_rate,
         idempotency_key: payload.idempotency_key,
         notes: payload.notes,
       },
@@ -335,6 +342,8 @@ export async function updateMovement(
           fees_cents: payload.fees_cents,
           taxes_cents: payload.taxes_cents,
           net_amount_cents: payload.net_amount_cents,
+          due_date: payload.due_date,
+          indexer_rate: payload.indexer_rate,
           notes: payload.notes,
         },
       },

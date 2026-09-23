@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T11:51:44.332Z",
+  "generatedAt": "2026-09-23T13:28:20.621Z",
   "collections": [
     {
       "name": "users",
@@ -625,6 +625,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "indexer_rate",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -868,6 +880,18 @@
           "required": false,
           "system": false,
           "collectionRef": "movements"
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "indexer_rate",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
