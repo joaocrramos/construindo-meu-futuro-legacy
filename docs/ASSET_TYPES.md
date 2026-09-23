@@ -20,7 +20,105 @@ O sistema categoriza os investimentos sob a enumeração `AssetClass`, alinhada 
 
 ---
 
-## 2. Renda Fixa: Subtipos, Campos e Comportamento Contábil
+## 2. Formulários de Movimentação Específicos por Tipo de Ativo
+
+O sistema adapta dinamicamente os campos do formulário de lançamento contábil conforme a classe do ativo selecionado e o tipo de operação (Compra vs. Venda).
+
+### Regras Gerais
+
+1. **Compra (`buy`)**: Nunca exibe campo de Imposto de Renda (IR). Os custos operacionais (emolumentos, liquidação ou outros custos) são somados ao valor bruto para compor o custo contábil total de aquisição (`net_amount_cents = gross_amount_cents + fees_cents`).
+2. **Venda (`sell`)**: Exibe campo de Imposto de Renda (`taxes_cents`). Os custos operacionais e impostos são subtraídos do valor bruto para apurar o líquido recebido (`net_amount_cents = gross_amount_cents - fees_cents - taxes_cents`).
+3. **Outros Custos**: Em ativos internacionais, Tesouro Direto, Fundos de Investimento e Outros, as taxas operacionais são consolidadas no campo "Outros Custos", que mapeia diretamente para `fees_cents` preservando toda a consistência do livro-razão contábil.
+
+---
+
+### Especificação de Campos por Classe e Operação
+
+#### 1. AÇÕES ou FII ou BDR ou ETF ou CRIPTOMOEDAS
+
+- **COMPRA**:
+  - Ativo / Ticker
+  - Data da Operação
+  - Quantidade
+  - Preço Unitário (R$)
+  - Emolumentos (R$)
+  - Liquidação (R$)
+- **VENDA**:
+  - Ativo / Ticker
+  - Data da Operação
+  - Quantidade
+  - Preço Unitário (R$)
+  - Emolumentos (R$)
+  - Liquidação (R$)
+  - IR (R$)
+
+#### 2. STOCKS ou ETF INTERNACIONAL ou REITs (em USD)
+
+- **COMPRA**:
+  - Ativo / Ticker
+  - Data da Operação
+  - Quantidade
+  - Preço Unitário (USD)
+  - Outros Custos (USD)
+- **VENDA**:
+  - Ativo / Ticker
+  - Data da Operação
+  - Quantidade
+  - Preço Unitário (USD)
+  - Outros Custos (USD)
+  - IR (USD)
+
+#### 3. RENDA FIXA (CDB, LCI, LCA, CRI, CRA, LC, LF, RDB, Debênture, CCB)
+
+- **Lançamento / Aplicação**:
+  - Emissor (Banco, Financeira ou Companhia)
+  - Tipo de Título: `CDB`, `LCI`, `LCA`, `CRI`, `CRA`, `LC`, `LF`, `RDB`, `Debênture`, `CCB`
+  - Forma: `Pós-Fixado` ou `Pré-Fixado`
+    - Ao selecionar **Pré-Fixado**, o campo Indexador é ocultado e permanece apenas o campo Taxa Pré-Fixada (%).
+    - Ao selecionar **Pós-Fixado**, exibe os indexadores `CDI`, `CDI+` ou `IPCA+` junto com a respectiva Taxa (%).
+  - Valor Aplicado / Investido (R$) (utiliza valor financeiro em vez de cota)
+  - Data Transação
+  - Data Vencimento
+  - Checkbox "Liquidez Diária"
+- **Equivalência no Schema**:
+  - `due_date` armazena a data de vencimento.
+  - `indexer_rate` armazena a combinação formal da forma, indexador e taxa (ex.: `Pré-Fixado (12.5%)` ou `CDI+ (110%)`).
+  - Emissor, Tipo de Título, Forma e Liquidez Diária podem ser herdados do cadastro do ativo ou informados no lançamento.
+
+#### 4. TESOURO DIRETO
+
+- **Campos**:
+  - Ativo
+  - Data Transação
+  - Quantidade
+  - Preço
+  - Outros Custos
+  - Na Venda: adiciona IR.
+
+#### 5. FUNDO DE INVESTIMENTO
+
+- **Campos**:
+  - Ativo
+  - Data Transação
+  - Quantidade (cotas)
+  - Preço (valor da cota)
+  - Outros Custos
+  - Na Venda: adiciona IR (come-cotas / resgate).
+
+#### 6. OUTROS
+
+- **Campos**:
+  - Nome do Ativo
+  - Data Transação
+  - Quantidade
+  - Preço
+  - Outros Custos
+  - Juros Anual (% a.a.) — mapeado para o campo `indexer_rate` como `Juros X% a.a.`.
+  - Na Venda: adiciona IR.
+
+---
+
+## 3. Renda Fixa: Subtipos, Campos e Comportamento Contábil
 
 Os títulos de Renda Fixa contam com modelagem dedicada para refletir com precisão contratos privados, indexadores bancários e títulos do Tesouro Nacional.
 
@@ -67,7 +165,7 @@ Para os ativos de renda fixa, estão disponíveis campos dedicados no catálogo 
 
 ---
 
-## 3. Ações (Equities), FIIs e Criptoativos
+## 4. Ações (Equities), FIIs e Criptoativos
 
 ### 3.1 Ações (`equities`)
 
@@ -90,7 +188,7 @@ Para os ativos de renda fixa, estão disponíveis campos dedicados no catálogo 
 
 ---
 
-## 4. Tipos de Movimentação Financeira (`MovementType`)
+## 5. Tipos de Movimentação Financeira (`MovementType`)
 
 O livro-razão registra cada evento patrimonial em conformidade contábil. A tabela abaixo especifica os tipos de operação suportados e os campos utilizados por cada um:
 
@@ -109,7 +207,7 @@ O livro-razão registra cada evento patrimonial em conformidade contábil. A tab
 
 ---
 
-## 5. Regras de Integridade e Validações Contábeis
+## 6. Regras de Integridade e Validações Contábeis
 
 1. **Prevenção de Saldo Negativo em Saque**: Saques (`withdrawal`) que resultem em saldo negativo na conta são bloqueados pelo backend com erro `INSUFFICIENT_FUNDS`.
 2. **Idempotência**: Cada ordem de compra, venda ou lançamento pode carregar uma chave única (`idempotency_key`), evitando lançamentos duplicados por cliques repetidos ou reenvios de rede.

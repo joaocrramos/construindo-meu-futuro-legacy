@@ -63,19 +63,21 @@ export const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
  * Categorias ou subtipos comuns de Renda Fixa no mercado brasileiro (padrão Investidor10).
  */
 export const FIXED_INCOME_SUBTYPES = [
-  'CDB (Certificado de Depósito Bancário)',
-  'LCI (Letra de Crédito Imobiliário)',
-  'LCA (Letra de Crédito do Agronegócio)',
-  'CRI (Certificado de Recebíveis Imobiliários)',
-  'CRA (Certificado de Recebíveis do Agronegócio)',
+  'CDB',
+  'LCI',
+  'LCA',
+  'CRI',
+  'CRA',
+  'LC',
+  'LF',
+  'RDB',
+  'Debênture',
+  'CCB',
   'Tesouro Selic',
   'Tesouro IPCA+',
   'Tesouro Prefixado',
   'Tesouro RendA+',
   'Tesouro Educa+',
-  'Debênture / Debênture Incentivada',
-  'LC (Letra de Câmbio)',
-  'RDB (Recibo de Depósito Bancário)',
   'Outro Título de Renda Fixa',
 ] as const
 

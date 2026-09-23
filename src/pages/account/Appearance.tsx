@@ -1,4 +1,8 @@
 import { Navigate } from 'react-router-dom'
+import { useTheme } from '@/contexts/ThemeContext'
+import { PageHeader } from '@/components/PageHeader'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Palette, Sun, Moon, Laptop, Check } from 'lucide-react'
 
 export default function AccountAppearancePage() {
   return <Navigate to="/profile?tab=appearance" replace />

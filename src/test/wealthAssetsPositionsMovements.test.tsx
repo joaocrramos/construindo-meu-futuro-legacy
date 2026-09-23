@@ -567,12 +567,12 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/Lançamento de Título de Renda Fixa/i)).not.toBeNull()
-      expect(screen.getByLabelText(/Valor Aplicado \/ Investido/i)).not.toBeNull()
+      expect(screen.getByText(/Renda Fixa — Detalhes do Título/i)).not.toBeNull()
+      expect(screen.getByLabelText(/Valor \(R\$\)/i)).not.toBeNull()
     })
 
     // Preenche valor aplicado de R$ 5.000
-    fireEvent.change(screen.getByLabelText(/Valor Aplicado \/ Investido/i), {
+    fireEvent.change(screen.getByLabelText(/Valor \(R\$\)/i), {
       target: { value: '5000' },
     })
 
@@ -590,6 +590,70 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
           unit_price_cents: 500000,
         }),
       )
+    })
+  })
+
+  it('7. Exibe campos específicos por tipo de ativo (Stocks/USD, Fundos, Outros e Renda Fixa)', async () => {
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Avenue Securities',
+        account_type: 'investment',
+        currency: 'USD',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_stock',
+        user_id: 'usr_1',
+        ticker: 'AAPL',
+        name: 'Apple Inc.',
+        asset_class: 'international',
+        currency: 'USD',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_other',
+        user_id: 'usr_1',
+        ticker: 'IMOVEL-SP',
+        name: 'Apartamento Jardins',
+        asset_class: 'other',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <MovementsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
+      ).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+
+    // Com ativo internacional, o campo de custos deve ser "Outros Custos (USD)"
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Outros Custos \(USD\)/i)).not.toBeNull()
+      expect(screen.getByLabelText(/Preço \(USD\)/i)).not.toBeNull()
+      // Não exibe Emolumentos nem IR na compra de Stock
+      expect(screen.queryByLabelText(/^Emolumentos/i)).toBeNull()
+      expect(screen.queryByLabelText(/IR/i)).toBeNull()
     })
   })
 })

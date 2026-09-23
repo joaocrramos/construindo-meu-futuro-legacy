@@ -28,7 +28,7 @@ export default function AdminEmailPage() {
         method: 'GET',
       })
       setStatus(res)
-    } catch (_) {
+    } catch {
       setStatus({
         resend_configured: false,
         has_resend_api_key: false,

@@ -117,6 +117,6 @@ pnpm run preview
 
 - **Fundação Visual e Estrutural Concluída**: Estrutura visual completa, paleta profissional com suporte a tema Claro, Escuro (*Deep Obsidian*) e Automático, layout responsivo (Desktop Sidebar e Mobile Drawer), navegação e todas as rotas mapeadas com estados vazios instrutivos.
 - **Estado da Autenticação**: A fundação estrutural e o cliente PocketBase estão integrados, mas a autenticação e fluxos reais serão implementados e ativados em fase posterior (Fase 2). Não há sessões simuladas, tokens fixos, usuários mockados nem sucesso falso.
-- **Catálogo e Tipos de Ativos**: Detalhamento completo de classes de ativos, títulos de renda fixa com aplicação por valor, vencimento, indexador e regras contábeis em [docs/ASSET_TYPES.md](docs/ASSET_TYPES.md).
+- **Catálogo e Tipos de Ativos**: Detalhamento completo de classes de ativos, formulários de movimentação específicos por tipo (Ações/FII/Cripto, Stocks/USD, Renda Fixa, Tesouro Direto, Fundos, Outros), aplicação por valor, vencimento, indexador e regras contábeis em [docs/ASSET_TYPES.md](docs/ASSET_TYPES.md).
 - **Backend Funcional com PocketBase**: Coleções e regras de negócio integradas em `pocketbase/migrations/` e rotas seguras em `pocketbase/hooks/`.
 - **E-mails Transacionais com Resend**: Hook de convites integrado via API do Resend com fallback suave quando credenciais não estiverem configuradas.

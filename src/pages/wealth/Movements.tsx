@@ -130,22 +130,75 @@ export default function MovementsPage() {
     setTaxesInput('0')
     setDueDateInput(activeAsset?.due_date ? activeAsset.due_date.substring(0, 10) : '')
     setIndexerRateInput(activeAsset?.indexer_rate || '')
+    setFixedIncomeIssuer(activeAsset?.issuer || '')
+    setFixedIncomeTitleType(activeAsset?.sub_type || 'CDB')
+    setFixedIncomeForma('pos')
+    setFixedIncomeIndexador('CDI')
+    setFixedIncomeTaxa('')
+    setFixedIncomeDailyLiquidity(false)
+    setOtherAnnualInterest('')
     setIdempotencyKey('')
     setNotes('')
     setOpenModal(true)
   }
+
+  // Campos específicos de Renda Fixa
+  const [fixedIncomeIssuer, setFixedIncomeIssuer] = React.useState('')
+  const [fixedIncomeTitleType, setFixedIncomeTitleType] = React.useState('CDB')
+  const [fixedIncomeForma, setFixedIncomeForma] = React.useState<'pos' | 'pre'>('pos')
+  const [fixedIncomeIndexador, setFixedIncomeIndexador] = React.useState('CDI')
+  const [fixedIncomeTaxa, setFixedIncomeTaxa] = React.useState('')
+  const [fixedIncomeDailyLiquidity, setFixedIncomeDailyLiquidity] = React.useState(false)
+
+  // Campo específico para categoria OUTROS: Juros Anual
+  const [otherAnnualInterest, setOtherAnnualInterest] = React.useState('')
 
   // Sincroniza campos padrão de renda fixa quando o usuário seleciona um ativo com due_date ou indexer_rate
   const handleAssetSelect = (newAssetId: string) => {
     setAssetId(newAssetId)
     if (newAssetId && newAssetId !== 'none') {
       const ast = assets.find((a) => a.id === newAssetId)
-      if (ast?.asset_class === 'fixed_income') {
+      if (ast) {
         if (ast.due_date && !dueDateInput) {
           setDueDateInput(ast.due_date.substring(0, 10))
         }
         if (ast.indexer_rate && !indexerRateInput) {
           setIndexerRateInput(ast.indexer_rate)
+          // Se for renda fixa e o indexer_rate tiver formato conhecido, preencher forma/indexador/taxa
+          if (ast.asset_class === 'fixed_income') {
+            const rawRate = ast.indexer_rate
+            if (
+              rawRate.toLowerCase().includes('prefixado') ||
+              rawRate.toLowerCase().includes('pré-fixado')
+            ) {
+              setFixedIncomeForma('pre')
+              const match = rawRate.match(/[\d.,]+/)
+              if (match) setFixedIncomeTaxa(match[0])
+            } else if (rawRate.includes('IPCA')) {
+              setFixedIncomeForma('pos')
+              setFixedIncomeIndexador('IPCA+')
+              const match = rawRate.match(/[\d.,]+/)
+              if (match) setFixedIncomeTaxa(match[0])
+            } else if (rawRate.includes('CDI+')) {
+              setFixedIncomeForma('pos')
+              setFixedIncomeIndexador('CDI+')
+              const match = rawRate.match(/[\d.,]+/)
+              if (match) setFixedIncomeTaxa(match[0])
+            } else if (rawRate.includes('CDI')) {
+              setFixedIncomeForma('pos')
+              setFixedIncomeIndexador('CDI')
+              const match = rawRate.match(/[\d.,]+/)
+              if (match) setFixedIncomeTaxa(match[0])
+            }
+          }
+        }
+        if (ast.asset_class === 'fixed_income') {
+          if (ast.sub_type) {
+            setFixedIncomeTitleType(ast.sub_type)
+          }
+          if (ast.issuer) {
+            setFixedIncomeIssuer(ast.issuer)
+          }
         }
       }
     }
@@ -199,6 +252,49 @@ export default function MovementsPage() {
 
     setDueDateInput(mov.due_date ? mov.due_date.substring(0, 10) : '')
     setIndexerRateInput(mov.indexer_rate || '')
+
+    const linkedAsset = assets.find((a) => a.id === mov.asset_id)
+    setFixedIncomeIssuer(linkedAsset?.issuer || '')
+    setFixedIncomeTitleType(linkedAsset?.sub_type || 'CDB')
+    setFixedIncomeDailyLiquidity(false)
+
+    // Se houver indexer_rate no mov ou asset, analisar para preencher campos auxiliares
+    const currentRate = mov.indexer_rate || linkedAsset?.indexer_rate || ''
+    if (linkedAsset?.asset_class === 'fixed_income' && currentRate) {
+      if (
+        currentRate.toLowerCase().includes('prefixado') ||
+        currentRate.toLowerCase().includes('pré-fixado')
+      ) {
+        setFixedIncomeForma('pre')
+        const m = currentRate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else if (currentRate.includes('IPCA')) {
+        setFixedIncomeForma('pos')
+        setFixedIncomeIndexador('IPCA+')
+        const m = currentRate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else if (currentRate.includes('CDI+')) {
+        setFixedIncomeForma('pos')
+        setFixedIncomeIndexador('CDI+')
+        const m = currentRate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else if (currentRate.includes('CDI')) {
+        setFixedIncomeForma('pos')
+        setFixedIncomeIndexador('CDI')
+        const m = currentRate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else {
+        setFixedIncomeTaxa(currentRate)
+      }
+    } else if (linkedAsset?.asset_class === 'other' && currentRate) {
+      setOtherAnnualInterest(currentRate)
+    } else {
+      setFixedIncomeForma('pos')
+      setFixedIncomeIndexador('CDI')
+      setFixedIncomeTaxa('')
+      setOtherAnnualInterest('')
+    }
+
     setIdempotencyKey(mov.idempotency_key || '')
     setNotes(mov.notes || '')
     setOpenModal(true)
@@ -294,6 +390,20 @@ export default function MovementsPage() {
           ? brlToCents(unitPriceInput)
           : undefined
 
+    // Se for renda fixa e o usuário preencheu forma/indexador/taxa, monta o indexer_rate textual se não houver um override manual
+    let resolvedIndexerRate = indexerRateInput.trim()
+    if (isFixedIncome) {
+      if (fixedIncomeForma === 'pre' && fixedIncomeTaxa.trim()) {
+        resolvedIndexerRate = `Pré-Fixado (${fixedIncomeTaxa.trim()}%)`
+      } else if (fixedIncomeForma === 'pos' && (fixedIncomeTaxa.trim() || fixedIncomeIndexador)) {
+        resolvedIndexerRate = fixedIncomeTaxa.trim()
+          ? `${fixedIncomeIndexador} (${fixedIncomeTaxa.trim()}%)`
+          : fixedIncomeIndexador
+      }
+    } else if (selectedAsset?.asset_class === 'other' && otherAnnualInterest.trim()) {
+      resolvedIndexerRate = `Juros ${otherAnnualInterest.trim()}% a.a.`
+    }
+
     setSubmitting(true)
     try {
       if (editingMovement) {
@@ -309,7 +419,7 @@ export default function MovementsPage() {
           taxes_cents: taxesCents,
           net_amount_cents: calculatedNetCents,
           due_date: isFixedIncome && dueDateInput ? dueDateInput : null,
-          indexer_rate: isFixedIncome && indexerRateInput.trim() ? indexerRateInput.trim() : null,
+          indexer_rate: resolvedIndexerRate ? resolvedIndexerRate : null,
           notes: notes.trim() || null,
         })
         toast.success('Movimentação atualizada com sucesso!')
@@ -326,8 +436,7 @@ export default function MovementsPage() {
           taxes_cents: taxesCents,
           net_amount_cents: calculatedNetCents,
           due_date: isFixedIncome && dueDateInput ? dueDateInput : undefined,
-          indexer_rate:
-            isFixedIncome && indexerRateInput.trim() ? indexerRateInput.trim() : undefined,
+          indexer_rate: resolvedIndexerRate ? resolvedIndexerRate : undefined,
           idempotency_key: idempotencyKey.trim() || undefined,
           notes: notes.trim() || undefined,
         })
@@ -510,29 +619,156 @@ export default function MovementsPage() {
                 </div>
               )}
 
-              {/* Campos adaptados conforme a classe do ativo (Renda Fixa vs Variável) */}
+              {/* Campos adaptados conforme a classe do ativo */}
               {isAssetRequired && (
                 <div className="space-y-2">
                   {selectedAsset?.asset_class === 'fixed_income' ? (
-                    <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-2.5">
+                    <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-foreground">
-                          Lançamento de Título de Renda Fixa
+                          Renda Fixa — Detalhes do Título
                         </span>
                         <Badge
                           variant="outline"
                           className="text-[10px] border-primary/30 text-primary"
                         >
-                          {selectedAsset.sub_type || 'Renda Fixa'}
+                          {fixedIncomeTitleType || 'Renda Fixa'}
                         </Badge>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
+                          <Label htmlFor="movFiIssuer" className="text-xs font-semibold">
+                            Emissor
+                          </Label>
+                          <Input
+                            id="movFiIssuer"
+                            placeholder="Ex.: Banco Inter, Petrobras"
+                            value={fixedIncomeIssuer}
+                            onChange={(e) => setFixedIncomeIssuer(e.target.value)}
+                            className="h-9 text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movFiTitleType" className="text-xs font-semibold">
+                            Tipo de Título
+                          </Label>
+                          <Select
+                            value={fixedIncomeTitleType}
+                            onValueChange={(val) => setFixedIncomeTitleType(val)}
+                          >
+                            <SelectTrigger
+                              id="movFiTitleType"
+                              aria-label="Tipo de Título"
+                              className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                            >
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover text-popover-foreground border-border max-h-56">
+                              {[
+                                'CDB',
+                                'LCI',
+                                'LCA',
+                                'CRI',
+                                'CRA',
+                                'LC',
+                                'LF',
+                                'RDB',
+                                'Debênture',
+                                'CCB',
+                              ].map((t) => (
+                                <SelectItem key={t} value={t} className="text-xs">
+                                  {t}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Forma: Pós-Fixado ou Pré-Fixado */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movFiForma" className="text-xs font-semibold">
+                            Forma
+                          </Label>
+                          <Select
+                            value={fixedIncomeForma}
+                            onValueChange={(val: 'pos' | 'pre') => setFixedIncomeForma(val)}
+                          >
+                            <SelectTrigger
+                              id="movFiForma"
+                              aria-label="Forma"
+                              className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                            >
+                              <SelectValue placeholder="Selecione a forma" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover text-popover-foreground border-border">
+                              <SelectItem value="pos" className="text-xs">
+                                Pós-Fixado
+                              </SelectItem>
+                              <SelectItem value="pre" className="text-xs">
+                                Pré-Fixado
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {fixedIncomeForma === 'pos' ? (
+                          <div className="space-y-1.5">
+                            <Label htmlFor="movFiIndexer" className="text-xs font-semibold">
+                              Indexador
+                            </Label>
+                            <Select
+                              value={fixedIncomeIndexador}
+                              onValueChange={(val) => setFixedIncomeIndexador(val)}
+                            >
+                              <SelectTrigger
+                                id="movFiIndexer"
+                                aria-label="Indexador"
+                                className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                              >
+                                <SelectValue placeholder="Indexador" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover text-popover-foreground border-border">
+                                <SelectItem value="CDI" className="text-xs">
+                                  CDI
+                                </SelectItem>
+                                <SelectItem value="CDI+" className="text-xs">
+                                  CDI+
+                                </SelectItem>
+                                <SelectItem value="IPCA+" className="text-xs">
+                                  IPCA+
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : null}
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movFiTaxa" className="text-xs font-semibold">
+                            {fixedIncomeForma === 'pre'
+                              ? 'Taxa Pré-Fixada (%)'
+                              : `Taxa do ${fixedIncomeIndexador} (%)`}
+                          </Label>
+                          <Input
+                            id="movFiTaxa"
+                            placeholder={
+                              fixedIncomeForma === 'pre' ? 'Ex.: 12,5' : 'Ex.: 110 ou 6,5'
+                            }
+                            value={fixedIncomeTaxa}
+                            onChange={(e) => setFixedIncomeTaxa(e.target.value)}
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Valor e Datas */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
                           <Label htmlFor="movGross" className="text-xs font-semibold">
-                            {isBuy
-                              ? 'Valor Aplicado / Investido (R$) *'
-                              : 'Valor do Resgate Bruto (R$) *'}
+                            {isBuy ? 'Valor (R$) *' : 'Valor do Resgate (R$) *'}
                           </Label>
                           <Input
                             id="movGross"
@@ -545,23 +781,8 @@ export default function MovementsPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <Label htmlFor="movQty" className="text-xs font-semibold">
-                            Qtd. de Títulos / Frações
-                          </Label>
-                          <Input
-                            id="movQty"
-                            placeholder="1 (padrão p/ valor total)"
-                            value={quantityInput}
-                            onChange={(e) => setQuantityInput(e.target.value)}
-                            className="h-9 text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-1">
-                        <div className="space-y-1.5">
                           <Label htmlFor="movDueDate" className="text-xs font-semibold">
-                            Data de Vencimento
+                            Data Vencimento
                           </Label>
                           <Input
                             id="movDueDate"
@@ -571,31 +792,79 @@ export default function MovementsPage() {
                             className="h-9 text-xs"
                           />
                         </div>
+                      </div>
 
+                      {/* Checkbox Liquidez Diária */}
+                      <div className="flex items-center space-x-2 pt-1">
+                        <input
+                          id="movDailyLiquidity"
+                          type="checkbox"
+                          checked={fixedIncomeDailyLiquidity}
+                          onChange={(e) => setFixedIncomeDailyLiquidity(e.target.checked)}
+                          className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+                        />
+                        <Label
+                          htmlFor="movDailyLiquidity"
+                          className="text-xs cursor-pointer font-normal"
+                        >
+                          Liquidez Diária
+                        </Label>
+                      </div>
+                    </div>
+                  ) : selectedAsset?.asset_class === 'other' ? (
+                    // OUTROS: Nome do Ativo, Quantidade, Preço, Juros Anual
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label htmlFor="movIndexerRate" className="text-xs font-semibold">
-                            Indexador / Taxa
+                          <Label htmlFor="movQty" className="text-xs font-semibold">
+                            Quantidade
                           </Label>
                           <Input
-                            id="movIndexerRate"
-                            placeholder="Ex.: 120% do CDI, IPCA + 6,5%"
-                            value={indexerRateInput}
-                            onChange={(e) => setIndexerRateInput(e.target.value)}
-                            className="h-9 text-xs"
+                            id="movQty"
+                            placeholder="Ex.: 10 ou 1"
+                            value={quantityInput}
+                            onChange={(e) =>
+                              handleQuantityOrPriceChange(e.target.value, unitPriceInput)
+                            }
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
+                            Preço
+                          </Label>
+                          <Input
+                            id="movUnitPrice"
+                            placeholder="Ex.: 150,00"
+                            value={unitPriceInput}
+                            onChange={(e) =>
+                              handleQuantityOrPriceChange(quantityInput, e.target.value)
+                            }
+                            className="h-9 text-xs font-mono"
                           />
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-muted-foreground">
-                        Em títulos como CDB, LCI, LCA e RDB, informe o valor financeiro aplicado. A
-                        quantidade pode permanecer 1 para representar o título integral.
-                      </p>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="movOtherInterest" className="text-xs font-semibold">
+                          Juros Anual (% a.a.)
+                        </Label>
+                        <Input
+                          id="movOtherInterest"
+                          placeholder="Ex.: 10,5"
+                          value={otherAnnualInterest}
+                          onChange={(e) => setOtherAnnualInterest(e.target.value)}
+                          className="h-9 text-xs font-mono"
+                        />
+                      </div>
                     </div>
                   ) : (
+                    // Ações, FII, BDR, ETF, Cripto, Stocks, REITs, Tesouro Direto, Fundos
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="movQty" className="text-xs font-semibold">
-                          Quantidade (cotas/ações)
+                          Quantidade
                         </Label>
                         <Input
                           id="movQty"
@@ -610,7 +879,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1.5">
                         <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
-                          Preço Unitário (R$)
+                          Preço {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
                         </Label>
                         <Input
                           id="movUnitPrice"
@@ -627,107 +896,200 @@ export default function MovementsPage() {
                 </div>
               )}
 
-              {/* Valores Financeiros: Bruto, Emolumentos, Liquidação, IR / Impostos e Totais */}
+              {/* Valores Financeiros: Bruto, Emolumentos, Liquidação, Outros Custos, IR / Impostos e Totais */}
               <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-3">
                 {isBuy ? (
-                  // Compra de Ativo: Valor Bruto, Emolumentos e Liquidação (SEM campo de IR)
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="movGross" className="text-xs font-semibold">
-                        Valor Bruto (R$) *
-                      </Label>
-                      <Input
-                        id="movGross"
-                        placeholder="0,00"
-                        value={grossInput}
-                        onChange={(e) => setGrossInput(e.target.value)}
-                        className="h-8 text-xs font-mono font-medium"
-                        required
-                      />
-                    </div>
+                  // Compra de Ativo (SEM campo de IR)
+                  selectedAsset?.asset_class === 'international' ||
+                  selectedAsset?.asset_class === 'fund' ||
+                  selectedAsset?.asset_class === 'other' ||
+                  (selectedAsset?.asset_class === 'fixed_income' &&
+                    (selectedAsset.sub_type?.includes('Tesouro') ||
+                      selectedAsset.name?.toLowerCase().includes('tesouro'))) ? (
+                    // Stocks/REITs (USD), Fundos, Outros, Tesouro Direto: Bruto + Outros Custos
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="movGross" className="text-xs font-semibold">
+                          Valor Bruto{' '}
+                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'} *
+                        </Label>
+                        <Input
+                          id="movGross"
+                          placeholder="0,00"
+                          value={grossInput}
+                          onChange={(e) => setGrossInput(e.target.value)}
+                          className="h-8 text-xs font-mono font-medium"
+                          required
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                        Emolumentos (R$)
-                      </Label>
-                      <Input
-                        id="movEmoluments"
-                        placeholder="0,00"
-                        value={emolumentsInput}
-                        onChange={(e) => setEmolumentsInput(e.target.value)}
-                        className="h-8 text-xs font-mono"
-                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="movEmoluments" className="text-xs font-semibold">
+                          Outros Custos{' '}
+                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                        </Label>
+                        <Input
+                          id="movEmoluments"
+                          placeholder="0,00"
+                          value={emolumentsInput}
+                          onChange={(e) => setEmolumentsInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    // Ações, FII, BDR, ETF, Cripto, Renda Fixa tradicional: Bruto + Emolumentos + Liquidação
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="movGross" className="text-xs font-semibold">
+                          Valor Bruto (R$) *
+                        </Label>
+                        <Input
+                          id="movGross"
+                          placeholder="0,00"
+                          value={grossInput}
+                          onChange={(e) => setGrossInput(e.target.value)}
+                          className="h-8 text-xs font-mono font-medium"
+                          required
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="movSettlement" className="text-xs font-semibold">
-                        Liquidação (R$)
-                      </Label>
-                      <Input
-                        id="movSettlement"
-                        placeholder="0,00"
-                        value={settlementFeesInput}
-                        onChange={(e) => setSettlementFeesInput(e.target.value)}
-                        className="h-8 text-xs font-mono"
-                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="movEmoluments" className="text-xs font-semibold">
+                          Emolumentos (R$)
+                        </Label>
+                        <Input
+                          id="movEmoluments"
+                          placeholder="0,00"
+                          value={emolumentsInput}
+                          onChange={(e) => setEmolumentsInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="movSettlement" className="text-xs font-semibold">
+                          Liquidação (R$)
+                        </Label>
+                        <Input
+                          id="movSettlement"
+                          placeholder="0,00"
+                          value={settlementFeesInput}
+                          onChange={(e) => setSettlementFeesInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )
                 ) : isSell ? (
-                  // Venda de Ativo: Valor Bruto, Emolumentos, Liquidação e IR
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="movGross" className="text-xs font-semibold">
-                        Valor Bruto (R$) *
-                      </Label>
-                      <Input
-                        id="movGross"
-                        placeholder="0,00"
-                        value={grossInput}
-                        onChange={(e) => setGrossInput(e.target.value)}
-                        className="h-8 text-xs font-mono font-medium"
-                        required
-                      />
-                    </div>
+                  // Venda de Ativo: com campo de IR
+                  selectedAsset?.asset_class === 'international' ||
+                  selectedAsset?.asset_class === 'fund' ||
+                  selectedAsset?.asset_class === 'other' ||
+                  (selectedAsset?.asset_class === 'fixed_income' &&
+                    (selectedAsset.sub_type?.includes('Tesouro') ||
+                      selectedAsset.name?.toLowerCase().includes('tesouro'))) ? (
+                    // Stocks/REITs (USD), Fundos, Outros, Tesouro Direto: Bruto + Outros Custos + IR
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="movGross" className="text-xs font-semibold">
+                          Valor Bruto{' '}
+                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'} *
+                        </Label>
+                        <Input
+                          id="movGross"
+                          placeholder="0,00"
+                          value={grossInput}
+                          onChange={(e) => setGrossInput(e.target.value)}
+                          className="h-8 text-xs font-mono font-medium"
+                          required
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                        Emolumentos (R$)
-                      </Label>
-                      <Input
-                        id="movEmoluments"
-                        placeholder="0,00"
-                        value={emolumentsInput}
-                        onChange={(e) => setEmolumentsInput(e.target.value)}
-                        className="h-8 text-xs font-mono"
-                      />
-                    </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="movEmoluments" className="text-xs font-semibold">
+                          Outros Custos{' '}
+                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                        </Label>
+                        <Input
+                          id="movEmoluments"
+                          placeholder="0,00"
+                          value={emolumentsInput}
+                          onChange={(e) => setEmolumentsInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="movSettlement" className="text-xs font-semibold">
-                        Liquidação (R$)
-                      </Label>
-                      <Input
-                        id="movSettlement"
-                        placeholder="0,00"
-                        value={settlementFeesInput}
-                        onChange={(e) => setSettlementFeesInput(e.target.value)}
-                        className="h-8 text-xs font-mono"
-                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="movTaxes" className="text-xs font-semibold">
+                          IR {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                        </Label>
+                        <Input
+                          id="movTaxes"
+                          placeholder="0,00"
+                          value={taxesInput}
+                          onChange={(e) => setTaxesInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    // Ações, FII, BDR, ETF, Cripto: Bruto + Emolumentos + Liquidação + IR
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="movGross" className="text-xs font-semibold">
+                          Valor Bruto (R$) *
+                        </Label>
+                        <Input
+                          id="movGross"
+                          placeholder="0,00"
+                          value={grossInput}
+                          onChange={(e) => setGrossInput(e.target.value)}
+                          className="h-8 text-xs font-mono font-medium"
+                          required
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="movTaxes" className="text-xs font-semibold">
-                        IR (R$)
-                      </Label>
-                      <Input
-                        id="movTaxes"
-                        placeholder="0,00"
-                        value={taxesInput}
-                        onChange={(e) => setTaxesInput(e.target.value)}
-                        className="h-8 text-xs font-mono"
-                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="movEmoluments" className="text-xs font-semibold">
+                          Emolumentos (R$)
+                        </Label>
+                        <Input
+                          id="movEmoluments"
+                          placeholder="0,00"
+                          value={emolumentsInput}
+                          onChange={(e) => setEmolumentsInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="movSettlement" className="text-xs font-semibold">
+                          Liquidação (R$)
+                        </Label>
+                        <Input
+                          id="movSettlement"
+                          placeholder="0,00"
+                          value={settlementFeesInput}
+                          onChange={(e) => setSettlementFeesInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="movTaxes" className="text-xs font-semibold">
+                          IR (R$)
+                        </Label>
+                        <Input
+                          id="movTaxes"
+                          placeholder="0,00"
+                          value={taxesInput}
+                          onChange={(e) => setTaxesInput(e.target.value)}
+                          className="h-8 text-xs font-mono"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )
                 ) : isDepositOrWithdrawal ? (
                   // Depósito ou Saque (Apenas valor em dinheiro em caixa)
                   <div className="space-y-1">
