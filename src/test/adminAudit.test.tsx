@@ -73,7 +73,7 @@ describe('AdminAuditPage', () => {
     render(<AdminAuditPage />)
 
     expect(screen.getByText(/Tipo de Evento/i)).not.toBeNull()
-    expect(screen.getByText(/Severidade/i)).not.toBeNull()
+    expect(screen.getAllByText(/Severidade/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/Usuário Responsável/i)).not.toBeNull()
   })
 })

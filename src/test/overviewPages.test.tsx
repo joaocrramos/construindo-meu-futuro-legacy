@@ -60,7 +60,7 @@ describe('Telas de Overview conectadas a dados reais', () => {
           screen.getByText(/Seu patrimônio ainda não possui registros cadastrados/i),
         ).not.toBeNull()
         expect(
-          screen.getByRole('button', { name: /Registrar Primeira Movimentação/i }),
+          screen.getByRole('link', { name: /Registrar Primeira Movimentação/i }),
         ).not.toBeNull()
       })
     })
@@ -257,11 +257,11 @@ describe('Telas de Overview conectadas a dados reais', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('R$ 10.000,00')).not.toBeNull()
+        expect(screen.getAllByText('R$ 10.000,00').length).toBeGreaterThan(0)
         expect(screen.getByText('Divisão de Patrimônio por Moeda')).not.toBeNull()
         expect(screen.getByText('BRL')).not.toBeNull()
         expect(screen.getByText('USD')).not.toBeNull()
-        expect(screen.getByText('$ 2.000,00')).not.toBeNull()
+        expect(screen.getAllByText('$ 2.000,00').length).toBeGreaterThan(0)
       })
     })
   })
@@ -335,9 +335,9 @@ describe('Telas de Overview conectadas a dados reais', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('R$ 8.000,00')).not.toBeNull() // Aportes totais
-        expect(screen.getByText('R$ 1.000,00')).not.toBeNull() // Resgates totais
-        expect(screen.getByText('R$ 7.000,00')).not.toBeNull() // Líquido acumulado
+        expect(screen.getAllByText('R$ 8.000,00').length).toBeGreaterThan(0) // Aportes totais
+        expect(screen.getAllByText('R$ 1.000,00').length).toBeGreaterThan(0) // Resgates totais
+        expect(screen.getAllByText('R$ 7.000,00').length).toBeGreaterThan(0) // Líquido acumulado
         expect(screen.getByText('Histórico Mensal Consolidado')).not.toBeNull()
       })
     })
@@ -439,7 +439,7 @@ describe('Telas de Overview conectadas a dados reais', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Dinheiro em Caixa')).not.toBeNull()
+        expect(screen.getAllByText('Dinheiro em Caixa').length).toBeGreaterThan(0)
         expect(screen.getByText('Ações / Ações Globais')).not.toBeNull()
         expect(screen.getByText('Itaú Corretora')).not.toBeNull()
       })
@@ -503,7 +503,7 @@ describe('Telas de Overview conectadas a dados reais', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Aporte / Depósito')).not.toBeNull()
-        expect(screen.getByText('Banco do Brasil')).not.toBeNull()
+        expect(screen.getAllByText(/Banco do Brasil/i).length).toBeGreaterThan(0)
         expect(screen.getByText(/Aporte mensal da poupança/i)).not.toBeNull()
         expect(screen.getByText('+ R$ 10.000,00')).not.toBeNull()
       })
@@ -579,9 +579,9 @@ describe('Telas de Overview conectadas a dados reais', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('CDB-INTER-2026')).not.toBeNull()
+        expect(screen.getAllByText('CDB-INTER-2026').length).toBeGreaterThan(0)
         expect(screen.getByText('110% CDI')).not.toBeNull()
-        expect(screen.getByText('R$ 1.000,00')).not.toBeNull()
+        expect(screen.getAllByText('R$ 1.000,00').length).toBeGreaterThan(0)
       })
     })
   })

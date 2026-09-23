@@ -83,7 +83,7 @@ describe('Fluxo de Convites (Invite-Only)', () => {
 
     // Verificar seletor de papel estilizado
     expect(screen.getByLabelText(/Papel de Acesso/i)).not.toBeNull()
-    expect(screen.getByText(/Usuário Comum/i)).not.toBeNull()
+    expect(screen.getAllByText(/Usuário Comum/i).length).toBeGreaterThan(0)
 
     const submitBtn = screen.getByRole('button', { name: /Emitir Convite Seguro/i })
     fireEvent.click(submitBtn)

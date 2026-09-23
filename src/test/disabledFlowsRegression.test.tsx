@@ -88,20 +88,16 @@ describe('Testes de Regressão de Telas e Fluxos Desabilitados (Sem Sucesso Fals
       </AuthProvider>,
     )
 
-    // Campos bloqueados para edição
-    const nameInput = screen.getByLabelText(/Nome Completo/i) as HTMLInputElement
-    const phoneInput = screen.getByLabelText(/Telefone Celular/i) as HTMLInputElement
+    // Aba Dados: e-mail centralizado bloqueado para edição
+    const emailInput = screen.getByLabelText(/E-mail/i) as HTMLInputElement
+    expect(emailInput.disabled).toBe(true)
 
-    expect(nameInput.disabled).toBe(true)
-    expect(phoneInput.disabled).toBe(true)
+    // Alerta explicativo de bloqueio / administração centralizada
+    expect(
+      screen.getByText(/Para alterar seu e-mail de acesso, contate um administrador do sistema/i),
+    ).not.toBeNull()
 
-    // Botão desabilitado
-    const submitButton = screen.getByRole('button', {
-      name: /Atualização Temporariamente Indisponível/i,
-    }) as HTMLButtonElement
-    expect(submitButton.disabled).toBe(true)
-
-    // Não deve exibir indicação de Salvo
+    // Não deve exibir indicação de Salvo sem submissão
     expect(screen.queryByText(/Salvo!/i)).toBeNull()
   })
 

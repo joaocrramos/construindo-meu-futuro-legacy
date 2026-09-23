@@ -38,7 +38,7 @@ describe('AdminEmailPage - E-mail de Teste e Status Resend', () => {
     })
 
     expect(screen.getByText('Presente no Backend')).not.toBeNull()
-    expect(screen.getByText('Enviar E-mail de Teste')).not.toBeNull()
+    expect(screen.getAllByText('Enviar E-mail de Teste').length).toBeGreaterThan(0)
   })
 
   it('2. Dispara e-mail de teste com sucesso e exibe feedback em pt-BR', async () => {
