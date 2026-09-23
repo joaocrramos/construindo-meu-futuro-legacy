@@ -180,13 +180,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/account/profile" className="cursor-pointer">
+                  <Link to="/profile" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>Meu Perfil</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/account/appearance" className="cursor-pointer">
+                  <Link to="/profile?tab=password" className="cursor-pointer">
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    <span>Alterar Senha</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile?tab=appearance" className="cursor-pointer">
                     <Palette className="mr-2 h-4 w-4" />
                     <span>Aparência</span>
                   </Link>

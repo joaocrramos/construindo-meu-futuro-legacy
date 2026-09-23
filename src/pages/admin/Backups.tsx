@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -294,37 +295,47 @@ export default function AdminBackupsPage() {
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 border-primary/20"
-                            onClick={() => handleDownloadBackup(b.key)}
-                            disabled={Boolean(downloadingKey) || restoring}
-                            title={`Baixar ${b.key}`}
-                          >
-                            {isDownloadingThis ? (
-                              <>
-                                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin text-primary" />
-                                <span>Baixando...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Download className="h-3.5 w-3.5 mr-1.5" />
-                                <span>Baixar</span>
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="h-7 px-2.5 text-xs"
-                            onClick={() => openRestoreModal(b.key)}
-                            disabled={restoring}
-                            title={`Restaurar banco para ${b.key}`}
-                          >
-                            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                            <span>Restaurar</span>
-                          </Button>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-7 w-7 text-primary hover:bg-primary/10 border-primary/20"
+                                  onClick={() => handleDownloadBackup(b.key)}
+                                  disabled={Boolean(downloadingKey) || restoring}
+                                  aria-label={`Baixar ${b.key}`}
+                                >
+                                  {isDownloadingThis ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                  ) : (
+                                    <Download className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="text-xs">Baixar arquivo de snapshot</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => openRestoreModal(b.key)}
+                                  disabled={restoring}
+                                  aria-label={`Restaurar ${b.key}`}
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="text-xs">Restaurar este snapshot</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </td>
                     </tr>

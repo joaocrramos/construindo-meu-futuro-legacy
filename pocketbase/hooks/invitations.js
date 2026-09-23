@@ -83,6 +83,76 @@ routerAdd('POST', '/backend/v1/invitations', (e) => {
     console.log('AUDIT_LOG_ERROR: ' + err.message)
   }
 
+  // Envio de e-mail de convite com Resend (fallback gracioso)
+  let emailSent = false
+  const resendApiKey = ($os.getenv('RESEND_API_KEY') || '').trim()
+  const resendFromEmail = (
+    $os.getenv('RESEND_FROM_EMAIL') || 'contato@construindomeufuturo.com'
+  ).trim()
+  const resendFromName = ($os.getenv('RESEND_FROM_NAME') || 'Construindo Meu Futuro').trim()
+  const siteUrl = ($os.getenv('SITE_URL') || 'https://construindomeufuturo.com').replace(/\/+$/, '')
+
+  if (!resendApiKey) {
+    console.log(
+      '[WARN][INVITATIONS] RESEND_API_KEY não configurada. Disparo de e-mail de convite ignorado para ' +
+        email +
+        '.',
+    )
+  } else {
+    try {
+      const inviteUrl = `${siteUrl}/register?token=${encodeURIComponent(plainToken)}`
+      const fromHeader = `${resendFromName} <${resendFromEmail}>`
+      const subject = 'Convite de Acesso — Construindo Meu Futuro'
+      const htmlBody = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b;">
+          <h2 style="color: #0f172a; margin-bottom: 8px;">Você foi convidado para o Construindo Meu Futuro</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+            Você recebeu um convite exclusivo para criar sua conta e acessar a plataforma de gestão patrimonial e financeira pessoal.
+          </p>
+          <div style="margin: 24px 0;">
+            <a href="${inviteUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 14px;">
+              Aceitar Convite e Concluir Cadastro
+            </a>
+          </div>
+          <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
+            Se o botão acima não funcionar, copie e cole o link no navegador:<br/>
+            <a href="${inviteUrl}" style="color: #2563eb; word-break: break-all;">${inviteUrl}</a>
+          </p>
+          <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+            Este convite é intransferível e expira em 7 dias. Se você não esperava este e-mail, pode ignorá-lo com segurança.
+          </p>
+        </div>
+      `
+
+      const res = $http.send({
+        url: 'https://api.resend.com/emails',
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromHeader,
+          to: [email],
+          subject: subject,
+          html: htmlBody,
+        }),
+        timeout: 15,
+      })
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        emailSent = true
+        console.log('[INFO][INVITATIONS] E-mail de convite enviado via Resend para ' + email)
+      } else {
+        console.log(
+          '[WARN][INVITATIONS] Falha no Resend (status ' + res.statusCode + '): ' + (res.raw || ''),
+        )
+      }
+    } catch (sendErr) {
+      console.log('[WARN][INVITATIONS] Erro ao enviar e-mail com Resend: ' + sendErr.message)
+    }
+  }
+
   return e.json(200, {
     id: record.id,
     email: record.getString('email'),
@@ -91,6 +161,33 @@ routerAdd('POST', '/backend/v1/invitations', (e) => {
     expires_at: record.getString('expires_at'),
     created: record.getString('created'),
     token: plainToken,
+    email_sent: emailSent,
+  })
+})
+
+routerAdd('GET', '/backend/v1/admin/email-status', (e) => {
+  const authRecord = e.auth
+  if (!authRecord || authRecord.getString('role') !== 'admin') {
+    return e.json(403, {
+      code: 'UNAUTHORIZED',
+      message: 'Apenas administradores podem consultar a configuração de e-mail.',
+    })
+  }
+
+  const resendApiKey = ($os.getenv('RESEND_API_KEY') || '').trim()
+  const resendFromEmail = ($os.getenv('RESEND_FROM_EMAIL') || '').trim()
+  const resendFromName = ($os.getenv('RESEND_FROM_NAME') || '').trim()
+  const siteUrl = ($os.getenv('SITE_URL') || '').trim()
+
+  return e.json(200, {
+    resend_configured: Boolean(resendApiKey),
+    has_resend_api_key: Boolean(resendApiKey),
+    has_from_email: Boolean(resendFromEmail),
+    from_email: resendFromEmail || 'contato@construindomeufuturo.com (padrão)',
+    has_from_name: Boolean(resendFromName),
+    from_name: resendFromName || 'Construindo Meu Futuro (padrão)',
+    has_site_url: Boolean(siteUrl),
+    site_url: siteUrl || 'https://construindomeufuturo.com (padrão)',
   })
 })
 

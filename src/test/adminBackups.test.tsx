@@ -43,8 +43,12 @@ describe('AdminBackupsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('backup_20260923_snapshot.zip')).not.toBeNull()
       expect(screen.getByText(/1 MB/i)).not.toBeNull()
-      expect(screen.getByRole('button', { name: /Baixar/i })).not.toBeNull()
-      expect(screen.getByRole('button', { name: /Restaurar/i })).not.toBeNull()
+      expect(
+        screen.getByRole('button', { name: /Baixar backup_20260923_snapshot\.zip/i }),
+      ).not.toBeNull()
+      expect(
+        screen.getByRole('button', { name: /Restaurar backup_20260923_snapshot\.zip/i }),
+      ).not.toBeNull()
     })
   })
 
@@ -74,7 +78,7 @@ describe('AdminBackupsPage', () => {
       expect(screen.getByText('backup_download.zip')).not.toBeNull()
     })
 
-    const downloadButton = screen.getByRole('button', { name: /Baixar/i })
+    const downloadButton = screen.getByRole('button', { name: /Baixar backup_download\.zip/i })
     fireEvent.click(downloadButton)
 
     await waitFor(() => {
@@ -108,7 +112,7 @@ describe('AdminBackupsPage', () => {
       expect(screen.getByText('testeb2.zip')).not.toBeNull()
     })
 
-    const restoreButton = screen.getByRole('button', { name: /Restaurar/i })
+    const restoreButton = screen.getByRole('button', { name: /Restaurar testeb2\.zip/i })
     fireEvent.click(restoreButton)
 
     // Modal deve abrir com aviso de ação destrutiva

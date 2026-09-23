@@ -18,7 +18,13 @@ import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { ClientResponseError } from 'pocketbase'
 
+import { Navigate } from 'react-router-dom'
+
 export default function AccountPasswordPage() {
+  return <Navigate to="/profile?tab=password" replace />
+}
+
+export function AccountPasswordPageLegacy() {
   const { user, refreshAuth } = useAuth()
 
   const [currentPassword, setCurrentPassword] = React.useState('')

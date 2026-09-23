@@ -386,6 +386,16 @@ const App = () => (
 
                 {/* Área 4: Conta */}
                 <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <AccountProfilePage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/account/profile"
                   element={
                     <ProtectedRoute>

@@ -275,10 +275,10 @@ export const navigationConfig: NavSection[] = [
         description: 'Dispositivos e conexões ativas no momento',
       },
       {
-        title: 'Preferências de Aparência',
-        href: '/account/appearance',
+        name: 'Aparência',
+        href: '/account/profile?tab=appearance',
         icon: Palette,
-        description: 'Escolha de tema claro, escuro ou automático',
+        badge: 'Beta',
       },
       {
         title: 'Ajuda e Informações',
