@@ -28,6 +28,7 @@ import {
   listAlerts,
   markAlertRead,
   markAllAlertsRead,
+  triggerAlertsCheck,
   type AlertRecord,
   ALERT_TYPE_LABELS,
 } from '@/services/alerts'
@@ -48,6 +49,7 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = React.useState<AlertRecord[]>([])
   const [updatingId, setUpdatingId] = React.useState<string | null>(null)
   const [markingAll, setMarkingAll] = React.useState(false)
+  const [runningCheck, setRunningCheck] = React.useState(false)
 
   // Filtros locais de visualização
   const [typeFilter, setTypeFilter] = React.useState<string>('all')
@@ -80,6 +82,23 @@ export default function AlertsPage() {
       toast.error((err as Error)?.message || 'Erro ao atualizar alerta.')
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const handleRunCheck = async () => {
+    try {
+      setRunningCheck(true)
+      const res = await triggerAlertsCheck()
+      toast.success(
+        res.alerts_created > 0
+          ? `${res.alerts_created} novo(s) alerta(s) gerado(s).`
+          : 'Varredura concluída. Nenhum novo alerta pendente.',
+      )
+      await loadAlerts()
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Erro ao executar verificação de alertas.')
+    } finally {
+      setRunningCheck(false)
     }
   }
 
@@ -139,8 +158,23 @@ export default function AlertsPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleRunCheck}
+              disabled={runningCheck || loading}
+              className="gap-1.5 text-xs"
+              title="Executar verificação manual de alertas"
+            >
+              {runningCheck ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              ) : (
+                <Clock className="h-3.5 w-3.5 text-primary" />
+              )}
+              Verificar Alertas
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={loadAlerts}
-              disabled={loading}
+              disabled={loading || runningCheck}
               className="gap-1.5 text-xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />

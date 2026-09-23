@@ -154,6 +154,30 @@ describe('AlertsPage & alerts service', () => {
     })
   })
 
+  it('permite acionar a verificação manual de alertas pelo botão "Verificar Alertas"', async () => {
+    vi.mocked(alertsService.listAlerts).mockResolvedValue([])
+    vi.mocked(alertsService.triggerAlertsCheck).mockResolvedValue({
+      success: true,
+      alerts_created: 1,
+      users_affected: 1,
+      date: '2026-09-24',
+    })
+
+    render(
+      <MemoryRouter>
+        <AlertsPage />
+      </MemoryRouter>,
+    )
+
+    const checkBtn = await screen.findByTitle(/Executar verificação manual de alertas/i)
+    expect(checkBtn).not.toBeNull()
+    fireEvent.click(checkBtn)
+
+    await waitFor(() => {
+      expect(alertsService.triggerAlertsCheck).toHaveBeenCalled()
+    })
+  })
+
   it('anti-duplicidade: valida lógica conceitual do cron de alertas', () => {
     // Simula verificação anti-duplicidade de maturity e balance_negative
     const existingMaturityAlerts = [

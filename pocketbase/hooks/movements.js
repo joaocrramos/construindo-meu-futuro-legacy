@@ -457,6 +457,25 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
         posRec.set('quantity_e8', accQtyE8)
         posRec.set('average_price_cents', accAvgPriceCents)
         posRec.set('total_cost_cents', accTotalCostCents)
+
+        // Sincronizar maturity_date e indexer a partir do cadastro do ativo ou movimentação
+        const effectiveDueDate =
+          dueDate ||
+          (assetRec ? assetRec.getString('due_date') : '') ||
+          posRec.getString('maturity_date') ||
+          ''
+        const effectiveIndexer =
+          indexerRate ||
+          (assetRec ? assetRec.getString('indexer_rate') : '') ||
+          posRec.getString('indexer') ||
+          ''
+        if (effectiveDueDate) {
+          posRec.set('maturity_date', effectiveDueDate)
+        }
+        if (effectiveIndexer) {
+          posRec.set('indexer', effectiveIndexer)
+        }
+
         posRec.set('last_recalculated_at', new Date().toISOString())
         txApp.saveNoValidate(posRec)
       }
@@ -1010,6 +1029,30 @@ routerAdd('PUT', '/backend/v1/movements/{id}', (e) => {
         posRec.set('quantity_e8', accQtyE8)
         posRec.set('average_price_cents', accAvgPriceCents)
         posRec.set('total_cost_cents', accTotalCostCents)
+
+        // Sincronizar maturity_date e indexer a partir do cadastro do ativo ou movimentação
+        let pairAssetRec = null
+        try {
+          pairAssetRec = txApp.findRecordById('assets', pair.astId)
+        } catch (_) {}
+
+        const effectiveDueDate =
+          dueDate ||
+          (pairAssetRec ? pairAssetRec.getString('due_date') : '') ||
+          posRec.getString('maturity_date') ||
+          ''
+        const effectiveIndexer =
+          indexerRate ||
+          (pairAssetRec ? pairAssetRec.getString('indexer_rate') : '') ||
+          posRec.getString('indexer') ||
+          ''
+        if (effectiveDueDate) {
+          posRec.set('maturity_date', effectiveDueDate)
+        }
+        if (effectiveIndexer) {
+          posRec.set('indexer', effectiveIndexer)
+        }
+
         posRec.set('last_recalculated_at', new Date().toISOString())
         txApp.saveNoValidate(posRec)
       }

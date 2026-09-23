@@ -17,16 +17,10 @@ cronAdd('daily_alerts_check', '0 6 * * *', () => {
   try {
     const alertsCol = $app.findCollectionByNameOrId('alerts')
 
-    // 1. Posições de renda fixa com maturity_date preenchida
+    // 1. Posições ativas (quantity_e8 > 0): verificar vencimento via maturity_date da posição ou due_date do ativo
     let positions = []
     try {
-      positions = $app.findRecordsByFilter(
-        'positions',
-        'maturity_date != null && maturity_date != "" && quantity_e8 > 0',
-        'maturity_date',
-        10000,
-        0,
-      )
+      positions = $app.findRecordsByFilter('positions', 'quantity_e8 > 0', 'created', 10000, 0)
     } catch (e) {
       console.log('[WARN][ALERTS_CRON] Erro ao buscar posições: ' + e.message)
     }
@@ -35,9 +29,36 @@ cronAdd('daily_alerts_check', '0 6 * * *', () => {
       const pos = positions[i]
       const userId = pos.getString('user_id')
       const posId = pos.id
-      const matDateStr = pos.getString('maturity_date').slice(0, 10)
 
-      if (!matDateStr || !userId) continue
+      if (!userId) continue
+
+      let posMatDate = pos.getString('maturity_date') || ''
+      let assetTicker = 'Título'
+      const astId = pos.getString('asset_id')
+
+      if (astId) {
+        try {
+          const ast = $app.findRecordById('assets', astId)
+          assetTicker = ast.getString('ticker') || ast.getString('name') || 'Título'
+          const astDueDate = ast.getString('due_date') || ''
+          const astIndexer = ast.getString('indexer_rate') || ''
+
+          // Se a posição não tem maturity_date mas o ativo tem, ou para manter sincronizado:
+          if (!posMatDate && astDueDate) {
+            posMatDate = astDueDate
+            try {
+              pos.set('maturity_date', astDueDate)
+              if (astIndexer && !pos.getString('indexer')) {
+                pos.set('indexer', astIndexer)
+              }
+              $app.saveNoValidate(pos)
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+
+      const matDateStr = posMatDate.slice(0, 10)
+      if (!matDateStr) continue
 
       // Calcular diferença em dias inteiros entre a data de vencimento e hoje
       const posDateParts = matDateStr.split('-')
@@ -55,15 +76,6 @@ cronAdd('daily_alerts_check', '0 6 * * *', () => {
       let alertTitle = ''
       let alertMessage = ''
       let alertSeverity = 'info'
-
-      let assetTicker = 'Título'
-      try {
-        const astId = pos.getString('asset_id')
-        if (astId) {
-          const ast = $app.findRecordById('assets', astId)
-          assetTicker = ast.getString('ticker') || ast.getString('name') || 'Título'
-        }
-      } catch (_) {}
 
       // Formatação simples da data para dd/mm/aaaa
       const dateFormatted = `${posDateParts[2]}/${posDateParts[1]}/${posDateParts[0]}`
@@ -331,16 +343,10 @@ routerAdd('POST', '/backend/v1/alerts/run-check', (e) => {
   try {
     const alertsCol = $app.findCollectionByNameOrId('alerts')
 
-    // 1. Posições de renda fixa com maturity_date preenchida
+    // 1. Posições ativas (quantity_e8 > 0): verificar vencimento via maturity_date da posição ou due_date do ativo
     let positions = []
     try {
-      positions = $app.findRecordsByFilter(
-        'positions',
-        'maturity_date != null && maturity_date != "" && quantity_e8 > 0',
-        'maturity_date',
-        10000,
-        0,
-      )
+      positions = $app.findRecordsByFilter('positions', 'quantity_e8 > 0', 'created', 10000, 0)
     } catch (err) {
       console.log('[WARN][ALERTS_CHECK] Erro ao buscar posições: ' + err.message)
     }
@@ -349,9 +355,35 @@ routerAdd('POST', '/backend/v1/alerts/run-check', (e) => {
       const pos = positions[i]
       const userId = pos.getString('user_id')
       const posId = pos.id
-      const matDateStr = pos.getString('maturity_date').slice(0, 10)
 
-      if (!matDateStr || !userId) continue
+      if (!userId) continue
+
+      let posMatDate = pos.getString('maturity_date') || ''
+      let assetTicker = 'Título'
+      const astId = pos.getString('asset_id')
+
+      if (astId) {
+        try {
+          const ast = $app.findRecordById('assets', astId)
+          assetTicker = ast.getString('ticker') || ast.getString('name') || 'Título'
+          const astDueDate = ast.getString('due_date') || ''
+          const astIndexer = ast.getString('indexer_rate') || ''
+
+          if (!posMatDate && astDueDate) {
+            posMatDate = astDueDate
+            try {
+              pos.set('maturity_date', astDueDate)
+              if (astIndexer && !pos.getString('indexer')) {
+                pos.set('indexer', astIndexer)
+              }
+              $app.saveNoValidate(pos)
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+
+      const matDateStr = posMatDate.slice(0, 10)
+      if (!matDateStr) continue
 
       const posDateParts = matDateStr.split('-')
       if (posDateParts.length !== 3) continue
@@ -368,15 +400,6 @@ routerAdd('POST', '/backend/v1/alerts/run-check', (e) => {
       let alertTitle = ''
       let alertMessage = ''
       let alertSeverity = 'info'
-
-      let assetTicker = 'Título'
-      try {
-        const astId = pos.getString('asset_id')
-        if (astId) {
-          const ast = $app.findRecordById('assets', astId)
-          assetTicker = ast.getString('ticker') || ast.getString('name') || 'Título'
-        }
-      } catch (_) {}
 
       const dateFormatted = `${posDateParts[2]}/${posDateParts[1]}/${posDateParts[0]}`
 

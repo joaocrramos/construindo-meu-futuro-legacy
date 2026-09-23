@@ -4,6 +4,23 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.101] - 2026-09-24 (Sincronização de vencimento de ativos para posições e motor de alertas)
+
+### Corrigido (Fixed)
+
+- **Motor de Alertas e Cron Diário (`pocketbase/hooks/alerts.js`)**:
+  - Ajustada a rotina de varredura de vencimentos (`daily_alerts_check` e `POST /backend/v1/alerts/run-check`) para buscar todas as posições ativas (`quantity_e8 > 0`) e resolver a data de vencimento tanto pelo campo `maturity_date` da posição quanto pelo `due_date` do cadastro do ativo vinculado (`assets`).
+  - Sincroniza retroativamente os campos `maturity_date` e `indexer` na posição caso estejam vazios e o ativo contenha os dados preenchidos.
+  - Preservadas integralmente as regras de janela de alertas (hoje com severidade warn, 30/15/7 dias) e anti-duplicidade estrita (`user_id`, `type`, `reference_id`, `due_date`).
+- **Hook de Movimentações (`pocketbase/hooks/movements.js`)**:
+  - Na criação e atualização de posições nos endpoints `POST` e `PUT /backend/v1/movements`, incluída a propagação de `maturity_date` e `indexer` a partir do cadastro do ativo (`assets`) ou dados da movimentação, eliminando a orfandade desses campos em posições futuras.
+- **Interface da Central de Alertas (`src/pages/overview/Alerts.tsx`)**:
+  - Adicionado o botão "Verificar Alertas" no cabeçalho da página, conectado a `triggerAlertsCheck()` (`POST /backend/v1/alerts/run-check`), permitindo ao usuário acionar e testar a varredura de alertas sob demanda.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.101` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.99] - 2026-09-23 (Polyfill de scrollIntoView para Radix Select nos testes de Ativos)
 
 ### Corrigido (Fixed)
