@@ -37,6 +37,7 @@ vi.mock('@/services/auditLogs', () => ({
 vi.mock('@/services/backups', () => ({
   listBackups: vi.fn(),
   createBackup: vi.fn(),
+  downloadBackup: vi.fn(),
 }))
 
 describe('AdminAuditPage', () => {
@@ -97,6 +98,55 @@ describe('AdminAuditPage', () => {
     await waitFor(() => {
       expect(screen.getByText('backup_20260923_snapshot.zip')).not.toBeNull()
       expect(screen.getByText(/1 MB/i)).not.toBeNull()
+    })
+  })
+
+  it('deve permitir disparar o download de um snapshot com sucesso', async () => {
+    vi.mocked(auditService.listAuditLogs).mockResolvedValue({
+      items: [],
+      totalItems: 0,
+      totalPages: 1,
+      page: 1,
+      perPage: 15,
+    })
+
+    vi.mocked(backupService.listBackups).mockResolvedValue({
+      items: [
+        {
+          key: 'backup_20260923_download_test.zip',
+          size: 2048576,
+          modified: '2026-09-23T11:00:00Z',
+        },
+      ],
+      total: 1,
+    })
+
+    const fakeBlob = new Blob(['fake zip content'], { type: 'application/zip' })
+    vi.mocked(backupService.downloadBackup).mockResolvedValue(fakeBlob)
+
+    // Mock de window.URL.createObjectURL e revokeObjectURL
+    const createObjectURLMock = vi.fn(() => 'blob:http://localhost/fake-blob-url')
+    const revokeObjectURLMock = vi.fn()
+    window.URL.createObjectURL = createObjectURLMock
+    window.URL.revokeObjectURL = revokeObjectURLMock
+
+    render(<AdminAuditPage />)
+
+    const backupsTab = screen.getByRole('tab', { name: /Backups & Restore B2/i })
+    fireEvent.click(backupsTab)
+
+    await waitFor(() => {
+      expect(screen.getByText('backup_20260923_download_test.zip')).not.toBeNull()
+    })
+
+    const downloadButton = screen.getByRole('button', { name: /Baixar/i })
+    expect(downloadButton).not.toBeNull()
+    fireEvent.click(downloadButton)
+
+    await waitFor(() => {
+      expect(backupService.downloadBackup).toHaveBeenCalledWith('backup_20260923_download_test.zip')
+      expect(createObjectURLMock).toHaveBeenCalledWith(fakeBlob)
+      expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/fake-blob-url')
     })
   })
 })

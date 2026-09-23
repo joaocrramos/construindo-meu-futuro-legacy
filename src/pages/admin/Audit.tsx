@@ -39,7 +39,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { listAuditLogs, type AuditLogRecord } from '@/services/auditLogs'
-import { listBackups, createBackup, type BackupItem } from '@/services/backups'
+import { listBackups, createBackup, downloadBackup, type BackupItem } from '@/services/backups'
 import { formatDateBRL } from '@/lib/formatters'
 import pb from '@/lib/pocketbase/client'
 
@@ -67,6 +67,7 @@ export default function AdminAuditPage() {
   // Estado de Backups
   const [backups, setBackups] = React.useState<BackupItem[]>([])
   const [loadingBackups, setLoadingBackups] = React.useState(false)
+  const [downloadingKey, setDownloadingKey] = React.useState<string | null>(null)
   const [creatingBackup, setCreatingBackup] = React.useState(false)
   const [backupModalOpen, setBackupModalOpen] = React.useState(false)
   const [customBackupName, setCustomBackupName] = React.useState('')
@@ -149,6 +150,31 @@ export default function AdminAuditPage() {
       loadBackupsData()
     }
   }, [loadBackupsData, activeTab])
+
+  // Disparar Download de Backup
+  const handleDownloadBackup = async (key: string) => {
+    if (downloadingKey) return
+    setDownloadingKey(key)
+    try {
+      const blob = await downloadBackup(key)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = key
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('Download concluído', {
+        description: `O arquivo ${key} foi baixado com sucesso.`,
+      })
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Falha ao baixar arquivo de backup'
+      toast.error('Erro no download do backup', { description: message })
+    } finally {
+      setDownloadingKey(null)
+    }
+  }
 
   // Disparar Criação de Backup
   const handleCreateBackup = async (e: React.FormEvent) => {
@@ -555,37 +581,63 @@ export default function AdminAuditPage() {
                       <th className="px-4 py-3">Tamanho</th>
                       <th className="px-4 py-3">Data de Modificação</th>
                       <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3 text-right">Integridade</th>
+                      <th className="px-4 py-3">Integridade</th>
+                      <th className="px-4 py-3 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {backups.map((b) => (
-                      <tr key={b.key} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-mono font-medium text-foreground">
-                          <div className="flex items-center gap-2">
-                            <Database className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>{b.key}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground font-mono">
-                          {formatBytes(b.size)}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground font-mono">
-                          {formatDateBRL(b.modified, { includeTime: true })}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-[11px]">
-                            Disponível
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">
-                          <span className="flex items-center justify-end gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Validado
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {backups.map((b) => {
+                      const isDownloadingThis = downloadingKey === b.key
+                      return (
+                        <tr key={b.key} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 font-mono font-medium text-foreground">
+                            <div className="flex items-center gap-2">
+                              <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>{b.key}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground font-mono">
+                            {formatBytes(b.size)}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground font-mono">
+                            {formatDateBRL(b.modified, { includeTime: true })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-[11px]">
+                              Disponível
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Validado
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 border-primary/20"
+                              onClick={() => handleDownloadBackup(b.key)}
+                              disabled={Boolean(downloadingKey)}
+                              title={`Baixar ${b.key}`}
+                            >
+                              {isDownloadingThis ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin text-primary" />
+                                  <span>Baixando...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                                  <span>Baixar</span>
+                                </>
+                              )}
+                            </Button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

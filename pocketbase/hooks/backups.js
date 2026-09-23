@@ -151,3 +151,137 @@ routerAdd('POST', '/backend/v1/backups', (e) => {
     })
   }
 })
+
+routerAdd('GET', '/backend/v1/backups/{key}/download', (e) => {
+  const authRecord = e.auth
+  if (!authRecord || authRecord.getString('role') !== 'admin') {
+    return e.json(403, {
+      code: 'UNAUTHORIZED',
+      message: 'Apenas administradores podem baixar arquivos de backup.',
+    })
+  }
+
+  const rawKey = e.request?.pathValue ? e.request.pathValue('key') : e.pathParam('key')
+  const key = (rawKey || '').trim()
+
+  // Validação contra path traversal e formato de chave
+  if (
+    !key ||
+    key.includes('/') ||
+    key.includes('\\') ||
+    key.includes('..') ||
+    !key.endsWith('.zip')
+  ) {
+    return e.json(400, {
+      code: 'INVALID_BACKUP_KEY',
+      message: 'Nome de snapshot de backup inválido.',
+    })
+  }
+
+  let baseUrl = $os.getenv('PB_INSTANCE_URL') || ''
+  if (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1)
+  }
+  const superToken = $os.getenv('PB_SUPERUSER_TOKEN') || ''
+
+  if (!baseUrl || !superToken) {
+    return e.json(500, {
+      code: 'BACKUP_CONFIG_MISSING',
+      message: 'Configuração do backend para gerenciamento de backups não está disponível.',
+    })
+  }
+
+  // 1. Validar se o backup informado realmente existe na lista da instância
+  try {
+    const listRes = $http.send({
+      url: baseUrl + '/api/backups',
+      method: 'GET',
+      headers: {
+        Authorization: superToken,
+      },
+      timeout: 15,
+    })
+
+    if (listRes.statusCode >= 400) {
+      console.log(
+        'CHECK_BACKUP_EXISTENCE_ERROR: status=' + listRes.statusCode + ' body=' + listRes.raw,
+      )
+      return e.json(listRes.statusCode, {
+        code: 'BACKUP_LIST_FAILED',
+        message:
+          'Falha ao validar lista de backups no PocketBase: ' +
+          (listRes.json?.message || listRes.raw || 'Erro desconhecido'),
+      })
+    }
+
+    const availableItems = listRes.json || []
+    const exists = availableItems.some((item) => item.key === key)
+    if (!exists) {
+      return e.json(404, {
+        code: 'BACKUP_NOT_FOUND',
+        message: 'Backup não encontrado.',
+      })
+    }
+  } catch (checkErr) {
+    console.log('CHECK_BACKUP_EXCEPTION: ' + checkErr.message)
+    return e.json(500, {
+      code: 'BACKUP_CHECK_EXCEPTION',
+      message: 'Erro interno ao verificar existência do backup: ' + checkErr.message,
+    })
+  }
+
+  // 2. Buscar o arquivo .zip na API nativa do PocketBase com token de superusuário
+  try {
+    const backupRes = $http.send({
+      url: baseUrl + '/api/backups/' + encodeURIComponent(key),
+      method: 'GET',
+      headers: {
+        Authorization: superToken,
+      },
+      timeout: 120,
+    })
+
+    if (backupRes.statusCode >= 400) {
+      console.log(
+        'DOWNLOAD_BACKUP_ERROR: status=' + backupRes.statusCode + ' body=' + backupRes.raw,
+      )
+      return e.json(backupRes.statusCode, {
+        code: 'BACKUP_DOWNLOAD_FAILED',
+        message:
+          'Falha ao baixar backup no PocketBase: ' +
+          (backupRes.json?.message || backupRes.raw || 'Erro desconhecido'),
+      })
+    }
+
+    // Registrar evento de auditoria BACKUP_DOWNLOADED
+    try {
+      const auditCol = $app.findCollectionByNameOrId('audit_logs')
+      const log = new Record(auditCol)
+      log.set('user_id', authRecord.id)
+      log.set('event_type', 'BACKUP_DOWNLOADED')
+      log.set('severity', 'info')
+      log.set('entity', 'backups')
+      log.set('entity_id', key)
+      log.set('summary', `Download de arquivo de backup efetuado: ${key}`)
+      log.set('details', {
+        key: key,
+        downloaded_by: authRecord.getString('email'),
+        timestamp: new Date().toISOString(),
+      })
+      $app.save(log)
+    } catch (auditErr) {
+      console.log('AUDIT_LOG_ERROR_BACKUP_DOWNLOAD: ' + auditErr.message)
+    }
+
+    // Transmitir arquivo com headers adequados
+    e.response.header().set('Content-Type', 'application/zip')
+    e.response.header().set('Content-Disposition', 'attachment; filename="' + key + '"')
+    return e.blob(200, 'application/zip', backupRes.raw)
+  } catch (err) {
+    console.log('DOWNLOAD_BACKUP_EXCEPTION: ' + err.message)
+    return e.json(500, {
+      code: 'BACKUP_DOWNLOAD_EXCEPTION',
+      message: 'Erro interno ao processar download do backup: ' + err.message,
+    })
+  }
+})
