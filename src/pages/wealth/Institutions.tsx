@@ -26,7 +26,7 @@ export default function InstitutionsPage() {
       <EmptyState
         icon={Building2}
         title="Nenhuma instituição cadastrada"
-        description="Cadastre as entidades onde você mantém contas e custódias (ex: Itaú, XP Investimentos, BTG Pactual, Nubank, Avenue)."
+        description="Cadastre as entidades onde você mantém contas e custódias (ex.: Itaú, XP Investimentos, BTG Pactual, Nubank, Avenue)."
         nextStepGuide="Após cadastrar a instituição, você poderá vincular contas correntes, contas de investimento e produtos a ela."
         actionLabel="Adicionar Instituição"
       />

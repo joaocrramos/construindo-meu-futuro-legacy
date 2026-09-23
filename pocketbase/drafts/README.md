@@ -30,3 +30,11 @@ Na infraestrutura atual do Skip Cloud / PocketBase:
 
 4. **Nomenclatura e Ordinais:**
    - Os arquivos de draft devem seguir rigorosamente o padrão `NNNN_snake_case.js` conforme alocado na ADR-019.
+
+---
+
+## 3. Critérios de Revisão e Regras de Frontend
+
+1. **Campos de Data nos Formulários:**
+   - Todo futuro formulário ou fluxo com campo de data deve obrigatoriamente usar o componente `DatePicker` reutilizável (`src/components/DatePicker.tsx`, baseado em Calendar + Popover com localização pt-BR).
+   - Nenhuma tela deve usar `input type="date"` nativo ou formatação manual ad-hoc de datas.

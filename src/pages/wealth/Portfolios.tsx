@@ -9,7 +9,7 @@ export default function PortfoliosPage() {
     <div className="space-y-6">
       <PageHeader
         title="Carteiras & Agrupamentos"
-        description="Agrupamentos patrimoniais estratégicos para separar objetivos (ex: Reserva, Aposentadoria, PJ, Família)."
+        description="Agrupamentos patrimoniais estratégicos para separar objetivos (ex.: Reserva, Aposentadoria, PJ, Família)."
         icon={FolderTree}
         breadcrumbs={[{ label: 'Patrimônio', href: '/wealth/portfolios' }, { label: 'Carteiras' }]}
         actions={
@@ -24,7 +24,7 @@ export default function PortfoliosPage() {
         icon={FolderTree}
         title="Nenhuma carteira patrimonial cadastrada"
         description="As carteiras são a base de organização do seu patrimônio. Elas permitem segmentar seus investimentos de acordo com o propósito e o horizonte de tempo."
-        nextStepGuide="Clique em 'Nova Carteira' para definir o nome (ex: Reserva de Liquidez) e o objetivo principal do agrupamento."
+        nextStepGuide="Clique em 'Nova Carteira' para definir o nome (ex.: Reserva de Liquidez) e o objetivo principal do agrupamento."
         actionLabel="Cadastrar Nova Carteira"
       />
     </div>

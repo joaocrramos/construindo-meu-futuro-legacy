@@ -30,7 +30,7 @@ export default function GoalsOverviewPage() {
         icon={Target}
         title="Nenhuma meta financeira cadastrada"
         description="Definir metas com valores e prazos claros permite mensurar a velocidade de acúmulo de capital e independência financeira."
-        nextStepGuide="Crie sua primeira meta (ex: Reserva de Emergência de R$ 50.000 ou Independência Financeira) e vincule suas carteiras."
+        nextStepGuide="Crie sua primeira meta (ex.: Reserva de Emergência de R$ 50.000 ou Independência Financeira) e vincule suas carteiras."
         actionLabel="Criar Primeira Meta"
         actionHref="/wealth/goals"
       />

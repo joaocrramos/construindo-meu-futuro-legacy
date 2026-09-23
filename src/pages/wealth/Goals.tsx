@@ -24,7 +24,7 @@ export default function WealthGoalsPage() {
         icon={Target}
         title="Nenhuma meta patrimonial configurada"
         description="As metas financeiras ajudam a manter a disciplina de investimento e mensuram o tempo estimado até a independência financeira."
-        nextStepGuide="Crie sua meta especificando o valor alvo (ex: R$ 1.000.000) e a data limite estimada."
+        nextStepGuide="Crie sua meta especificando o valor alvo (ex.: R$ 1.000.000) e a data limite estimada."
         actionLabel="Configurar Primeira Meta"
       />
     </div>

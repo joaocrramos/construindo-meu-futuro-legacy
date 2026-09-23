@@ -103,7 +103,7 @@ export default function Dashboard() {
         icon={FolderTree}
         title="Seu patrimônio ainda não possui registros cadastrados"
         description="Esta é a fundação do Construindo Meu Futuro. Para começar a monitorar a evolução dos seus investimentos, comece estruturando suas carteiras e instituições financeiras."
-        nextStepGuide="Acesse a seção 'Patrimônio > Carteiras' para cadastrar seu primeiro agrupamento estratégico (ex: Reserva de Emergência, Aposentadoria, Renda Passiva)."
+        nextStepGuide="Acesse a seção 'Patrimônio > Carteiras' para cadastrar seu primeiro agrupamento estratégico (ex.: Reserva de Emergência, Aposentadoria, Renda Passiva)."
         actionLabel="Cadastrar Primeira Carteira"
         actionHref="/wealth/portfolios"
         secondaryActionLabel="Ver Instituições"

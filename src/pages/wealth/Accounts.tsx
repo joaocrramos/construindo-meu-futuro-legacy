@@ -24,7 +24,7 @@ export default function AccountsPage() {
         icon={CreditCard}
         title="Nenhuma conta cadastrada"
         description="As contas representam os domicílios bancários e contas de custódia específicas dentro de cada instituição cadastrada."
-        nextStepGuide="Cadastre sua primeira conta (ex: Conta Corrente Itaú ou Conta Investimentos XP) para abrigar saldo em dinheiro e ativos."
+        nextStepGuide="Cadastre sua primeira conta (ex.: Conta Corrente Itaú ou Conta Investimentos XP) para abrigar saldo em dinheiro e ativos."
         actionLabel="Adicionar Conta"
       />
     </div>

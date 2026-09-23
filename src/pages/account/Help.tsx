@@ -61,9 +61,9 @@ export default function AccountHelpPage() {
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed">
                     Uma <strong>Conta</strong> representa o local físico/jurídico onde o dinheiro ou
-                    custódia está depositado (ex: Conta Corrente Itaú ou Conta XP). Uma{' '}
-                    <strong>Carteira</strong> é um agrupamento conceitual e estratégico (ex: Reserva
-                    de Emergência, Aposentadoria).
+                    custódia está depositado (ex.: Conta Corrente Itaú ou Conta XP). Uma{' '}
+                    <strong>Carteira</strong> é um agrupamento conceitual e estratégico (ex.:
+                    Reserva de Emergência, Aposentadoria).
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

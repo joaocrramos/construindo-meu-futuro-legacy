@@ -24,7 +24,7 @@ export default function AssetsPage() {
         icon={Coins}
         title="Nenhum ativo cadastrado no catálogo"
         description="O catálogo unifica tickers da B3, títulos públicos, fundos de investimento e outros bens antes de vincular a uma posição com quantidade e preço."
-        nextStepGuide="Cadastre ativos por código/ticker (ex: PETR4, HGLG11, Tesouro Selic 2029) para posterior lançamento de compras e posições."
+        nextStepGuide="Cadastre ativos por código/ticker (ex.: PETR4, HGLG11, Tesouro Selic 2029) para posterior lançamento de compras e posições."
         actionLabel="Adicionar Instrumento / Ativo"
       />
     </div>
