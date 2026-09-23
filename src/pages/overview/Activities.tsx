@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -13,26 +13,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
-import {
-  History,
-  Plus,
-  Loader2,
-  ArrowUpDown,
-  ArrowDownRight,
-  ArrowUpRight,
-  Search,
-  Filter,
-  Building2,
-  Coins,
-  Calendar,
-} from 'lucide-react'
+import { History, Plus, Loader2, ArrowDownRight, ArrowUpRight, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
   listMovements,
   formatQuantityE8,
   MOVEMENT_TYPE_LABELS,
   type MovementRecord,
-  type MovementType,
 } from '@/services/movements'
 import { listAccounts, type AccountRecord } from '@/services/accounts'
 import { listAssets, type AssetRecord } from '@/services/assets'

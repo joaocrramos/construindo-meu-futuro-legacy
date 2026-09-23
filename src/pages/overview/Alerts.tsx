@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
@@ -10,11 +10,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  ArrowUpDown,
-  Building2,
   ShieldAlert,
   Loader2,
-  TrendingDown,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listPositions, type PositionRecord } from '@/services/positions'
