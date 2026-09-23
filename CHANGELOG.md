@@ -4,6 +4,24 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.36] - 2026-09-23 (Estabilização definitiva de montagem de modal e CI sob carga adversa)
+
+### Corrigido (Fixed)
+
+- **Estabilização de Diálogos Radix no Setup Global (`src/test/setup.ts`)**:
+  - Mock global de `window.matchMedia` com suporte explícito a `prefers-reduced-motion: reduce`, eliminando atrasos e transições de entrada de componentes Radix (`Dialog`, `Tooltip`, etc.) no runner headless.
+  - Injeção global no `<head>` de folha de estilo que zera `animation-duration`, `animation-delay` e `transition-duration` durante a execução de testes, garantindo que o portal de diálogo monte deterministicamente no DOM.
+- **Configuração de Vitest e Timeouts (`vitest.config.ts`)**:
+  - Elevado `testTimeout: 10000` no Vitest para runners de CI com contenção de CPU.
+- **Robustez de Seleção e Montagem Assíncrona (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Nos testes 6 e 7 de Movimentações (`/wealth/movements`), adicionada sincronização explícita com `waitFor` aguardando o carregamento dos dados da página antes do clique em "Registrar primeira movimentação".
+  - Configurados timeouts adequados (4000ms) nas consultas `findByRole('dialog')` e `findByText` / `findByLabelText`.
+  - Todas as asserções de negócio e regras de formulário de Renda Fixa, Ações e Ativos em USD foram rigorosamente mantidas.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.36` sincronizada em `VERSION` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.35] - 2026-09-23 (Sincronização do repositório e confirmação de deploy)
 
 ### Operacional / Governança

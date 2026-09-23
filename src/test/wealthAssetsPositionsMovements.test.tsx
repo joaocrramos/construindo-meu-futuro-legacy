@@ -560,15 +560,26 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    const firstMovBtn = await screen.findByRole('button', {
+    // Aguarda carregar os dados antes de interagir com o botão da EmptyState
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: /Registrar primeira movimentação/i,
+        }),
+      ).not.toBeNull()
+    })
+
+    const firstMovBtn = screen.getByRole('button', {
       name: /Registrar primeira movimentação/i,
     })
     fireEvent.click(firstMovBtn)
 
-    await screen.findByRole('dialog')
+    await screen.findByRole('dialog', {}, { timeout: 4000 })
 
-    expect(await screen.findByText(/Renda Fixa — Detalhes do Título/i)).not.toBeNull()
-    const valorInput = await screen.findByLabelText(/Valor \(R\$\)/i)
+    expect(
+      await screen.findByText(/Renda Fixa — Detalhes do Título/i, {}, { timeout: 4000 }),
+    ).not.toBeNull()
+    const valorInput = await screen.findByLabelText(/Valor \(R\$\)/i, {}, { timeout: 4000 })
     expect(valorInput).not.toBeNull()
 
     // Preenche valor aplicado de R$ 5.000
@@ -576,7 +587,11 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       target: { value: '5000' },
     })
 
-    const submitBtn = await screen.findByRole('button', { name: /Confirmar Lançamento/i })
+    const submitBtn = await screen.findByRole(
+      'button',
+      { name: /Confirmar Lançamento/i },
+      { timeout: 4000 },
+    )
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
@@ -640,16 +655,27 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    const firstMovBtn = await screen.findByRole('button', {
+    // Aguarda carregar os dados antes de interagir com o botão da EmptyState
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: /Registrar primeira movimentação/i,
+        }),
+      ).not.toBeNull()
+    })
+
+    const firstMovBtn = screen.getByRole('button', {
       name: /Registrar primeira movimentação/i,
     })
     fireEvent.click(firstMovBtn)
 
-    await screen.findByRole('dialog')
+    await screen.findByRole('dialog', {}, { timeout: 4000 })
 
     // Com ativo internacional (USD), os campos específicos devem ser renderizados
-    expect(await screen.findByLabelText(/Outros Custos \(USD\)/i)).not.toBeNull()
-    expect(await screen.findByLabelText(/Preço \(USD\)/i)).not.toBeNull()
+    expect(
+      await screen.findByLabelText(/Outros Custos \(USD\)/i, {}, { timeout: 4000 }),
+    ).not.toBeNull()
+    expect(await screen.findByLabelText(/Preço \(USD\)/i, {}, { timeout: 4000 })).not.toBeNull()
     // Não exibe Emolumentos nem IR na compra de Stock
     expect(screen.queryByLabelText(/^Emolumentos/i)).toBeNull()
     expect(screen.queryByLabelText(/IR/i)).toBeNull()
