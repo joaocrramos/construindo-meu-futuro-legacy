@@ -81,6 +81,10 @@ describe('Fluxo de Convites (Invite-Only)', () => {
     const emailInput = screen.getByPlaceholderText(/convidado@exemplo.com/i)
     fireEvent.change(emailInput, { target: { value: 'novo@teste.com' } })
 
+    // Verificar seletor de papel estilizado
+    expect(screen.getByLabelText(/Papel de Acesso/i)).not.toBeNull()
+    expect(screen.getByText(/Usuário Comum/i)).not.toBeNull()
+
     const submitBtn = screen.getByRole('button', { name: /Emitir Convite Seguro/i })
     fireEvent.click(submitBtn)
 
@@ -90,7 +94,29 @@ describe('Fluxo de Convites (Invite-Only)', () => {
     })
   })
 
-  it('3. RegisterPage valida token válido e preenche e-mail em modo somente leitura', async () => {
+  it('3. AdminInvitesPage renderiza o seletor de papel com classes semânticas de tema e acessibilidade', async () => {
+    vi.mocked(invitesService.listInvitations).mockResolvedValue([])
+
+    render(
+      <MemoryRouter>
+        <AdminInvitesPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Nenhum convite pendente ou ativo emitido/i)).not.toBeNull()
+    })
+
+    const createBtn = screen.getByRole('button', { name: /Gerar Novo Convite/i })
+    fireEvent.click(createBtn)
+
+    const roleTrigger = screen.getByRole('combobox', { name: /Papel de Acesso/i })
+    expect(roleTrigger).not.toBeNull()
+    expect(roleTrigger.className).toContain('bg-background')
+    expect(roleTrigger.className).toContain('text-foreground')
+  })
+
+  it('4. RegisterPage valida token válido e preenche e-mail em modo somente leitura', async () => {
     vi.mocked(invitesService.validateInvitation).mockResolvedValue({
       valid: true,
       email: 'autorizado@empresa.com',

@@ -16,6 +16,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from 'sonner'
 import {
   listInvitations,
@@ -171,15 +178,23 @@ export default function AdminInvitesPage() {
                   <Label htmlFor="invRole" className="text-xs font-semibold">
                     Papel de Acesso
                   </Label>
-                  <select
-                    id="invRole"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as 'user' | 'admin')}
-                    className="w-full h-10 px-3 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="user">Usuário Comum (user)</option>
-                    <option value="admin">Administrador (admin)</option>
-                  </select>
+                  <Select value={role} onValueChange={(value: 'user' | 'admin') => setRole(value)}>
+                    <SelectTrigger
+                      id="invRole"
+                      aria-label="Papel de Acesso"
+                      className="w-full h-10 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                    >
+                      <SelectValue placeholder="Selecione o papel de acesso" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      <SelectItem value="user" className="text-xs">
+                        Usuário Comum (user)
+                      </SelectItem>
+                      <SelectItem value="admin" className="text-xs">
+                        Administrador (admin)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="p-3 rounded-lg bg-secondary/50 text-[11px] text-muted-foreground leading-relaxed">

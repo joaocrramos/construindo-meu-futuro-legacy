@@ -15,6 +15,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from 'sonner'
 import {
   listInstitutions,
@@ -187,18 +194,35 @@ export default function InstitutionsPage() {
                 <Label htmlFor="instType" className="text-xs font-semibold">
                   Tipo de Instituição *
                 </Label>
-                <select
-                  id="instType"
+                <Select
                   value={institutionType}
-                  onChange={(e) => setInstitutionType(e.target.value as InstitutionType)}
-                  className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  onValueChange={(val: InstitutionType) => setInstitutionType(val)}
                 >
-                  <option value="bank">Banco Comercial</option>
-                  <option value="broker">Corretora de Valores</option>
-                  <option value="crypto_exchange">Exchange Cripto</option>
-                  <option value="international">Internacional</option>
-                  <option value="other">Outro</option>
-                </select>
+                  <SelectTrigger
+                    id="instType"
+                    aria-label="Tipo de Instituição"
+                    className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                  >
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover text-popover-foreground border-border">
+                    <SelectItem value="bank" className="text-xs">
+                      Banco Comercial
+                    </SelectItem>
+                    <SelectItem value="broker" className="text-xs">
+                      Corretora de Valores
+                    </SelectItem>
+                    <SelectItem value="crypto_exchange" className="text-xs">
+                      Exchange Cripto
+                    </SelectItem>
+                    <SelectItem value="international" className="text-xs">
+                      Internacional
+                    </SelectItem>
+                    <SelectItem value="other" className="text-xs">
+                      Outro
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">

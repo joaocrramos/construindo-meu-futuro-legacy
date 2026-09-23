@@ -15,6 +15,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from 'sonner'
 import {
   listAccounts,
@@ -199,20 +206,22 @@ export default function AccountsPage() {
                 <Label htmlFor="accInstitution" className="text-xs font-semibold">
                   Instituição Financeira *
                 </Label>
-                <select
-                  id="accInstitution"
-                  value={institutionId}
-                  onChange={(e) => setInstitutionId(e.target.value)}
-                  className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  required
-                >
-                  <option value="">Selecione uma instituição</option>
-                  {institutions.map((inst) => (
-                    <option key={inst.id} value={inst.id}>
-                      {inst.name} {!inst.is_active ? '(Inativa)' : ''}
-                    </option>
-                  ))}
-                </select>
+                <Select value={institutionId} onValueChange={(val) => setInstitutionId(val)}>
+                  <SelectTrigger
+                    id="accInstitution"
+                    aria-label="Instituição Financeira"
+                    className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                  >
+                    <SelectValue placeholder="Selecione uma instituição" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover text-popover-foreground border-border">
+                    {institutions.map((inst) => (
+                      <SelectItem key={inst.id} value={inst.id} className="text-xs">
+                        {inst.name} {!inst.is_active ? '(Inativa)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
@@ -234,19 +243,38 @@ export default function AccountsPage() {
                   <Label htmlFor="accType" className="text-xs font-semibold">
                     Tipo de Conta *
                   </Label>
-                  <select
-                    id="accType"
+                  <Select
                     value={accountType}
-                    onChange={(e) => setAccountType(e.target.value as AccountType)}
-                    className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    onValueChange={(val: AccountType) => setAccountType(val)}
                   >
-                    <option value="checking">Conta Corrente</option>
-                    <option value="investment">Conta Investimento</option>
-                    <option value="savings">Conta Poupança</option>
-                    <option value="international_checking">Internacional</option>
-                    <option value="cash">Caixa / Carteira Física</option>
-                    <option value="other">Outro</option>
-                  </select>
+                    <SelectTrigger
+                      id="accType"
+                      aria-label="Tipo de Conta"
+                      className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                    >
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      <SelectItem value="checking" className="text-xs">
+                        Conta Corrente
+                      </SelectItem>
+                      <SelectItem value="investment" className="text-xs">
+                        Conta Investimento
+                      </SelectItem>
+                      <SelectItem value="savings" className="text-xs">
+                        Conta Poupança
+                      </SelectItem>
+                      <SelectItem value="international_checking" className="text-xs">
+                        Internacional
+                      </SelectItem>
+                      <SelectItem value="cash" className="text-xs">
+                        Caixa / Carteira Física
+                      </SelectItem>
+                      <SelectItem value="other" className="text-xs">
+                        Outro
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5">
