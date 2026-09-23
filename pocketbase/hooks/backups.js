@@ -232,24 +232,104 @@ routerAdd('GET', '/backend/v1/backups/{key}/download', (e) => {
 
   // 2. Buscar o arquivo .zip na API nativa do PocketBase com token de superusuário
   try {
-    const backupRes = $http.send({
-      url: baseUrl + '/api/backups/' + encodeURIComponent(key),
-      method: 'GET',
-      headers: {
-        Authorization: superToken,
-      },
-      timeout: 120,
-    })
+    let backupRes = null
+    let authMethodUsed = ''
 
-    if (backupRes.statusCode >= 400) {
-      console.log(
-        'DOWNLOAD_BACKUP_ERROR: status=' + backupRes.statusCode + ' body=' + backupRes.raw,
-      )
-      return e.json(backupRes.statusCode, {
+    // Tentativa A: query param ?token= (comportamento padrão do PocketBase para download de arquivos/backups)
+    try {
+      const urlWithToken =
+        baseUrl +
+        '/api/backups/' +
+        encodeURIComponent(key) +
+        '?token=' +
+        encodeURIComponent(superToken)
+      const resQuery = $http.send({
+        url: urlWithToken,
+        method: 'GET',
+        timeout: 120,
+      })
+      if (resQuery.statusCode < 400) {
+        backupRes = resQuery
+        authMethodUsed = 'query_param_token'
+        console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via query param ?token=')
+      } else {
+        console.log(
+          'DOWNLOAD_BACKUP_TRY_QUERY_FAILED: status=' +
+            resQuery.statusCode +
+            ' body=' +
+            resQuery.raw,
+        )
+      }
+    } catch (tryQueryErr) {
+      console.log('DOWNLOAD_BACKUP_TRY_QUERY_EXCEPTION: ' + tryQueryErr.message)
+    }
+
+    // Tentativa B: header Authorization com token direto
+    if (!backupRes) {
+      try {
+        const resHeaderDirect = $http.send({
+          url: baseUrl + '/api/backups/' + encodeURIComponent(key),
+          method: 'GET',
+          headers: {
+            Authorization: superToken,
+          },
+          timeout: 120,
+        })
+        if (resHeaderDirect.statusCode < 400) {
+          backupRes = resHeaderDirect
+          authMethodUsed = 'header_authorization_direct'
+          console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via Authorization direct header')
+        } else {
+          console.log(
+            'DOWNLOAD_BACKUP_TRY_HEADER_FAILED: status=' +
+              resHeaderDirect.statusCode +
+              ' body=' +
+              resHeaderDirect.raw,
+          )
+        }
+      } catch (tryHeaderErr) {
+        console.log('DOWNLOAD_BACKUP_TRY_HEADER_EXCEPTION: ' + tryHeaderErr.message)
+      }
+    }
+
+    // Tentativa C: header Authorization com prefixo Bearer
+    if (!backupRes) {
+      try {
+        const authHeader = superToken.startsWith('Bearer ') ? superToken : 'Bearer ' + superToken
+        const resHeaderBearer = $http.send({
+          url: baseUrl + '/api/backups/' + encodeURIComponent(key),
+          method: 'GET',
+          headers: {
+            Authorization: authHeader,
+          },
+          timeout: 120,
+        })
+        if (resHeaderBearer.statusCode < 400) {
+          backupRes = resHeaderBearer
+          authMethodUsed = 'header_authorization_bearer'
+          console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via Authorization Bearer header')
+        } else {
+          console.log(
+            'DOWNLOAD_BACKUP_TRY_BEARER_FAILED: status=' +
+              resHeaderBearer.statusCode +
+              ' body=' +
+              resHeaderBearer.raw,
+          )
+        }
+      } catch (tryBearerErr) {
+        console.log('DOWNLOAD_BACKUP_TRY_BEARER_EXCEPTION: ' + tryBearerErr.message)
+      }
+    }
+
+    if (!backupRes || backupRes.statusCode >= 400) {
+      const errStatus = backupRes ? backupRes.statusCode : 500
+      const errRaw = backupRes ? backupRes.raw : 'Nenhuma tentativa obteve resposta com sucesso'
+      console.log('DOWNLOAD_BACKUP_ERROR: status=' + errStatus + ' body=' + errRaw)
+      return e.json(errStatus, {
         code: 'BACKUP_DOWNLOAD_FAILED',
         message:
           'Falha ao baixar backup no PocketBase: ' +
-          (backupRes.json?.message || backupRes.raw || 'Erro desconhecido'),
+          (backupRes?.json?.message || errRaw || 'Erro desconhecido'),
       })
     }
 
@@ -266,6 +346,7 @@ routerAdd('GET', '/backend/v1/backups/{key}/download', (e) => {
       log.set('details', {
         key: key,
         downloaded_by: authRecord.getString('email'),
+        auth_method: authMethodUsed,
         timestamp: new Date().toISOString(),
       })
       $app.save(log)
