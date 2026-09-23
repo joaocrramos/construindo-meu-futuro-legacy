@@ -269,7 +269,10 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
         movRecord.set('notes', notes)
       }
 
-      txApp.save(movRecord)
+      // O validador "required" nativo do PocketBase trata 0 numérico como valor em branco (IsZero).
+      // Como o endpoint já valida estritamente todos os campos e regras de negócio antes de salvar,
+      // usa-se saveNoValidate nos saves para contornar a rejeição de 0 em number required (fees_cents, taxes_cents, balance_cents, quantity_e8).
+      txApp.saveNoValidate(movRecord)
       createdMovementId = movRecord.id
       finalCreatedDate = movRecord.getString('created')
       finalUpdatedDate = movRecord.getString('updated')
@@ -320,7 +323,7 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
       balanceRec.set('balance_cents', newBalanceCents)
       balanceRec.set('last_movement_id', createdMovementId)
       balanceRec.set('last_recalculated_at', new Date().toISOString())
-      txApp.save(balanceRec)
+      txApp.saveNoValidate(balanceRec)
 
       // 3. Atualizar positions se houver asset_id
       if (assetId) {
@@ -404,7 +407,7 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
         posRec.set('average_price_cents', accAvgPriceCents)
         posRec.set('total_cost_cents', accTotalCostCents)
         posRec.set('last_recalculated_at', new Date().toISOString())
-        txApp.save(posRec)
+        txApp.saveNoValidate(posRec)
       }
     })
   } catch (err) {
