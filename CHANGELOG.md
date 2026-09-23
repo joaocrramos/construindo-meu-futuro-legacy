@@ -4,6 +4,16 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.35] - 2026-09-23 (Sincronização do repositório e confirmação de deploy)
+
+### Operacional / Governança
+
+- **Confirmação e alinhamento de sincronização**:
+  - Validação da integridade da esteira de qualidade (check de versão, migrations, lint, typecheck, testes e build).
+  - Garantia de que todos os ajustes das rodadas anteriores (configuração global do Vitest, isolamento de DOM com cleanup e estabilização das suítes de testes de Movimentações e Central de Alertas) estão persistidos e integrados à branch principal.
+
+---
+
 ## [0.0.34] - 2026-09-23 (Conclusão da rodada de correção do CI e setup global com cleanup)
 
 ### Corrigido (Fixed)
