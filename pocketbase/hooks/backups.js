@@ -230,107 +230,286 @@ routerAdd('GET', '/backend/v1/backups/{key}/download', (e) => {
     })
   }
 
-  // 2. Buscar o arquivo .zip na API nativa do PocketBase com token de superusuário
+  // 2. Tentar entrega primária diretamente via filesystem local do PocketBase
   try {
-    let backupRes = null
+    let zipBytes = null
     let authMethodUsed = ''
 
-    // Tentativa A: query param ?token= (comportamento padrão do PocketBase para download de arquivos/backups)
+    // Descobrir candidatos de diretórios de backup locais
+    const candidateDirs = []
+    let dataDir = ''
     try {
-      const urlWithToken =
-        baseUrl +
-        '/api/backups/' +
-        encodeURIComponent(key) +
-        '?token=' +
-        encodeURIComponent(superToken)
-      const resQuery = $http.send({
-        url: urlWithToken,
-        method: 'GET',
-        timeout: 120,
-      })
-      if (resQuery.statusCode < 400) {
-        backupRes = resQuery
-        authMethodUsed = 'query_param_token'
-        console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via query param ?token=')
+      if (typeof $app.dataDir === 'function') {
+        dataDir = $app.dataDir() || ''
+      }
+    } catch (_) {}
+
+    if (dataDir) {
+      const cleanDataDir = dataDir.endsWith('/') ? dataDir.slice(0, -1) : dataDir
+      candidateDirs.push(cleanDataDir + '/pb_backup')
+      candidateDirs.push(cleanDataDir + '/backups')
+      candidateDirs.push(cleanDataDir + '/pb_data/pb_backup')
+      // Diretório irmão do dataDir
+      const lastSlashIdx = cleanDataDir.lastIndexOf('/')
+      if (lastSlashIdx > 0) {
+        const parentDir = cleanDataDir.slice(0, lastSlashIdx)
+        candidateDirs.push(parentDir + '/pb_backup')
+        candidateDirs.push(parentDir + '/backups')
+      }
+    }
+    candidateDirs.push('pb_backup')
+    candidateDirs.push('backups')
+    candidateDirs.push('./pb_backup')
+    candidateDirs.push('./backups')
+    candidateDirs.push('/pb_backup')
+    candidateDirs.push('/data/pb_backup')
+
+    let resolvedBackupDir = ''
+    let resolvedFilePath = ''
+
+    // Função auxiliar inline para verificar existência de arquivo
+    const checkFileStat = (path) => {
+      try {
+        if (typeof $os !== 'undefined' && typeof $os.stat === 'function') {
+          const st = $os.stat(path)
+          return !!st
+        }
+      } catch (_) {}
+      return false
+    }
+
+    // Função auxiliar inline para ler bytes de um arquivo
+    const readFileBytes = (filePath, dirPath, fileName) => {
+      // 1. $os.readFile
+      try {
+        if (typeof $os !== 'undefined' && typeof $os.readFile === 'function') {
+          const content = $os.readFile(filePath)
+          if (content) return content
+        }
+      } catch (rfErr) {
+        console.log('READ_FILE_METHOD_OS_READFILE_FAIL: ' + rfErr.message)
+      }
+
+      // 2. $os.dirFS
+      try {
+        if (typeof $os !== 'undefined' && typeof $os.dirFS === 'function') {
+          const fs = $os.dirFS(dirPath)
+          if (fs) {
+            if (typeof fs.readFile === 'function') {
+              const content = fs.readFile(fileName)
+              if (content) return content
+            }
+            if (typeof fs.open === 'function') {
+              const file = fs.open(fileName)
+              if (file && typeof file.readAll === 'function') {
+                const content = file.readAll()
+                if (typeof file.close === 'function') file.close()
+                if (content) return content
+              }
+              if (file && typeof file.read === 'function') {
+                const content = file.read()
+                if (typeof file.close === 'function') file.close()
+                if (content) return content
+              }
+            }
+          }
+        }
+      } catch (dfsErr) {
+        console.log('READ_FILE_METHOD_OS_DIRFS_FAIL: ' + dfsErr.message)
+      }
+
+      // 3. $filesystem ou $os.open
+      try {
+        if (typeof $os !== 'undefined' && typeof $os.open === 'function') {
+          const file = $os.open(filePath)
+          if (file) {
+            if (typeof file.readAll === 'function') {
+              const content = file.readAll()
+              if (typeof file.close === 'function') file.close()
+              if (content) return content
+            }
+            if (typeof file.read === 'function') {
+              const content = file.read()
+              if (typeof file.close === 'function') file.close()
+              if (content) return content
+            }
+          }
+        }
+      } catch (oErr) {
+        console.log('READ_FILE_METHOD_OS_OPEN_FAIL: ' + oErr.message)
+      }
+
+      return null
+    }
+
+    for (let i = 0; i < candidateDirs.length; i++) {
+      const cDir = candidateDirs[i]
+      const targetFile = cDir.endsWith('/') ? cDir + key : cDir + '/' + key
+      if (checkFileStat(targetFile)) {
+        resolvedBackupDir = cDir
+        resolvedFilePath = targetFile
+        console.log(
+          'FOUND_BACKUP_LOCAL_FILE: candidate="' + cDir + '" fullPath="' + targetFile + '"',
+        )
+        break
+      }
+    }
+
+    if (!resolvedFilePath) {
+      // Tentar verificar se algum diretório existe e se conseguimos listar arquivos
+      for (let i = 0; i < candidateDirs.length; i++) {
+        const cDir = candidateDirs[i]
+        try {
+          if (typeof $os !== 'undefined' && typeof $os.readDir === 'function') {
+            const entries = $os.readDir(cDir)
+            if (entries && entries.length) {
+              console.log('PROBED_CANDIDATE_DIR: "' + cDir + '" entries=' + entries.length)
+              for (let j = 0; j < entries.length; j++) {
+                const name =
+                  typeof entries[j].name === 'function' ? entries[j].name() : entries[j].name
+                if (name === key) {
+                  resolvedBackupDir = cDir
+                  resolvedFilePath = cDir.endsWith('/') ? cDir + key : cDir + '/' + key
+                  console.log('FOUND_BACKUP_VIA_READDIR: candidate="' + cDir + '"')
+                  break
+                }
+              }
+              if (resolvedFilePath) break
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (resolvedFilePath) {
+      const readContent = readFileBytes(resolvedFilePath, resolvedBackupDir, key)
+      if (readContent) {
+        zipBytes = readContent
+        authMethodUsed = 'local_filesystem'
+        console.log(
+          'DOWNLOAD_BACKUP_SUCCESS: served directly via local filesystem from ' + resolvedFilePath,
+        )
       } else {
         console.log(
-          'DOWNLOAD_BACKUP_TRY_QUERY_FAILED: status=' +
-            resQuery.statusCode +
-            ' body=' +
-            resQuery.raw,
+          'DOWNLOAD_BACKUP_LOCAL_READ_FAILED: file found at ' +
+            resolvedFilePath +
+            ' but could not read content',
         )
       }
-    } catch (tryQueryErr) {
-      console.log('DOWNLOAD_BACKUP_TRY_QUERY_EXCEPTION: ' + tryQueryErr.message)
+    } else {
+      console.log(
+        'DOWNLOAD_BACKUP_NO_LOCAL_CANDIDATE: target ' +
+          key +
+          ' not found in tested candidate dirs (dataDir=' +
+          dataDir +
+          ')',
+      )
     }
 
-    // Tentativa B: header Authorization com token direto
-    if (!backupRes) {
+    // 3. Fallback: tentativas HTTP caso a leitura local não tenha obtido os bytes
+    if (!zipBytes) {
+      console.log('DOWNLOAD_BACKUP_FALLBACK_HTTP: attempting native HTTP endpoint fallback...')
+      let backupRes = null
+
+      // Tentativa A: query param ?token=
       try {
-        const resHeaderDirect = $http.send({
-          url: baseUrl + '/api/backups/' + encodeURIComponent(key),
+        const urlWithToken =
+          baseUrl +
+          '/api/backups/' +
+          encodeURIComponent(key) +
+          '?token=' +
+          encodeURIComponent(superToken)
+        const resQuery = $http.send({
+          url: urlWithToken,
           method: 'GET',
-          headers: {
-            Authorization: superToken,
-          },
           timeout: 120,
         })
-        if (resHeaderDirect.statusCode < 400) {
-          backupRes = resHeaderDirect
-          authMethodUsed = 'header_authorization_direct'
-          console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via Authorization direct header')
+        if (resQuery.statusCode < 400) {
+          backupRes = resQuery
+          authMethodUsed = 'query_param_token'
+          console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via query param ?token=')
         } else {
           console.log(
-            'DOWNLOAD_BACKUP_TRY_HEADER_FAILED: status=' +
-              resHeaderDirect.statusCode +
+            'DOWNLOAD_BACKUP_TRY_QUERY_FAILED: status=' +
+              resQuery.statusCode +
               ' body=' +
-              resHeaderDirect.raw,
+              resQuery.raw,
           )
         }
-      } catch (tryHeaderErr) {
-        console.log('DOWNLOAD_BACKUP_TRY_HEADER_EXCEPTION: ' + tryHeaderErr.message)
+      } catch (tryQueryErr) {
+        console.log('DOWNLOAD_BACKUP_TRY_QUERY_EXCEPTION: ' + tryQueryErr.message)
       }
-    }
 
-    // Tentativa C: header Authorization com prefixo Bearer
-    if (!backupRes) {
-      try {
-        const authHeader = superToken.startsWith('Bearer ') ? superToken : 'Bearer ' + superToken
-        const resHeaderBearer = $http.send({
-          url: baseUrl + '/api/backups/' + encodeURIComponent(key),
-          method: 'GET',
-          headers: {
-            Authorization: authHeader,
-          },
-          timeout: 120,
+      // Tentativa B: header Authorization com token direto
+      if (!backupRes) {
+        try {
+          const resHeaderDirect = $http.send({
+            url: baseUrl + '/api/backups/' + encodeURIComponent(key),
+            method: 'GET',
+            headers: {
+              Authorization: superToken,
+            },
+            timeout: 120,
+          })
+          if (resHeaderDirect.statusCode < 400) {
+            backupRes = resHeaderDirect
+            authMethodUsed = 'header_authorization_direct'
+            console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via Authorization direct header')
+          } else {
+            console.log(
+              'DOWNLOAD_BACKUP_TRY_HEADER_FAILED: status=' +
+                resHeaderDirect.statusCode +
+                ' body=' +
+                resHeaderDirect.raw,
+            )
+          }
+        } catch (tryHeaderErr) {
+          console.log('DOWNLOAD_BACKUP_TRY_HEADER_EXCEPTION: ' + tryHeaderErr.message)
+        }
+      }
+
+      // Tentativa C: header Authorization com prefixo Bearer
+      if (!backupRes) {
+        try {
+          const authHeader = superToken.startsWith('Bearer ') ? superToken : 'Bearer ' + superToken
+          const resHeaderBearer = $http.send({
+            url: baseUrl + '/api/backups/' + encodeURIComponent(key),
+            method: 'GET',
+            headers: {
+              Authorization: authHeader,
+            },
+            timeout: 120,
+          })
+          if (resHeaderBearer.statusCode < 400) {
+            backupRes = resHeaderBearer
+            authMethodUsed = 'header_authorization_bearer'
+            console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via Authorization Bearer header')
+          } else {
+            console.log(
+              'DOWNLOAD_BACKUP_TRY_BEARER_FAILED: status=' +
+                resHeaderBearer.statusCode +
+                ' body=' +
+                resHeaderBearer.raw,
+            )
+          }
+        } catch (tryBearerErr) {
+          console.log('DOWNLOAD_BACKUP_TRY_BEARER_EXCEPTION: ' + tryBearerErr.message)
+        }
+      }
+
+      if (backupRes && backupRes.statusCode < 400) {
+        zipBytes = backupRes.raw
+      } else {
+        const errStatus = backupRes ? backupRes.statusCode : 500
+        const errRaw = backupRes ? backupRes.raw : 'Nenhuma tentativa obteve resposta com sucesso'
+        console.log('DOWNLOAD_BACKUP_ERROR: status=' + errStatus + ' body=' + errRaw)
+        return e.json(errStatus, {
+          code: 'BACKUP_DOWNLOAD_FAILED',
+          message:
+            'Falha ao baixar backup no PocketBase: ' +
+            (backupRes?.json?.message || errRaw || 'Erro desconhecido'),
         })
-        if (resHeaderBearer.statusCode < 400) {
-          backupRes = resHeaderBearer
-          authMethodUsed = 'header_authorization_bearer'
-          console.log('DOWNLOAD_BACKUP_SUCCESS: authenticated via Authorization Bearer header')
-        } else {
-          console.log(
-            'DOWNLOAD_BACKUP_TRY_BEARER_FAILED: status=' +
-              resHeaderBearer.statusCode +
-              ' body=' +
-              resHeaderBearer.raw,
-          )
-        }
-      } catch (tryBearerErr) {
-        console.log('DOWNLOAD_BACKUP_TRY_BEARER_EXCEPTION: ' + tryBearerErr.message)
       }
-    }
-
-    if (!backupRes || backupRes.statusCode >= 400) {
-      const errStatus = backupRes ? backupRes.statusCode : 500
-      const errRaw = backupRes ? backupRes.raw : 'Nenhuma tentativa obteve resposta com sucesso'
-      console.log('DOWNLOAD_BACKUP_ERROR: status=' + errStatus + ' body=' + errRaw)
-      return e.json(errStatus, {
-        code: 'BACKUP_DOWNLOAD_FAILED',
-        message:
-          'Falha ao baixar backup no PocketBase: ' +
-          (backupRes?.json?.message || errRaw || 'Erro desconhecido'),
-      })
     }
 
     // Registrar evento de auditoria BACKUP_DOWNLOADED
@@ -357,7 +536,7 @@ routerAdd('GET', '/backend/v1/backups/{key}/download', (e) => {
     // Transmitir arquivo com headers adequados
     e.response.header().set('Content-Type', 'application/zip')
     e.response.header().set('Content-Disposition', 'attachment; filename="' + key + '"')
-    return e.blob(200, 'application/zip', backupRes.raw)
+    return e.blob(200, 'application/zip', zipBytes)
   } catch (err) {
     console.log('DOWNLOAD_BACKUP_EXCEPTION: ' + err.message)
     return e.json(500, {
