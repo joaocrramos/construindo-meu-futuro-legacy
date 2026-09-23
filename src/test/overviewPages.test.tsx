@@ -17,6 +17,7 @@ import * as movService from '@/services/movements'
 import * as accService from '@/services/accounts'
 import * as assetService from '@/services/assets'
 import * as portService from '@/services/portfolios'
+import pb from '@/lib/pocketbase/client'
 
 vi.mock('@/services/accountBalances')
 vi.mock('@/services/positions')
@@ -653,21 +654,11 @@ describe('Telas de Overview conectadas a dados reais', () => {
 
   describe('8. Central de Alertas (/overview/alerts)', () => {
     it('renderiza EmptyState quando não há alertas ativos', async () => {
-      vi.mocked(accBalService.listAccountBalances).mockResolvedValue([
-        {
-          id: 'bal_ok',
-          user_id: 'usr_1',
-          account_id: 'acc_1',
-          currency: 'BRL',
-          balance_cents: 10000,
-          last_recalculated_at: new Date().toISOString(),
-          created: new Date().toISOString(),
-          updated: new Date().toISOString(),
-        },
-      ])
-      vi.mocked(posService.listPositions).mockResolvedValue([])
-      vi.mocked(accService.listAccounts).mockResolvedValue([])
-      vi.mocked(assetService.listAssets).mockResolvedValue([])
+      // AlertsPage agora consome a collection 'alerts' via pb.collection('alerts')
+      vi.mocked(pb.collection).mockReturnValue({
+        getFullList: vi.fn().mockResolvedValue([]),
+        update: vi.fn().mockResolvedValue({}),
+      } as any)
 
       render(
         <MemoryRouter>
@@ -680,35 +671,48 @@ describe('Telas de Overview conectadas a dados reais', () => {
       })
     })
 
-    it('renderiza alerta crítico quando uma conta possui saldo negativo em caixa', async () => {
-      vi.mocked(accBalService.listAccountBalances).mockResolvedValue([
-        {
-          id: 'bal_neg',
-          user_id: 'usr_1',
-          account_id: 'acc_1',
-          currency: 'BRL',
-          balance_cents: -45000, // - R$ 450,00
-          last_recalculated_at: new Date().toISOString(),
-          created: new Date().toISOString(),
-          updated: new Date().toISOString(),
-          expand: {
-            account_id: {
-              id: 'acc_1',
-              user_id: 'usr_1',
-              institution_id: 'inst_1',
-              name: 'Bradesco Corrente',
-              account_type: 'checking',
-              currency: 'BRL',
-              is_active: true,
-              created: new Date().toISOString(),
-              updated: new Date().toISOString(),
-            },
+    it('renderiza alertas vindos da collection alerts com badges e botão de marcar como lida', async () => {
+      vi.mocked(pb.collection).mockReturnValue({
+        getFullList: vi.fn().mockResolvedValue([
+          {
+            id: 'alt_1',
+            user_id: 'usr_1',
+            type: 'balance_negative',
+            title: 'Saldo Negativo em Caixa: Bradesco Corrente',
+            message: 'A conta Bradesco Corrente apresenta saldo devedor de BRL -450,00.',
+            severity: 'warn',
+            reference_id: 'acc_1',
+            is_read: false,
+            created: '2026-09-23T06:00:00.000Z',
+            updated: '2026-09-23T06:00:00.000Z',
           },
-        },
-      ])
-      vi.mocked(posService.listPositions).mockResolvedValue([])
-      vi.mocked(accService.listAccounts).mockResolvedValue([])
-      vi.mocked(assetService.listAssets).mockResolvedValue([])
+          {
+            id: 'alt_2',
+            user_id: 'usr_1',
+            type: 'maturity_upcoming',
+            title: 'Vencimento em 30 dias: CDB Banco Master',
+            message: 'O título CDB Banco Master vencerá em 30 dias.',
+            severity: 'info',
+            reference_id: 'pos_1',
+            due_date: '2026-10-23T00:00:00.000Z',
+            is_read: false,
+            created: '2026-09-23T06:00:00.000Z',
+            updated: '2026-09-23T06:00:00.000Z',
+          },
+        ]),
+        update: vi.fn().mockResolvedValue({
+          id: 'alt_1',
+          user_id: 'usr_1',
+          type: 'balance_negative',
+          title: 'Saldo Negativo em Caixa: Bradesco Corrente',
+          message: 'A conta Bradesco Corrente apresenta saldo devedor de BRL -450,00.',
+          severity: 'warn',
+          reference_id: 'acc_1',
+          is_read: true,
+          created: '2026-09-23T06:00:00.000Z',
+          updated: '2026-09-23T06:01:00.000Z',
+        }),
+      } as any)
 
       render(
         <MemoryRouter>
@@ -718,7 +722,8 @@ describe('Telas de Overview conectadas a dados reais', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Saldo Negativo em Caixa: Bradesco Corrente/i)).not.toBeNull()
-        expect(screen.getByText('Crítico')).not.toBeNull()
+        expect(screen.getByText(/Vencimento em 30 dias: CDB Banco Master/i)).not.toBeNull()
+        expect(screen.getByText(/2 alerta\(s\) não lido\(s\)/i)).not.toBeNull()
       })
     })
   })

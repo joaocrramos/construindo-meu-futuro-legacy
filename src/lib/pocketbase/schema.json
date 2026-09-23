@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T15:59:12.697Z",
+  "generatedAt": "2026-09-23T16:25:07.381Z",
   "collections": [
     {
       "name": "users",
@@ -899,6 +899,88 @@
         "CREATE INDEX idx_movements_user_asset_date ON movements (user_id, asset_id, date DESC)",
         "CREATE UNIQUE INDEX idx_movements_user_idempotency ON movements (user_id, idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key != ''",
         "CREATE UNIQUE INDEX idx_movements_reversal_unique ON movements (reversal_of_id) WHERE movement_type = 'reversal' AND reversal_of_id IS NOT NULL"
+      ]
+    },
+    {
+      "name": "alerts",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": null,
+        "update": "@request.auth.id != '' && user_id = @request.auth.id",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["maturity_upcoming", "maturity_today", "balance_negative", "system"]
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "severity",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["info", "warn", "critical"]
+        },
+        {
+          "name": "reference_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_read",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_alerts_user_read_created ON alerts (user_id, is_read, created DESC)",
+        "CREATE INDEX idx_alerts_user_type ON alerts (user_id, type)"
       ]
     }
   ]

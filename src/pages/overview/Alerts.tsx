@@ -4,13 +4,34 @@ import { EmptyState } from '@/components/EmptyState'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
-import { Bell, CheckCircle2, AlertTriangle, Clock, ShieldAlert, Loader2 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Bell,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ShieldAlert,
+  Loader2,
+  Check,
+  CheckCheck,
+  Calendar,
+  RefreshCw,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { listPositions, type PositionRecord } from '@/services/positions'
-import { listAccounts, type AccountRecord } from '@/services/accounts'
-import { listAssets, type AssetRecord } from '@/services/assets'
-import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
+import {
+  listAlerts,
+  markAlertRead,
+  markAllAlertsRead,
+  type AlertRecord,
+  ALERT_TYPE_LABELS,
+} from '@/services/alerts'
+import { formatDateBRL } from '@/lib/formatters'
 import { toast } from 'sonner'
 
 export interface AlertItem {
@@ -24,25 +45,19 @@ export interface AlertItem {
 
 export default function AlertsPage() {
   const [loading, setLoading] = React.useState(true)
-  const [positions, setPositions] = React.useState<PositionRecord[]>([])
-  const [accounts, setAccounts] = React.useState<AccountRecord[]>([])
-  const [assets, setAssets] = React.useState<AssetRecord[]>([])
-  const [accountBalances, setAccountBalances] = React.useState<AccountBalanceRecord[]>([])
+  const [alerts, setAlerts] = React.useState<AlertRecord[]>([])
+  const [updatingId, setUpdatingId] = React.useState<string | null>(null)
+  const [markingAll, setMarkingAll] = React.useState(false)
 
-  const loadData = React.useCallback(async () => {
+  // Filtros locais de visualização
+  const [typeFilter, setTypeFilter] = React.useState<string>('all')
+  const [statusFilter, setStatusFilter] = React.useState<string>('all') // 'all' | 'unread' | 'read'
+
+  const loadAlerts = React.useCallback(async () => {
     try {
       setLoading(true)
-      const [posData, accData, assetData, balData] = await Promise.all([
-        listPositions(),
-        listAccounts(),
-        listAssets(),
-        listAccountBalances(),
-      ])
-
-      setPositions(posData)
-      setAccounts(accData)
-      setAssets(assetData)
-      setAccountBalances(balData)
+      const data = await listAlerts()
+      setAlerts(data)
     } catch (err: unknown) {
       toast.error((err as Error)?.message || 'Erro ao carregar alertas.')
     } finally {
@@ -51,95 +66,66 @@ export default function AlertsPage() {
   }, [])
 
   React.useEffect(() => {
-    loadData()
-  }, [loadData])
+    loadAlerts()
+  }, [loadAlerts])
 
-  const accountMap = React.useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts])
-  const assetMap = React.useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets])
-
-  // Avalia condições reais da conta para gerar alertas dinâmicos
-  const activeAlerts: AlertItem[] = React.useMemo(() => {
-    const alerts: AlertItem[] = []
-    const nowStr = new Date().toISOString().slice(0, 10)
-
-    // 1. Alerta de saldo negativo em contas de caixa
-    for (const bal of accountBalances) {
-      if (bal.balance_cents < 0) {
-        const acc = bal.expand?.account_id || accountMap.get(bal.account_id)
-        alerts.push({
-          id: `neg_balance_${bal.id}`,
-          title: `Saldo Negativo em Caixa: ${acc?.name || 'Conta'}`,
-          description: `A conta apresenta saldo negativo de ${formatCurrencyBRL(
-            bal.balance_cents / 100,
-          )} (${bal.currency}). Verifique lançamentos pendentes ou realize um aporte para cobrir o saldo devedor.`,
-          severity: 'critical',
-          actionLabel: 'Ver Conta',
-          actionHref: '/wealth/accounts',
-        })
-      }
+  const handleToggleRead = async (alert: AlertRecord) => {
+    try {
+      setUpdatingId(alert.id)
+      const newStatus = !alert.is_read
+      const updated = await markAlertRead(alert.id, newStatus)
+      setAlerts((prev) => prev.map((a) => (a.id === alert.id ? updated : a)))
+      toast.success(newStatus ? 'Alerta marcado como lido.' : 'Alerta marcado como não lido.')
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Erro ao atualizar alerta.')
+    } finally {
+      setUpdatingId(null)
     }
-
-    // 2. Alerta de vencimentos próximos (próximos 30 dias) ou vencidos
-    for (const pos of positions) {
-      if (pos.maturity_date && pos.quantity_e8 > 0) {
-        const ast = pos.expand?.asset_id || assetMap.get(pos.asset_id)
-        const ticker = ast?.ticker || 'Ativo'
-        const matDate = pos.maturity_date
-
-        if (matDate < nowStr) {
-          alerts.push({
-            id: `expired_${pos.id}`,
-            title: `Título Vencido em Custódia: ${ticker}`,
-            description: `O ativo atingiu a data de vencimento em ${formatDateBRL(
-              matDate,
-            )}. Lance a liquidação ou resgate em Movimentações.`,
-            severity: 'warning',
-            actionLabel: 'Lançar Resgate',
-            actionHref: '/wealth/movements',
-          })
-        } else {
-          const days = Math.ceil(
-            (new Date(matDate).getTime() - new Date(nowStr).getTime()) / (1000 * 60 * 60 * 24),
-          )
-          if (days <= 30) {
-            alerts.push({
-              id: `due_soon_${pos.id}`,
-              title: `Vencimento Próximo: ${ticker}`,
-              description: `Este título de renda fixa vencerá em ${formatDateBRL(
-                matDate,
-              )} (em ${days} dias). Planeje o reinvestimento do capital.`,
-              severity: 'info',
-              actionLabel: 'Ver Vencimentos',
-              actionHref: '/overview/due-dates',
-            })
-          }
-        }
-      }
-    }
-
-    return alerts
-  }, [accountBalances, positions, accountMap, assetMap])
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Central de Alertas"
-          description="Notificações sobre rebalanceamento de carteira, saldos devedores e vencimento de títulos."
-          icon={Bell}
-          breadcrumbs={[{ label: 'Visão Geral', href: '/dashboard' }, { label: 'Alertas' }]}
-        />
-        <div className="flex min-h-[350px] items-center justify-center">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-xs">Examinando condições de saúde do patrimônio...</p>
-          </div>
-        </div>
-      </div>
-    )
   }
 
-  const hasAlerts = activeAlerts.length > 0
+  const handleMarkAllRead = async () => {
+    const unread = alerts.filter((a) => !a.is_read)
+    if (unread.length === 0) {
+      toast.info('Não há alertas não lidos.')
+      return
+    }
+
+    try {
+      setMarkingAll(true)
+      await markAllAlertsRead(alerts)
+      setAlerts((prev) => prev.map((a) => ({ ...a, is_read: true })))
+      toast.success('Todos os alertas foram marcados como lidos.')
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Erro ao marcar alertas como lidos.')
+    } finally {
+      setMarkingAll(false)
+    }
+  }
+
+  // Contagem de alertas não lidos
+  const unreadCount = React.useMemo(() => {
+    return alerts.filter((a) => !a.is_read).length
+  }, [alerts])
+
+  // Filtragem dos alertas
+  const filteredAlerts = React.useMemo(() => {
+    return alerts.filter((a) => {
+      if (typeFilter !== 'all' && a.type !== typeFilter) return false
+      if (statusFilter === 'unread' && a.is_read) return false
+      if (statusFilter === 'read' && !a.is_read) return false
+      return true
+    })
+  }, [alerts, typeFilter, statusFilter])
+
+  const getActionInfo = (alert: AlertRecord): { label?: string; href?: string } => {
+    if (alert.type === 'balance_negative') {
+      return { label: 'Ver Contas', href: '/wealth/accounts' }
+    }
+    if (alert.type === 'maturity_upcoming' || alert.type === 'maturity_today') {
+      return { label: 'Ver Vencimentos', href: '/overview/due-dates' }
+    }
+    return {}
+  }
 
   return (
     <div className="space-y-6">
@@ -148,9 +134,46 @@ export default function AlertsPage() {
         description="Notificações automáticas de saldos, prazos de resgates e integridade patrimonial."
         icon={Bell}
         breadcrumbs={[{ label: 'Visão Geral', href: '/dashboard' }, { label: 'Alertas' }]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadAlerts}
+              disabled={loading}
+              className="gap-1.5 text-xs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+            {unreadCount > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleMarkAllRead}
+                disabled={markingAll || loading}
+                className="gap-1.5 text-xs"
+              >
+                {markingAll ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCheck className="h-3.5 w-3.5" />
+                )}
+                Marcar todas como lidas
+              </Button>
+            )}
+          </div>
+        }
       />
 
-      {!hasAlerts ? (
+      {loading ? (
+        <div className="flex min-h-[350px] items-center justify-center">
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-xs">Examinando condições de saúde do patrimônio...</p>
+          </div>
+        </div>
+      ) : alerts.length === 0 ? (
         <EmptyState
           icon={CheckCircle2}
           title="Nenhum alerta pendente no momento"
@@ -159,71 +182,193 @@ export default function AlertsPage() {
         />
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-            <span>{activeAlerts.length} alerta(s) requerem atenção</span>
+          {/* Barra de filtros e contador */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-foreground">
+                {unreadCount > 0
+                  ? `${unreadCount} alerta(s) não lido(s)`
+                  : 'Nenhum alerta pendente'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                • {alerts.length} alerta(s) no total
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="w-[160px]">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="unread">Apenas não lidos</SelectItem>
+                    <SelectItem value="read">Apenas lidos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-[180px]">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Tipo de alerta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    <SelectItem value="maturity_upcoming">
+                      {ALERT_TYPE_LABELS.maturity_upcoming}
+                    </SelectItem>
+                    <SelectItem value="maturity_today">
+                      {ALERT_TYPE_LABELS.maturity_today}
+                    </SelectItem>
+                    <SelectItem value="balance_negative">
+                      {ALERT_TYPE_LABELS.balance_negative}
+                    </SelectItem>
+                    <SelectItem value="system">{ALERT_TYPE_LABELS.system}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {activeAlerts.map((alert) => {
-              const isCrit = alert.severity === 'critical'
-              const isWarn = alert.severity === 'warning'
+          {filteredAlerts.length === 0 ? (
+            <div className="p-8 text-center border rounded-lg bg-card text-muted-foreground text-xs">
+              Nenhum alerta corresponde aos filtros selecionados.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredAlerts.map((alert) => {
+                const isCrit = alert.severity === 'critical'
+                const isWarn = alert.severity === 'warn'
+                const action = getActionInfo(alert)
+                const isUpdating = updatingId === alert.id
 
-              return (
-                <Card
-                  key={alert.id}
-                  className={`border ${
-                    isCrit
-                      ? 'border-destructive/40 bg-destructive/5'
-                      : isWarn
-                        ? 'border-amber-500/40 bg-amber-500/5'
-                        : 'border-blue-500/40 bg-blue-500/5'
-                  }`}
-                >
-                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`p-2 rounded-full shrink-0 mt-0.5 ${
-                          isCrit
-                            ? 'bg-destructive/10 text-destructive'
-                            : isWarn
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                        }`}
-                      >
-                        {isCrit ? (
-                          <ShieldAlert className="h-5 w-5" />
-                        ) : isWarn ? (
-                          <AlertTriangle className="h-5 w-5" />
-                        ) : (
-                          <Clock className="h-5 w-5" />
+                return (
+                  <Card
+                    key={alert.id}
+                    className={`border transition-opacity ${
+                      alert.is_read ? 'opacity-70 bg-card/60' : ''
+                    } ${
+                      isCrit
+                        ? 'border-destructive/40 bg-destructive/5'
+                        : isWarn
+                          ? 'border-amber-500/40 bg-amber-500/5'
+                          : 'border-blue-500/40 bg-blue-500/5'
+                    }`}
+                  >
+                    <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div
+                          className={`p-2 rounded-full shrink-0 mt-0.5 ${
+                            isCrit
+                              ? 'bg-destructive/10 text-destructive'
+                              : isWarn
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                          }`}
+                        >
+                          {isCrit ? (
+                            <ShieldAlert className="h-5 w-5" />
+                          ) : isWarn ? (
+                            <AlertTriangle className="h-5 w-5" />
+                          ) : (
+                            <Clock className="h-5 w-5" />
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3
+                              className={`text-xs font-semibold ${
+                                alert.is_read
+                                  ? 'text-muted-foreground line-through decoration-muted-foreground/50'
+                                  : 'text-foreground'
+                              }`}
+                            >
+                              {alert.title}
+                            </h3>
+                            <Badge
+                              variant={isCrit ? 'destructive' : 'outline'}
+                              className="text-[10px] py-0"
+                            >
+                              {isCrit ? 'Crítico' : isWarn ? 'Atenção' : 'Informativo'}
+                            </Badge>
+                            {alert.type && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] py-0 font-normal text-muted-foreground"
+                              >
+                                {ALERT_TYPE_LABELS[alert.type] || alert.type}
+                              </Badge>
+                            )}
+                            {alert.is_read && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] py-0 text-muted-foreground bg-muted/30"
+                              >
+                                Lido
+                              </Badge>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground leading-relaxed break-words">
+                            {alert.message}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground/80 pt-0.5">
+                            {alert.due_date && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Vencimento: {formatDateBRL(alert.due_date)}
+                              </span>
+                            )}
+                            {alert.created && <span>Gerado em {formatDateBRL(alert.created)}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleRead(alert)}
+                          disabled={isUpdating}
+                          className="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                          title={alert.is_read ? 'Marcar como não lido' : 'Marcar como lido'}
+                        >
+                          {isUpdating ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : alert.is_read ? (
+                            <>
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              Desmarcar
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-3.5 w-3.5" />
+                              Marcar como lida
+                            </>
+                          )}
+                        </Button>
+
+                        {action.label && action.href && (
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs shrink-0"
+                          >
+                            <Link to={action.href}>{action.label}</Link>
+                          </Button>
                         )}
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xs font-semibold text-foreground">{alert.title}</h3>
-                          <Badge
-                            variant={isCrit ? 'destructive' : 'outline'}
-                            className="text-[10px] py-0"
-                          >
-                            {isCrit ? 'Crítico' : isWarn ? 'Atenção' : 'Informativo'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {alert.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {alert.actionLabel && alert.actionHref && (
-                      <Button asChild size="sm" variant="outline" className="h-8 text-xs shrink-0">
-                        <Link to={alert.actionHref}>{alert.actionLabel}</Link>
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
