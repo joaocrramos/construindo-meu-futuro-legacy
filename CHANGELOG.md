@@ -4,6 +4,18 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.99] - 2026-09-23 (Polyfill de scrollIntoView para Radix Select nos testes de Ativos)
+
+### Corrigido (Fixed)
+
+- **Polyfill de `Element.prototype.scrollIntoView` (`src/test/setup.ts`)**:
+  - O JSDOM não implementa `scrollIntoView`. Ao abrir, o Radix Select o chama no item selecionado; a exceção não capturada desmontava a árvore React e o teste 4 de Ativos (Renda Fixa) não encontrava o Select "Tipo de Título de Renda Fixa" (body vazio no dump do CI).
+  - Com o stub no setup global, a suíte completa passa (145/145) e o `pnpm run verify` conclui sem erros.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.99` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.98] - 2026-09-23 (Correção definitiva dos testes de Movimentações e Ativos com mock parcial e polyfill ResizeObserver)
 
 ### Corrigido (Fixed)
