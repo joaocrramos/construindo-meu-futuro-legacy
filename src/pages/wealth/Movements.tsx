@@ -147,28 +147,10 @@ export default function MovementsPage() {
     setTaxesInput('0')
     setDueDateInput(activeAsset?.due_date ? activeAsset.due_date.substring(0, 10) : '')
     setIndexerRateInput(activeAsset?.indexer_rate || '')
-    setFixedIncomeIssuer(activeAsset?.issuer || '')
-    setFixedIncomeTitleType(activeAsset?.sub_type || 'CDB')
-    setFixedIncomeForma('pos')
-    setFixedIncomeIndexador('CDI')
-    setFixedIncomeTaxa('')
-    setFixedIncomeDailyLiquidity(false)
-    setOtherAnnualInterest('')
     setIdempotencyKey('')
     setNotes('')
     setOpenModal(true)
   }
-
-  // Campos específicos de Renda Fixa
-  const [fixedIncomeIssuer, setFixedIncomeIssuer] = React.useState('')
-  const [fixedIncomeTitleType, setFixedIncomeTitleType] = React.useState('CDB')
-  const [fixedIncomeForma, setFixedIncomeForma] = React.useState<'pos' | 'pre'>('pos')
-  const [fixedIncomeIndexador, setFixedIncomeIndexador] = React.useState('CDI')
-  const [fixedIncomeTaxa, setFixedIncomeTaxa] = React.useState('')
-  const [fixedIncomeDailyLiquidity, setFixedIncomeDailyLiquidity] = React.useState(false)
-
-  // Campo específico para categoria OUTROS: Juros Anual
-  const [otherAnnualInterest, setOtherAnnualInterest] = React.useState('')
 
   // Sincroniza campos padrão de renda fixa quando o usuário seleciona um ativo com due_date ou indexer_rate
   const handleAssetSelect = (newAssetId: string) => {
@@ -176,47 +158,8 @@ export default function MovementsPage() {
     if (newAssetId && newAssetId !== 'none') {
       const ast = assets.find((a) => a.id === newAssetId)
       if (ast) {
-        if (ast.due_date && !dueDateInput) {
-          setDueDateInput(ast.due_date.substring(0, 10))
-        }
-        if (ast.indexer_rate && !indexerRateInput) {
-          setIndexerRateInput(ast.indexer_rate)
-          // Se for renda fixa e o indexer_rate tiver formato conhecido, preencher forma/indexador/taxa
-          if (ast.asset_class === 'fixed_income') {
-            const rawRate = ast.indexer_rate
-            if (
-              rawRate.toLowerCase().includes('prefixado') ||
-              rawRate.toLowerCase().includes('pré-fixado')
-            ) {
-              setFixedIncomeForma('pre')
-              const match = rawRate.match(/[\d.,]+/)
-              if (match) setFixedIncomeTaxa(match[0])
-            } else if (rawRate.includes('IPCA')) {
-              setFixedIncomeForma('pos')
-              setFixedIncomeIndexador('IPCA+')
-              const match = rawRate.match(/[\d.,]+/)
-              if (match) setFixedIncomeTaxa(match[0])
-            } else if (rawRate.includes('CDI+')) {
-              setFixedIncomeForma('pos')
-              setFixedIncomeIndexador('CDI+')
-              const match = rawRate.match(/[\d.,]+/)
-              if (match) setFixedIncomeTaxa(match[0])
-            } else if (rawRate.includes('CDI')) {
-              setFixedIncomeForma('pos')
-              setFixedIncomeIndexador('CDI')
-              const match = rawRate.match(/[\d.,]+/)
-              if (match) setFixedIncomeTaxa(match[0])
-            }
-          }
-        }
-        if (ast.asset_class === 'fixed_income') {
-          if (ast.sub_type) {
-            setFixedIncomeTitleType(ast.sub_type)
-          }
-          if (ast.issuer) {
-            setFixedIncomeIssuer(ast.issuer)
-          }
-        }
+        setDueDateInput(ast.due_date ? ast.due_date.substring(0, 10) : '')
+        setIndexerRateInput(ast.indexer_rate || '')
       }
     }
   }
@@ -267,50 +210,15 @@ export default function MovementsPage() {
     const taxesBrl = centsToBrl(mov.taxes_cents)
     setTaxesInput(taxesBrl > 0 ? taxesBrl.toFixed(2).replace('.', ',') : '0')
 
-    setDueDateInput(mov.due_date ? mov.due_date.substring(0, 10) : '')
-    setIndexerRateInput(mov.indexer_rate || '')
-
     const linkedAsset = assets.find((a) => a.id === mov.asset_id)
-    setFixedIncomeIssuer(linkedAsset?.issuer || '')
-    setFixedIncomeTitleType(linkedAsset?.sub_type || 'CDB')
-    setFixedIncomeDailyLiquidity(false)
-
-    // Se houver indexer_rate no mov ou asset, analisar para preencher campos auxiliares
-    const currentRate = mov.indexer_rate || linkedAsset?.indexer_rate || ''
-    if (linkedAsset?.asset_class === 'fixed_income' && currentRate) {
-      if (
-        currentRate.toLowerCase().includes('prefixado') ||
-        currentRate.toLowerCase().includes('pré-fixado')
-      ) {
-        setFixedIncomeForma('pre')
-        const m = currentRate.match(/[\d.,]+/)
-        setFixedIncomeTaxa(m ? m[0] : '')
-      } else if (currentRate.includes('IPCA')) {
-        setFixedIncomeForma('pos')
-        setFixedIncomeIndexador('IPCA+')
-        const m = currentRate.match(/[\d.,]+/)
-        setFixedIncomeTaxa(m ? m[0] : '')
-      } else if (currentRate.includes('CDI+')) {
-        setFixedIncomeForma('pos')
-        setFixedIncomeIndexador('CDI+')
-        const m = currentRate.match(/[\d.,]+/)
-        setFixedIncomeTaxa(m ? m[0] : '')
-      } else if (currentRate.includes('CDI')) {
-        setFixedIncomeForma('pos')
-        setFixedIncomeIndexador('CDI')
-        const m = currentRate.match(/[\d.,]+/)
-        setFixedIncomeTaxa(m ? m[0] : '')
-      } else {
-        setFixedIncomeTaxa(currentRate)
-      }
-    } else if (linkedAsset?.asset_class === 'other' && currentRate) {
-      setOtherAnnualInterest(currentRate)
-    } else {
-      setFixedIncomeForma('pos')
-      setFixedIncomeIndexador('CDI')
-      setFixedIncomeTaxa('')
-      setOtherAnnualInterest('')
-    }
+    setDueDateInput(
+      mov.due_date
+        ? mov.due_date.substring(0, 10)
+        : linkedAsset?.due_date
+          ? linkedAsset.due_date.substring(0, 10)
+          : '',
+    )
+    setIndexerRateInput(mov.indexer_rate || linkedAsset?.indexer_rate || '')
 
     setIdempotencyKey(mov.idempotency_key || '')
     setNotes(mov.notes || '')
@@ -407,19 +315,12 @@ export default function MovementsPage() {
           ? brlToCents(unitPriceInput)
           : undefined
 
-    // Se for renda fixa e o usuário preencheu forma/indexador/taxa, monta o indexer_rate textual se não houver um override manual
-    let resolvedIndexerRate = indexerRateInput.trim()
-    if (isFixedIncome) {
-      if (fixedIncomeForma === 'pre' && fixedIncomeTaxa.trim()) {
-        resolvedIndexerRate = `Pré-Fixado (${fixedIncomeTaxa.trim()}%)`
-      } else if (fixedIncomeForma === 'pos' && (fixedIncomeTaxa.trim() || fixedIncomeIndexador)) {
-        resolvedIndexerRate = fixedIncomeTaxa.trim()
-          ? `${fixedIncomeIndexador} (${fixedIncomeTaxa.trim()}%)`
-          : fixedIncomeIndexador
-      }
-    } else if (selectedAsset?.asset_class === 'other' && otherAnnualInterest.trim()) {
-      resolvedIndexerRate = `Juros ${otherAnnualInterest.trim()}% a.a.`
-    }
+    // Indexador e vencimento herdados do ativo (ou override de lançamento)
+    const resolvedIndexerRate = indexerRateInput.trim() || selectedAsset?.indexer_rate || undefined
+    const resolvedDueDate = isFixedIncome
+      ? dueDateInput ||
+        (selectedAsset?.due_date ? selectedAsset.due_date.substring(0, 10) : undefined)
+      : undefined
 
     setSubmitting(true)
     try {
@@ -435,7 +336,7 @@ export default function MovementsPage() {
           fees_cents: feesCents,
           taxes_cents: taxesCents,
           net_amount_cents: calculatedNetCents,
-          due_date: isFixedIncome && dueDateInput ? dueDateInput : null,
+          due_date: isFixedIncome && resolvedDueDate ? resolvedDueDate : null,
           indexer_rate: resolvedIndexerRate ? resolvedIndexerRate : null,
           notes: notes.trim() || null,
         })
@@ -452,7 +353,7 @@ export default function MovementsPage() {
           fees_cents: feesCents,
           taxes_cents: taxesCents,
           net_amount_cents: calculatedNetCents,
-          due_date: isFixedIncome && dueDateInput ? dueDateInput : undefined,
+          due_date: isFixedIncome && resolvedDueDate ? resolvedDueDate : undefined,
           indexer_rate: resolvedIndexerRate ? resolvedIndexerRate : undefined,
           idempotency_key: idempotencyKey.trim() || undefined,
           notes: notes.trim() || undefined,
@@ -645,147 +546,39 @@ export default function MovementsPage() {
                         <span className="text-xs font-semibold text-foreground">
                           Renda Fixa — Detalhes do Título
                         </span>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] border-primary/30 text-primary"
-                        >
-                          {fixedIncomeTitleType || 'Renda Fixa'}
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="movFiIssuer" className="text-xs font-semibold">
-                            Emissor
-                          </Label>
-                          <Input
-                            id="movFiIssuer"
-                            placeholder="Ex.: Banco Inter, Petrobras"
-                            value={fixedIncomeIssuer}
-                            onChange={(e) => setFixedIncomeIssuer(e.target.value)}
-                            className="h-9 text-xs"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="movFiTitleType" className="text-xs font-semibold">
-                            Tipo de Título
-                          </Label>
-                          <Select
-                            value={fixedIncomeTitleType}
-                            onValueChange={(val) => setFixedIncomeTitleType(val)}
+                        <div className="flex items-center gap-1.5">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] border-primary/30 text-primary"
                           >
-                            <SelectTrigger
-                              id="movFiTitleType"
-                              aria-label="Tipo de Título"
-                              className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
-                            >
-                              <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-popover text-popover-foreground border-border max-h-56">
-                              {[
-                                'CDB',
-                                'LCI',
-                                'LCA',
-                                'CRI',
-                                'CRA',
-                                'LC',
-                                'LF',
-                                'RDB',
-                                'Debênture',
-                                'CCB',
-                              ].map((t) => (
-                                <SelectItem key={t} value={t} className="text-xs">
-                                  {t}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {selectedAsset.sub_type || 'Renda Fixa'}
+                          </Badge>
+                          {selectedAsset.indexer_rate && (
+                            <span className="text-[11px] font-mono text-muted-foreground">
+                              {selectedAsset.indexer_rate}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Forma: Pós-Fixado ou Pré-Fixado */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="movFiForma" className="text-xs font-semibold">
-                            Forma
-                          </Label>
-                          <Select
-                            value={fixedIncomeForma}
-                            onValueChange={(val: 'pos' | 'pre') => setFixedIncomeForma(val)}
-                          >
-                            <SelectTrigger
-                              id="movFiForma"
-                              aria-label="Forma"
-                              className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
-                            >
-                              <SelectValue placeholder="Selecione a forma" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-popover text-popover-foreground border-border">
-                              <SelectItem value="pos" className="text-xs">
-                                Pós-Fixado
-                              </SelectItem>
-                              <SelectItem value="pre" className="text-xs">
-                                Pré-Fixado
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {fixedIncomeForma === 'pos' ? (
-                          <div className="space-y-1.5">
-                            <Label htmlFor="movFiIndexer" className="text-xs font-semibold">
-                              Indexador
-                            </Label>
-                            <Select
-                              value={fixedIncomeIndexador}
-                              onValueChange={(val) => setFixedIncomeIndexador(val)}
-                            >
-                              <SelectTrigger
-                                id="movFiIndexer"
-                                aria-label="Indexador"
-                                className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
-                              >
-                                <SelectValue placeholder="Indexador" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover text-popover-foreground border-border">
-                                <SelectItem value="CDI" className="text-xs">
-                                  CDI
-                                </SelectItem>
-                                <SelectItem value="CDI+" className="text-xs">
-                                  CDI+
-                                </SelectItem>
-                                <SelectItem value="IPCA+" className="text-xs">
-                                  IPCA+
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ) : null}
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="movFiTaxa" className="text-xs font-semibold">
-                            {fixedIncomeForma === 'pre'
-                              ? 'Taxa Pré-Fixada (%)'
-                              : `Taxa do ${fixedIncomeIndexador} (%)`}
-                          </Label>
-                          <Input
-                            id="movFiTaxa"
-                            placeholder={
-                              fixedIncomeForma === 'pre' ? 'Ex.: 12,5' : 'Ex.: 110 ou 6,5'
-                            }
-                            value={fixedIncomeTaxa}
-                            onChange={(e) => setFixedIncomeTaxa(e.target.value)}
-                            className="h-9 text-xs font-mono"
-                          />
-                        </div>
+                      {/* Informações herdadas do ativo */}
+                      <div className="text-[11px] text-muted-foreground bg-background/50 p-2 rounded border border-border/50">
+                        <span>Tipo/Subtipo e rentabilidade são herdados do cadastro do ativo.</span>
+                        {selectedAsset.due_date && (
+                          <span className="ml-2">
+                            Vencimento contratado:{' '}
+                            <strong className="text-foreground">
+                              {formatDateBRL(selectedAsset.due_date)}
+                            </strong>
+                          </span>
+                        )}
                       </div>
 
-                      {/* Valor e Datas */}
+                      {/* Valor e Vencimento da Operação */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label htmlFor="movGross" className="text-xs font-semibold">
-                            {isBuy ? 'Valor (R$) *' : 'Valor do Resgate (R$) *'}
+                            {isBuy ? 'Valor Aplicado (R$) *' : 'Valor do Resgate (R$) *'}
                           </Label>
                           <Input
                             id="movGross"
@@ -810,26 +603,9 @@ export default function MovementsPage() {
                           />
                         </div>
                       </div>
-
-                      {/* Checkbox Liquidez Diária */}
-                      <div className="flex items-center space-x-2 pt-1">
-                        <input
-                          id="movDailyLiquidity"
-                          type="checkbox"
-                          checked={fixedIncomeDailyLiquidity}
-                          onChange={(e) => setFixedIncomeDailyLiquidity(e.target.checked)}
-                          className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
-                        />
-                        <Label
-                          htmlFor="movDailyLiquidity"
-                          className="text-xs cursor-pointer font-normal"
-                        >
-                          Liquidez Diária
-                        </Label>
-                      </div>
                     </div>
                   ) : selectedAsset?.asset_class === 'other' ? (
-                    // OUTROS: Nome do Ativo, Quantidade, Preço, Juros Anual
+                    // OUTROS: Nome do Ativo herdado, Quantidade e Preço
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
@@ -861,19 +637,6 @@ export default function MovementsPage() {
                             className="h-9 text-xs font-mono"
                           />
                         </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="movOtherInterest" className="text-xs font-semibold">
-                          Juros Anual (% a.a.)
-                        </Label>
-                        <Input
-                          id="movOtherInterest"
-                          placeholder="Ex.: 10,5"
-                          value={otherAnnualInterest}
-                          onChange={(e) => setOtherAnnualInterest(e.target.value)}
-                          className="h-9 text-xs font-mono"
-                        />
                       </div>
                     </div>
                   ) : (

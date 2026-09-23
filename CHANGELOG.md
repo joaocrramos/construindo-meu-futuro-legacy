@@ -4,6 +4,28 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.37] - 2026-09-23 (Tipologia de ativos fixada no cadastro e herdada nos lançamentos)
+
+### Modificado (Changed)
+
+- **Cadastro de Ativos (`/wealth/assets`, `src/pages/wealth/Assets.tsx`)**:
+  - Adicionada a seleção de Tipo/Subtipo padronizada conforme `docs/ASSET_TYPES.md` e `FIXED_INCOME_SUBTYPES` (CDB, Tesouro Direto, LCI, LCA, CRI, CRA, Debêntures, Ações, FIIs, etc.).
+  - Para títulos de Renda Fixa, incluída parametrização direta no cadastro do ativo com Forma (Pós-Fixado ou Pré-Fixado), Indexador (CDI, CDI+, IPCA+, SELIC), Taxa (%) e Data de Vencimento contratada.
+  - O ativo armazena a tipologia (`sub_type`), rentabilidade (`indexer_rate`) e vencimento (`due_date`) de forma única e definitiva.
+- **Lançamento de Movimentações (`/wealth/movements`, `src/pages/wealth/Movements.tsx`)**:
+  - Removida qualquer seleção redundante de tipo ou subtipo do título no momento do lançamento.
+  - Ao selecionar um ativo, o formulário herda automaticamente sua classe, tipo, taxa contratada e data de vencimento.
+  - Para títulos de Renda Fixa, campos adaptados passam a focar estritamente na transação: "Valor Aplicado (R$)" ou "Valor do Resgate (R$)" e vencimento da operação, exibindo em badge informativo o subtipo e a taxa herdados do ativo.
+- **Serviço de Ativos (`src/services/assets.ts`)**:
+  - Inclusão do subtipo 'Tesouro Direto' na lista canônica `FIXED_INCOME_SUBTYPES`.
+  - Exportação de `ASSET_SUBTYPES_BY_CLASS` para categorização assistida nas demais classes (Ações, FIIs, Fundos, Cripto).
+- **Suíte de Testes Automatizados (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Atualizados os testes de Assets e Movements para validar a criação de ativos com tipo/subtipo e taxa, a herança automática no lançamento de Renda Fixa com Valor Aplicado, preservando 100% das asserções de negócio e isolamento de DOM.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.37` sincronizada em `VERSION` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.36] - 2026-09-23 (Estabilização definitiva de montagem de modal e CI sob carga adversa)
 
 ### Corrigido (Fixed)

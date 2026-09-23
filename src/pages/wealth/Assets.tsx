@@ -51,6 +51,10 @@ export default function AssetsPage() {
   const [subType, setSubType] = React.useState('')
   const [currency, setCurrency] = React.useState('BRL')
   const [cnpjIssuer, setCnpjIssuer] = React.useState('')
+  // Campos de Renda Fixa / Remuneração
+  const [fixedIncomeForma, setFixedIncomeForma] = React.useState<'pos' | 'pre'>('pos')
+  const [fixedIncomeIndexador, setFixedIncomeIndexador] = React.useState('CDI')
+  const [fixedIncomeTaxa, setFixedIncomeTaxa] = React.useState('')
   const [dueDate, setDueDate] = React.useState('')
   const [indexerRate, setIndexerRate] = React.useState('')
   const [isActive, setIsActive] = React.useState(true)
@@ -82,6 +86,9 @@ export default function AssetsPage() {
     setSubType('')
     setCurrency('BRL')
     setCnpjIssuer('')
+    setFixedIncomeForma('pos')
+    setFixedIncomeIndexador('CDI')
+    setFixedIncomeTaxa('')
     setDueDate('')
     setIndexerRate('')
     setIsActive(true)
@@ -98,6 +105,38 @@ export default function AssetsPage() {
     setCnpjIssuer(item.cnpj_issuer || '')
     setDueDate(item.due_date ? item.due_date.substring(0, 10) : '')
     setIndexerRate(item.indexer_rate || '')
+
+    // Decodifica indexer_rate para preencher forma/indexador/taxa na edição
+    const rate = item.indexer_rate || ''
+    if (rate) {
+      if (rate.toLowerCase().includes('pré-fixado') || rate.toLowerCase().includes('prefixado')) {
+        setFixedIncomeForma('pre')
+        const m = rate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else if (rate.includes('IPCA')) {
+        setFixedIncomeForma('pos')
+        setFixedIncomeIndexador('IPCA+')
+        const m = rate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else if (rate.includes('CDI+')) {
+        setFixedIncomeForma('pos')
+        setFixedIncomeIndexador('CDI+')
+        const m = rate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else if (rate.includes('CDI')) {
+        setFixedIncomeForma('pos')
+        setFixedIncomeIndexador('CDI')
+        const m = rate.match(/[\d.,]+/)
+        setFixedIncomeTaxa(m ? m[0] : '')
+      } else {
+        setFixedIncomeTaxa(rate)
+      }
+    } else {
+      setFixedIncomeForma('pos')
+      setFixedIncomeIndexador('CDI')
+      setFixedIncomeTaxa('')
+    }
+
     setIsActive(item.is_active)
     setOpenModal(true)
   }
@@ -115,6 +154,18 @@ export default function AssetsPage() {
 
     setSubmitting(true)
     try {
+      // Monta indexer_rate a partir dos campos assistidos se não informado diretamente
+      let resolvedIndexer = indexerRate.trim()
+      if (assetClass === 'fixed_income') {
+        if (fixedIncomeForma === 'pre' && fixedIncomeTaxa.trim()) {
+          resolvedIndexer = `Pré-Fixado (${fixedIncomeTaxa.trim()}%)`
+        } else if (fixedIncomeForma === 'pos' && fixedIncomeTaxa.trim()) {
+          resolvedIndexer = `${fixedIncomeIndexador} (${fixedIncomeTaxa.trim()}%)`
+        } else if (fixedIncomeForma === 'pos' && fixedIncomeIndexador) {
+          resolvedIndexer = fixedIncomeIndexador
+        }
+      }
+
       if (editingItem) {
         await updateAsset(editingItem.id, {
           ticker: ticker.trim().toUpperCase(),
@@ -125,7 +176,7 @@ export default function AssetsPage() {
           cnpj_issuer: cnpjIssuer.trim() || undefined,
           due_date: assetClass === 'fixed_income' && dueDate ? dueDate : undefined,
           indexer_rate:
-            assetClass === 'fixed_income' && indexerRate.trim() ? indexerRate.trim() : undefined,
+            assetClass === 'fixed_income' && resolvedIndexer ? resolvedIndexer : undefined,
           is_active: isActive,
         })
         toast.success('Ativo atualizado com sucesso!')
@@ -139,7 +190,7 @@ export default function AssetsPage() {
           cnpj_issuer: cnpjIssuer.trim() || undefined,
           due_date: assetClass === 'fixed_income' && dueDate ? dueDate : undefined,
           indexer_rate:
-            assetClass === 'fixed_income' && indexerRate.trim() ? indexerRate.trim() : undefined,
+            assetClass === 'fixed_income' && resolvedIndexer ? resolvedIndexer : undefined,
           is_active: isActive,
         })
         toast.success('Ativo criado com sucesso!')
@@ -338,7 +389,88 @@ export default function AssetsPage() {
             </div>
 
             {assetClass === 'fixed_income' && (
-              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-md border border-border">
+              <div className="p-3 bg-muted/40 rounded-md border border-border space-y-3">
+                <div className="text-xs font-semibold text-foreground">
+                  Parâmetros de Renda Fixa (Definidos no Ativo)
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="assetFiForma" className="text-xs font-semibold">
+                      Forma
+                    </Label>
+                    <Select
+                      value={fixedIncomeForma}
+                      onValueChange={(val: 'pos' | 'pre') => setFixedIncomeForma(val)}
+                    >
+                      <SelectTrigger
+                        id="assetFiForma"
+                        aria-label="Forma"
+                        className="w-full h-9 text-xs bg-background text-foreground border-input"
+                      >
+                        <SelectValue placeholder="Forma" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover text-popover-foreground border-border">
+                        <SelectItem value="pos" className="text-xs">
+                          Pós-Fixado
+                        </SelectItem>
+                        <SelectItem value="pre" className="text-xs">
+                          Pré-Fixado
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {fixedIncomeForma === 'pos' ? (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="assetFiIndexer" className="text-xs font-semibold">
+                        Indexador
+                      </Label>
+                      <Select
+                        value={fixedIncomeIndexador}
+                        onValueChange={(val) => setFixedIncomeIndexador(val)}
+                      >
+                        <SelectTrigger
+                          id="assetFiIndexer"
+                          aria-label="Indexador"
+                          className="w-full h-9 text-xs bg-background text-foreground border-input"
+                        >
+                          <SelectValue placeholder="Indexador" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover text-popover-foreground border-border">
+                          <SelectItem value="CDI" className="text-xs">
+                            CDI
+                          </SelectItem>
+                          <SelectItem value="CDI+" className="text-xs">
+                            CDI+
+                          </SelectItem>
+                          <SelectItem value="IPCA+" className="text-xs">
+                            IPCA+
+                          </SelectItem>
+                          <SelectItem value="SELIC" className="text-xs">
+                            SELIC
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="assetFiTaxa" className="text-xs font-semibold">
+                      {fixedIncomeForma === 'pre'
+                        ? 'Taxa Pré-Fixada (%)'
+                        : `Taxa do ${fixedIncomeIndexador} (%)`}
+                    </Label>
+                    <Input
+                      id="assetFiTaxa"
+                      placeholder={fixedIncomeForma === 'pre' ? 'Ex.: 12,5' : 'Ex.: 110 ou 6,5'}
+                      value={fixedIncomeTaxa}
+                      onChange={(e) => setFixedIncomeTaxa(e.target.value)}
+                      className="h-9 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="assetDueDate" className="text-xs font-semibold">
                     Data de Vencimento
@@ -348,18 +480,6 @@ export default function AssetsPage() {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="h-9 text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="assetIndexerRate" className="text-xs font-semibold">
-                    Indexador / Taxa
-                  </Label>
-                  <Input
-                    id="assetIndexerRate"
-                    placeholder="Ex.: 120% do CDI, IPCA + 6,5%"
-                    value={indexerRate}
-                    onChange={(e) => setIndexerRate(e.target.value)}
                     className="h-9 text-xs"
                   />
                 </div>

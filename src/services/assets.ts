@@ -83,8 +83,34 @@ export const FIXED_INCOME_SUBTYPES = [
   'Tesouro Prefixado',
   'Tesouro RendA+',
   'Tesouro Educa+',
+  'Tesouro Direto',
   'Outro Título de Renda Fixa',
 ] as const
+
+/**
+ * Subtipos ou categorias comuns para outras classes de ativo (FIIs, Ações, Fundos, Cripto).
+ */
+export const ASSET_SUBTYPES_BY_CLASS: Partial<Record<AssetClass, readonly string[]>> = {
+  fixed_income: FIXED_INCOME_SUBTYPES,
+  equities: ['Ações Ordinárias (ON)', 'Ações Preferenciais (PN)', 'Units', 'BDR', 'ETF de Ações'],
+  real_estate_funds: [
+    'Tijolo',
+    'Papel (CRI)',
+    'Fiagro',
+    'Fundo de Fundos (FoF)',
+    'Desenvolvimento',
+  ],
+  mutual_funds: [
+    'Fundo Multimercado',
+    'Fundo de Ações',
+    'Fundo Cambial',
+    'Fundo de Renda Fixa',
+    'Fundo de Previdência',
+  ],
+  crypto: ['Criptomoeda', 'Stablecoin', 'Token DeFi', 'Outro Criptoativo'],
+  cash_equivalent: ['Reserva de Emergência', 'Conta Remunerada', 'Fundo DI'],
+  international: ['Stocks (Ações EUA)', 'REITs', 'ETF Internacional', 'Outro Internacional'],
+}
 
 /**
  * Indexadores financeiros típicos de Renda Fixa no Brasil.

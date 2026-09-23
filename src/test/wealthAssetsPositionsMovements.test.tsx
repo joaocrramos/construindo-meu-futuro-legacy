@@ -107,6 +107,10 @@ describe('CRUD de Ativos (/wealth/assets)', () => {
     const nameInput = screen.getByPlaceholderText(/Ex.: Petrobras PN/i)
     fireEvent.change(nameInput, { target: { value: 'Petrobras PN' } })
 
+    // Seleciona tipo/subtipo se desejar
+    const subTypeInput = screen.getByLabelText(/Tipo \/ Subtipo/i)
+    fireEvent.change(subTypeInput, { target: { value: 'Ações Ordinárias (ON)' } })
+
     const submitBtn = screen.getByRole('button', { name: /Criar Ativo/i })
     fireEvent.click(submitBtn)
 
@@ -115,6 +119,73 @@ describe('CRUD de Ativos (/wealth/assets)', () => {
         expect.objectContaining({
           ticker: 'PETR4',
           name: 'Petrobras PN',
+          sub_type: 'Ações Ordinárias (ON)',
+        }),
+      )
+    })
+  })
+
+  it('4. Cadastro de ativo de Renda Fixa define Tipo/Subtipo e rentabilidade na criação', async () => {
+    vi.mocked(assetService.listAssets).mockResolvedValue([])
+    vi.mocked(assetService.createAsset).mockResolvedValue({
+      id: 'ast_cdb_new',
+      user_id: 'usr_1',
+      ticker: 'CDB-TEST',
+      name: 'CDB Banco Inter 110% CDI',
+      asset_class: 'fixed_income',
+      sub_type: 'CDB',
+      currency: 'BRL',
+      due_date: '2028-12-31',
+      indexer_rate: 'CDI (110%)',
+      is_active: true,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <AssetsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Criar primeiro ativo/i })).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Criar primeiro ativo/i }))
+
+    fireEvent.change(screen.getByPlaceholderText('PETR4'), { target: { value: 'CDB-TEST' } })
+    fireEvent.change(screen.getByPlaceholderText(/Ex.: Petrobras PN/i), {
+      target: { value: 'CDB Banco Inter 110% CDI' },
+    })
+
+    // Seleciona classe Renda Fixa
+    fireEvent.change(screen.getByLabelText(/Classe/i), { target: { value: 'fixed_income' } })
+
+    // Seleciona Subtipo CDB
+    const subTypeInput = screen.getByLabelText(/Tipo \/ Subtipo/i)
+    fireEvent.change(subTypeInput, { target: { value: 'CDB' } })
+
+    // Taxa do CDI
+    const taxaInput = screen.getByPlaceholderText('Ex.: 110 ou 6,5')
+    fireEvent.change(taxaInput, { target: { value: '110' } })
+
+    // Data de Vencimento
+    const dueDateInput = screen.getByLabelText(/Data de Vencimento/i)
+    fireEvent.change(dueDateInput, { target: { value: '2028-12-31' } })
+
+    const submitBtn = screen.getByRole('button', { name: /Criar Ativo/i })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(assetService.createAsset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ticker: 'CDB-TEST',
+          name: 'CDB Banco Inter 110% CDI',
+          asset_class: 'fixed_income',
+          sub_type: 'CDB',
+          indexer_rate: 'CDI (110%)',
+          due_date: '2028-12-31',
         }),
       )
     })
@@ -579,7 +650,11 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     expect(
       await screen.findByText(/Renda Fixa — Detalhes do Título/i, {}, { timeout: 4000 }),
     ).not.toBeNull()
-    const valorInput = await screen.findByLabelText(/Valor \(R\$\)/i, {}, { timeout: 4000 })
+    const valorInput = await screen.findByLabelText(
+      /Valor Aplicado \(R\$\)/i,
+      {},
+      { timeout: 4000 },
+    )
     expect(valorInput).not.toBeNull()
 
     // Preenche valor aplicado de R$ 5.000
@@ -809,6 +884,10 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
     expect(await screen.findByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
     expect(screen.queryByLabelText(/IR/i)).toBeNull()
+
+    // O ativo selecionado inicialmente é o primeiro (PETR4, equities)
+    expect(screen.getByLabelText(/Quantidade/i)).not.toBeNull()
+    expect(screen.getByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
   })
 })
 
