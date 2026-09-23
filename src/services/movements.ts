@@ -144,10 +144,22 @@ export function centsToBrl(cents: number | null | undefined): number {
  * Traduz erros do PocketBase referentes a movements para mensagens amigáveis em português.
  */
 export function translateMovementError(error: unknown): string {
-  if (error && typeof error === 'object' && 'response' in error) {
+  if (error && typeof error === 'object') {
     const err = error as {
-      response?: { data?: Record<string, { message?: string; code?: string }>; message?: string }
+      message?: string
+      response?: {
+        message?: string
+        code?: string
+        data?: Record<string, { message?: string; code?: string }>
+      }
+      status?: number
     }
+
+    const responseMsg = err.response?.message
+    if (responseMsg) {
+      return responseMsg
+    }
+
     const data = err.response?.data
     if (data?.idempotency_key) {
       return 'Esta movimentação já foi registrada anteriormente (chave de idempotência duplicada).'
@@ -158,11 +170,26 @@ export function translateMovementError(error: unknown): string {
     if (data?.gross_amount_cents) {
       return 'O valor bruto da movimentação é obrigatório.'
     }
+
+    if (
+      err.message &&
+      !err.message.includes('ClientResponseError') &&
+      !err.message.includes('status: 400')
+    ) {
+      return err.message
+    }
   }
 
   const strErr = String(error)
-  if (strErr.includes('idx_movements_user_idempotency') || strErr.includes('idempotency_key')) {
+  if (
+    strErr.includes('idx_movements_user_idempotency') ||
+    strErr.includes('DUPLICATE_IDEMPOTENCY_KEY') ||
+    strErr.includes('idempotency_key')
+  ) {
     return 'Esta movimentação já foi registrada anteriormente (chave de idempotência duplicada).'
+  }
+  if (strErr.includes('NET_AMOUNT_MISMATCH')) {
+    return 'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.'
   }
 
   return 'Ocorreu um erro ao registrar a movimentação. Tente novamente.'
@@ -194,20 +221,30 @@ export async function createMovement(payload: CreateMovementPayload): Promise<Mo
   const calculatedNet =
     payload.net_amount_cents !== undefined ? payload.net_amount_cents : gross - fees - taxes
 
+  if (calculatedNet !== gross - fees - taxes) {
+    throw new Error(
+      'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
+    )
+  }
+
   try {
-    const record = await pb.collection('movements').create<MovementRecord>(
-      {
-        ...payload,
-        user_id: userId,
+    const record = await pb.send<MovementRecord>('/backend/v1/movements', {
+      method: 'POST',
+      body: {
+        account_id: payload.account_id,
+        asset_id: payload.asset_id,
+        movement_type: payload.movement_type,
+        date: payload.date,
+        quantity_e8: payload.quantity_e8,
+        unit_price_cents: payload.unit_price_cents,
+        gross_amount_cents: gross,
         fees_cents: fees,
         taxes_cents: taxes,
         net_amount_cents: calculatedNet,
-        is_reversed: false,
+        idempotency_key: payload.idempotency_key,
+        notes: payload.notes,
       },
-      {
-        expand: 'account_id,asset_id',
-      },
-    )
+    })
     return record
   } catch (err) {
     const userFriendlyMsg = translateMovementError(err)
