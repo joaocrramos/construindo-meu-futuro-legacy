@@ -44,6 +44,13 @@ Historicamente, probes de backup haviam sido suspensos até autorização formal
 - A rota `/admin/audit` (`src/pages/admin/Audit.tsx`) passou a focar exclusivamente nos **Logs de Auditoria**: tabela paginada com ordenação decrescente, filtros de eventos (incluindo `BACKUP_CREATED`, `BACKUP_DOWNLOADED` e `BACKUP_RESTORE_REQUESTED`), severidades, usuários e exportação CSV.
 - A página `/admin/backups` conta com listagem de snapshots, tamanhos formatados, datas, disparo de novo backup manual, download seguro via filesystem/HTTP e o botão de **Restaurar** com diálogo de alto atrito.
 
+### 5. Escopo do Backup: Global do Sistema (Não por Usuário) e Governança de Acesso
+
+- O mecanismo de backup nativo do PocketBase captura a instância inteira: todas as collections, todos os usuários, todas as movimentações e todo o log de auditoria. Não existe backup isolado por usuário — isso é característica do mecanismo, não escolha de produto, e é coerente com o propósito do B2 (um backup por usuário deixaria dados órfãos, pois movimentações referenciam contas e ativos de outras collections).
+- O que é por usuário é a trilha de auditoria: o log registra quem criou, baixou ou pediu restore de cada snapshot.
+- Consequência de segurança: como o arquivo de backup contém os dados de todos os usuários, qualquer cópia baixada e guardada fora da instância deve ser tratada como DADO SENSÍVEL — armazenar apenas em local seguro, nunca em compartilhamento aberto.
+- Acesso à tela e às rotas é exclusivo de administradores (menu com `requireAdmin`, rota protegida por `ProtectedRoute requireAdmin` e checagem de role `admin` em todas as quatro rotas do hook).
+
 ---
 
 ## Procedimento Operacional de Restore em Caso de Incidente
