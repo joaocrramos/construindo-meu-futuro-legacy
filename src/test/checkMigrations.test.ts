@@ -146,4 +146,24 @@ describe('check:migrations guard script', () => {
     expect(res.status).toBe(0)
     expect(res.stdout).toContain('Todas as 2 migrations')
   })
+
+  it('permite a transição entre 0010 e ordinais >= 0020 e entre 0020 e 0022', () => {
+    createTempMigration(
+      '0001_create_users.js',
+      'migrate((app) => { app.save(new Collection({ name: "users" })) }, (app) => {})',
+    )
+    createTempMigration('0020_add_due_date.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration(
+      '0022_create_alerts.js',
+      'migrate((app) => { app.save(new Collection({ name: "alerts" })) }, (app) => {})',
+    )
+    // Inicializa a cadeia para 0001..0010
+    for (let i = 2; i <= 10; i++) {
+      const pad = String(i).padStart(4, '0')
+      createTempMigration(`${pad}_mig.js`, 'migrate((app) => {}, (app) => {})')
+    }
+    const res = runCheck()
+    expect(res.status).toBe(0)
+    expect(res.stdout).toContain('Todas as 12 migrations')
+  })
 })

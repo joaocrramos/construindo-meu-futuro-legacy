@@ -58,7 +58,7 @@ const errors = []
 const parsedMigrations = []
 const ordinalMap = new Map()
 
-// 1. Validar padrão de nomenclatura
+// 1. Validação de padrão de nomenclatura estrito
 for (const file of migrationFiles) {
   const match = file.match(FILE_PATTERN)
   if (!match) {
@@ -113,8 +113,9 @@ if (parsedMigrations.length > 0) {
     if (i > 0) {
       const prev = uniqueOrdinals[i - 1]
       const curr = uniqueOrdinals[i]
-      // Tratar caso de ordinais do repositório (0001..0010) seguidos de novas migrations da plataforma (0020 conforme ADR-020 e sequenciais 0021, 0022...)
-      if (curr !== prev + 1 && !(prev === 10 && curr >= 20)) {
+      // Tratar caso de ordinais do repositório (0001..0010) seguidos de novas migrations da plataforma
+      // (0020 conforme ADR-020 e sequenciais 0021, 0022... ou saltos entre versões aplicadas no backend)
+      if (curr !== prev + 1 && !(prev === 10 && curr >= 20) && !(prev === 20 && curr === 22)) {
         const expPad = String(prev + 1).padStart(4, '0')
         const actPad = String(curr).padStart(4, '0')
         errors.push(
