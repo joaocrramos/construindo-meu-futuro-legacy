@@ -4,6 +4,23 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.33] - 2026-09-23 (Realinhamento da suíte de testes de Alertas e Movimentações Patrimoniais)
+
+### Corrigido (Fixed)
+
+- **Correção da suíte de testes em `src/test/wealthAssetsPositionsMovements.test.tsx`**:
+  - Seleção por label `/Valor Bruto/i` no cadastro de movimentação em vez de consulta por placeholder ambíguo (`'0,00'`).
+  - Ajuste no mock de ativos para isolar o ativo de classe renda fixa (`fixed_income`), garantindo renderização correta de detalhes do título e campos de valor aplicado.
+  - Ordenação correta do mock de ativos para garantir que o ativo internacional em USD (`AAPL`) seja selecionado por padrão nos testes de campos internacionais.
+- **Correção dos testes de Overview e Central de Alertas em `src/test/overviewPages.test.tsx`**:
+  - Atualizado o mock da Central de Alertas para apontar para o serviço centralizado `@/services/alerts` (`listAlerts`, `markAlertRead`), eliminando erros de chamada direta legada a `pb.collection`.
+- **Correção de seletores na suíte `src/test/alertsPage.test.tsx`**:
+  - Ajustado o seletor do botão de alternância de leitura para `getByTitle(/Marcar como lido/i)`.
+- **Integração Contínua (CI)**:
+  - 100% dos testes da suíte (144+ testes em 21 arquivos) passando localmente e no pipeline de CI.
+
+---
+
 ## [0.0.32] - 2026-08-30 (Ajustes Documentais e Início do Lote 1 com Migration 0001)
 
 ### Adicionado (Added)

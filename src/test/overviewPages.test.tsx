@@ -17,7 +17,7 @@ import * as movService from '@/services/movements'
 import * as accService from '@/services/accounts'
 import * as assetService from '@/services/assets'
 import * as portService from '@/services/portfolios'
-import pb from '@/lib/pocketbase/client'
+import * as alertsService from '@/services/alerts'
 
 vi.mock('@/services/accountBalances')
 vi.mock('@/services/positions')
@@ -25,6 +25,7 @@ vi.mock('@/services/movements')
 vi.mock('@/services/accounts')
 vi.mock('@/services/assets')
 vi.mock('@/services/portfolios')
+vi.mock('@/services/alerts')
 
 // Mock do ResizeObserver e componentes de chart para ambiente JSDOM
 global.ResizeObserver = class ResizeObserver {
@@ -654,11 +655,7 @@ describe('Telas de Overview conectadas a dados reais', () => {
 
   describe('8. Central de Alertas (/overview/alerts)', () => {
     it('renderiza EmptyState quando não há alertas ativos', async () => {
-      // AlertsPage agora consome a collection 'alerts' via pb.collection('alerts')
-      vi.mocked(pb.collection).mockReturnValue({
-        getFullList: vi.fn().mockResolvedValue([]),
-        update: vi.fn().mockResolvedValue({}),
-      } as any)
+      vi.mocked(alertsService.listAlerts).mockResolvedValue([])
 
       render(
         <MemoryRouter>
@@ -671,36 +668,9 @@ describe('Telas de Overview conectadas a dados reais', () => {
       })
     })
 
-    it('renderiza alertas vindos da collection alerts com badges e botão de marcar como lida', async () => {
-      vi.mocked(pb.collection).mockReturnValue({
-        getFullList: vi.fn().mockResolvedValue([
-          {
-            id: 'alt_1',
-            user_id: 'usr_1',
-            type: 'balance_negative',
-            title: 'Saldo Negativo em Caixa: Bradesco Corrente',
-            message: 'A conta Bradesco Corrente apresenta saldo devedor de BRL -450,00.',
-            severity: 'warn',
-            reference_id: 'acc_1',
-            is_read: false,
-            created: '2026-09-23T06:00:00.000Z',
-            updated: '2026-09-23T06:00:00.000Z',
-          },
-          {
-            id: 'alt_2',
-            user_id: 'usr_1',
-            type: 'maturity_upcoming',
-            title: 'Vencimento em 30 dias: CDB Banco Master',
-            message: 'O título CDB Banco Master vencerá em 30 dias.',
-            severity: 'info',
-            reference_id: 'pos_1',
-            due_date: '2026-10-23T00:00:00.000Z',
-            is_read: false,
-            created: '2026-09-23T06:00:00.000Z',
-            updated: '2026-09-23T06:00:00.000Z',
-          },
-        ]),
-        update: vi.fn().mockResolvedValue({
+    it('renderiza alertas vindos do serviço alerts com badges e contador', async () => {
+      vi.mocked(alertsService.listAlerts).mockResolvedValue([
+        {
           id: 'alt_1',
           user_id: 'usr_1',
           type: 'balance_negative',
@@ -708,11 +678,24 @@ describe('Telas de Overview conectadas a dados reais', () => {
           message: 'A conta Bradesco Corrente apresenta saldo devedor de BRL -450,00.',
           severity: 'warn',
           reference_id: 'acc_1',
-          is_read: true,
+          is_read: false,
           created: '2026-09-23T06:00:00.000Z',
-          updated: '2026-09-23T06:01:00.000Z',
-        }),
-      } as any)
+          updated: '2026-09-23T06:00:00.000Z',
+        },
+        {
+          id: 'alt_2',
+          user_id: 'usr_1',
+          type: 'maturity_upcoming',
+          title: 'Vencimento em 30 dias: CDB Banco Master',
+          message: 'O título CDB Banco Master vencerá em 30 dias.',
+          severity: 'info',
+          reference_id: 'pos_1',
+          due_date: '2026-10-23T00:00:00.000Z',
+          is_read: false,
+          created: '2026-09-23T06:00:00.000Z',
+          updated: '2026-09-23T06:00:00.000Z',
+        },
+      ])
 
       render(
         <MemoryRouter>

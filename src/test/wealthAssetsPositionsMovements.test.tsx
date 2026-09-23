@@ -275,7 +275,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
 
     // Preenche valor bruto
-    const grossInput = screen.getByPlaceholderText('0,00')
+    const grossInput = screen.getByLabelText(/Valor Bruto/i)
     fireEvent.change(grossInput, { target: { value: '6000' } })
 
     const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
@@ -521,6 +521,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         updated: new Date().toISOString(),
       },
     ])
+    // Apenas o ativo de renda fixa na lista, garantindo que seja selecionado como ativo padrão
     vi.mocked(assetService.listAssets).mockResolvedValue([
       {
         id: 'ast_rf',
@@ -608,6 +609,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         updated: new Date().toISOString(),
       },
     ])
+    // O ativo ast_stock é o primeiro da lista, tornando-se o ativo ativo padrão na abertura do formulário
     vi.mocked(assetService.listAssets).mockResolvedValue([
       {
         id: 'ast_stock',
@@ -647,7 +649,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
 
-    // Com ativo internacional, o campo de custos deve ser "Outros Custos (USD)"
+    // Com ativo internacional (USD), os campos específicos devem ser renderizados
     await waitFor(() => {
       expect(screen.getByLabelText(/Outros Custos \(USD\)/i)).not.toBeNull()
       expect(screen.getByLabelText(/Preço \(USD\)/i)).not.toBeNull()

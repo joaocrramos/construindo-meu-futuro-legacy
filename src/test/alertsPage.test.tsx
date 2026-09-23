@@ -160,7 +160,7 @@ describe('AlertsPage & alerts service', () => {
     })
 
     // Clicar em "Marcar como lida"
-    const markBtn = screen.getByText(/Marcar como lida/i)
+    const markBtn = screen.getByTitle(/Marcar como lido/i)
     fireEvent.click(markBtn)
 
     await waitFor(() => {
