@@ -28,6 +28,7 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string; must_change_password?: boolean }>
   logout: () => void
   refreshAuth: () => Promise<void>
+  updateProfile?: (updates: Partial<UserProfile>) => void
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
@@ -164,6 +165,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       refreshAuth,
+      updateProfile: (updates: Partial<UserProfile>) => {
+        setUser((prev) => (prev ? { ...prev, ...updates } : null))
+      },
     }),
     [user, token, isLoading, login, logout, refreshAuth],
   )

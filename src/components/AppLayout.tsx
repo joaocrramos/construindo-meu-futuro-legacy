@@ -25,6 +25,7 @@ import {
   User,
   Palette,
   Sparkles,
+  KeyRound,
 } from 'lucide-react'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
