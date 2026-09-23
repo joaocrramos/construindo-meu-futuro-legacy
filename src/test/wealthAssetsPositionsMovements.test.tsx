@@ -11,8 +11,32 @@ import * as posService from '@/services/positions'
 import * as accService from '@/services/accounts'
 import * as balService from '@/services/accountBalances'
 
-vi.mock('@/services/assets')
-vi.mock('@/services/movements')
+vi.mock('@/services/assets', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/assets')>()
+  return {
+    ...actual,
+    listAssets: vi.fn(),
+    createAsset: vi.fn(),
+    updateAsset: vi.fn(),
+    toggleAssetActive: vi.fn(),
+    translateAssetError: vi.fn(actual.translateAssetError),
+  }
+})
+vi.mock('@/services/movements', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/movements')>()
+  return {
+    ...actual,
+    listMovements: vi.fn(),
+    createMovement: vi.fn(),
+    updateMovement: vi.fn(),
+    brlToCents: vi.fn(actual.brlToCents),
+    centsToBrl: vi.fn(actual.centsToBrl),
+    decimalToE8: vi.fn(actual.decimalToE8),
+    e8ToDecimal: vi.fn(actual.e8ToDecimal),
+    formatQuantityE8: vi.fn(actual.formatQuantityE8),
+    translateMovementError: vi.fn(actual.translateMovementError),
+  }
+})
 vi.mock('@/services/positions')
 vi.mock('@/services/accounts')
 vi.mock('@/services/accountBalances')
@@ -107,8 +131,8 @@ describe('CRUD de Ativos (/wealth/assets)', () => {
     const nameInput = screen.getByPlaceholderText(/Ex.: Petrobras PN/i)
     fireEvent.change(nameInput, { target: { value: 'Petrobras PN' } })
 
-    // Seleciona tipo/subtipo se desejar
-    const subTypeInput = screen.getByLabelText(/Tipo \/ Subtipo/i)
+    // Seleciona subtipo se desejar (Subtipo / Segmento para ações)
+    const subTypeInput = screen.getByLabelText(/Subtipo \/ Segmento/i)
     fireEvent.change(subTypeInput, { target: { value: 'Ações Ordinárias (ON)' } })
 
     const submitBtn = screen.getByRole('button', { name: /Criar Ativo/i })
@@ -159,15 +183,21 @@ describe('CRUD de Ativos (/wealth/assets)', () => {
       target: { value: 'CDB Banco Inter 110% CDI' },
     })
 
-    // Seleciona classe Renda Fixa
-    fireEvent.change(screen.getByLabelText(/Classe/i), { target: { value: 'fixed_income' } })
+    // Seleciona classe Renda Fixa via Radix Select Trigger
+    const classTrigger = screen.getByLabelText('Classe de Ativo')
+    fireEvent.click(classTrigger)
+    const fixedIncomeOption = await screen.findByRole('option', { name: /Renda Fixa/i })
+    fireEvent.click(fixedIncomeOption)
 
-    // Seleciona Subtipo CDB
-    const subTypeInput = screen.getByLabelText(/Tipo \/ Subtipo/i)
-    fireEvent.change(subTypeInput, { target: { value: 'CDB' } })
+    // Seleciona Subtipo CDB via Radix Select Trigger
+    const subTypeTrigger = await screen.findByLabelText('Tipo de Título de Renda Fixa')
+    fireEvent.click(subTypeTrigger)
+    const cdbOption = await screen.findByRole('option', { name: /^CDB$/i })
+    fireEvent.click(cdbOption)
 
+    // Forma já é Pós-Fixado ('pos') por padrão e Indexador já é 'CDI' por padrão
     // Taxa do CDI
-    const taxaInput = screen.getByPlaceholderText('Ex.: 110 ou 6,5')
+    const taxaInput = await screen.findByPlaceholderText('Ex.: 110 ou 6,5')
     fireEvent.change(taxaInput, { target: { value: '110' } })
 
     // Data de Vencimento
@@ -637,7 +667,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
     await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
     const openBtn = screen.getByRole('button', {
-      name: /Nova Movimentação|Registrar primeira movimentação/i,
+      name: /Registrar primeira movimentação/i,
     })
     fireEvent.click(openBtn)
 
@@ -730,7 +760,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
     await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
     const openBtn = screen.getByRole('button', {
-      name: /Nova Movimentação|Registrar primeira movimentação/i,
+      name: /Registrar primeira movimentação/i,
     })
     fireEvent.click(openBtn)
 
@@ -891,7 +921,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
     await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
     const openBtn = screen.getByRole('button', {
-      name: /Nova Movimentação|Registrar primeira movimentação/i,
+      name: /Registrar primeira movimentação/i,
     })
     fireEvent.click(openBtn)
 
@@ -1004,7 +1034,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
 
       await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
       const btn = screen.getByRole('button', {
-        name: /Nova Movimentação|Registrar primeira movimentação/i,
+        name: /Registrar primeira movimentação/i,
       })
       fireEvent.click(btn)
 

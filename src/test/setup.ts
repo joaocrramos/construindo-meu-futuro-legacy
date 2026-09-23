@@ -18,6 +18,15 @@ beforeAll(() => {
     }),
   })
 
+  // Polyfill ResizeObserver for Radix UI components (Checkbox, Select, etc.) in JSDOM
+  if (typeof globalThis.ResizeObserver === 'undefined') {
+    globalThis.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  }
+
   // Disable CSS animations and transitions globally in tests so Radix Dialog and Tooltips mount synchronously
   const style = document.createElement('style')
   style.innerHTML = `

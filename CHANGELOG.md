@@ -4,6 +4,24 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.98] - 2026-09-23 (Correção definitiva dos testes de Movimentações e Ativos com mock parcial e polyfill ResizeObserver)
+
+### Corrigido (Fixed)
+
+- **Mock Parcial em `movements` e `assets` (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Substituído automock integral `vi.mock('@/services/movements')` e `vi.mock('@/services/assets')` por mock parcial preservando constantes canônicas reais via `importOriginal` (`ASSET_REQUIRED_MOVEMENTS`, `FIXED_INCOME_SUBTYPES`, `FIXED_INCOME_INDEXERS`, `ASSET_SUBTYPES_BY_CLASS`, `ASSET_CLASS_LABELS`).
+  - Corrige esvaziamento silencioso de arrays exportados pelo Vitest, garantindo renderização dos campos de Renda Fixa, Preço, Quantidade e opções dos Selects Radix.
+- **Polyfill de `ResizeObserver` (`src/test/setup.ts`)**:
+  - Adicionado stub global para `ResizeObserver` no setup de testes para suporte à medição de layout de componentes Radix UI (`Select`, `Checkbox`) em ambiente JSDOM.
+- **Alinhamento dos Testes de Ativos à UI Atual (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Atualizada a consulta de rótulo para "Subtipo / Segmento" no teste 3 de Ativos.
+  - No teste 4 de Renda Fixa, atualizada a interação para acionar os triggers dos Radix Selects ("Classe de Ativo" e "Tipo de Título de Renda Fixa") e selecionar as opções correspondentes.
+  - Ajustada a consulta do botão de abertura de modal nos testes de Movimentações para `/Registrar primeira movimentação/i`, prevenindo colisão de elementos múltiplos no getByRole.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.98` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.97] - 2026-09-23 (Aguardar renderização do formulário de Movimentações com findByLabelText Tipo de Operação)
 
 ### Corrigido (Fixed)
