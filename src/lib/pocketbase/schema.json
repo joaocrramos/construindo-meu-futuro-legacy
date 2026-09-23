@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-31T01:49:31.957Z",
+  "generatedAt": "2026-09-16T09:42:19.380Z",
   "collections": [
     {
       "name": "users",
@@ -29,28 +29,40 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "role",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["admin", "user"]
+          "selectValues": [
+            "admin",
+            "user"
+          ]
         },
         {
           "name": "status",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["active", "suspended", "pending"]
+          "selectValues": [
+            "active",
+            "suspended",
+            "pending"
+          ]
         },
         {
           "name": "must_change_password",
