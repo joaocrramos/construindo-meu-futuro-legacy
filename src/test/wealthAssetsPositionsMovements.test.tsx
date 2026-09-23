@@ -9,11 +9,13 @@ import * as assetService from '@/services/assets'
 import * as movService from '@/services/movements'
 import * as posService from '@/services/positions'
 import * as accService from '@/services/accounts'
+import * as balService from '@/services/accountBalances'
 
 vi.mock('@/services/assets')
 vi.mock('@/services/movements')
 vi.mock('@/services/positions')
 vi.mock('@/services/accounts')
+vi.mock('@/services/accountBalances')
 
 describe('CRUD de Ativos (/wealth/assets)', () => {
   beforeEach(() => {
@@ -291,7 +293,131 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     })
   })
 
-  it('4. Compra exibe Emolumentos e Liquidação (sem IR), resume Custo total e envia fees_cents somados e taxes_cents = 0', async () => {
+  it('4. Edição de movimentação abre formulário preenchido e chama updateMovement', async () => {
+    vi.mocked(movService.listMovements).mockResolvedValue([
+      {
+        id: 'mov_to_edit',
+        user_id: 'usr_1',
+        account_id: 'acc_1',
+        asset_id: 'ast_1',
+        movement_type: 'buy',
+        date: '2026-03-20',
+        quantity_e8: 10000000000,
+        unit_price_cents: 3550,
+        gross_amount_cents: 355000,
+        fees_cents: 500,
+        taxes_cents: 0,
+        net_amount_cents: 355500,
+        is_reversed: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        expand: {
+          account_id: {
+            id: 'acc_1',
+            user_id: 'usr_1',
+            institution_id: 'inst_1',
+            name: 'Conta XP',
+            account_type: 'investment',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+          asset_id: {
+            id: 'ast_1',
+            user_id: 'usr_1',
+            ticker: 'PETR4',
+            name: 'Petrobras PN',
+            asset_class: 'equities',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+        },
+      },
+    ])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Conta XP',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_1',
+        user_id: 'usr_1',
+        ticker: 'PETR4',
+        name: 'Petrobras PN',
+        asset_class: 'equities',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(movService.updateMovement).mockResolvedValue({
+      id: 'mov_to_edit',
+      user_id: 'usr_1',
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'buy',
+      date: '2026-03-20',
+      quantity_e8: 10000000000,
+      unit_price_cents: 3550,
+      gross_amount_cents: 400000,
+      fees_cents: 500,
+      taxes_cents: 0,
+      net_amount_cents: 400500,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <MovementsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Editar/i })).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Editar/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Editar Movimentação')).not.toBeNull()
+      expect(screen.getByRole('button', { name: /Salvar Alterações/i })).not.toBeNull()
+    })
+
+    // Altera o valor bruto para 4000
+    const grossInput = screen.getByLabelText(/Valor Bruto/i)
+    fireEvent.change(grossInput, { target: { value: '4000' } })
+
+    const saveBtn = screen.getByRole('button', { name: /Salvar Alterações/i })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(movService.updateMovement).toHaveBeenCalledWith(
+        'mov_to_edit',
+        expect.objectContaining({
+          account_id: 'acc_1',
+          asset_id: 'ast_1',
+          movement_type: 'buy',
+          gross_amount_cents: 400000,
+        }),
+      )
+    })
+  })
+
+  it('5. Compra exibe Emolumentos e Liquidação (sem IR), resume Custo total e envia fees_cents somados e taxes_cents = 0', async () => {
     vi.mocked(movService.listMovements).mockResolvedValue([])
     vi.mocked(accService.listAccounts).mockResolvedValue([
       {
@@ -394,6 +520,7 @@ describe('Posições em Custódia (/wealth/positions)', () => {
     vi.mocked(movService.listMovements).mockResolvedValue([])
     vi.mocked(accService.listAccounts).mockResolvedValue([])
     vi.mocked(assetService.listAssets).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
     vi.mocked(posService.derivePositionsFromMovements).mockReturnValue([])
 
     render(
@@ -408,11 +535,70 @@ describe('Posições em Custódia (/wealth/positions)', () => {
     })
   })
 
-  it('2. Exibe posições derivadas das movimentações com cálculo de Preço Médio e e8', async () => {
+  it('2. Exibe Dinheiro em Caixa destacado por conta e no resumo consolidado', async () => {
+    vi.mocked(posService.listPositions).mockResolvedValue([])
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Itaú Conta Corrente',
+        account_type: 'checking',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([
+      {
+        id: 'bal_1',
+        user_id: 'usr_1',
+        account_id: 'acc_1',
+        currency: 'BRL',
+        balance_cents: 1500000, // R$ 15.000,00
+        last_recalculated_at: new Date().toISOString(),
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        expand: {
+          account_id: {
+            id: 'acc_1',
+            user_id: 'usr_1',
+            institution_id: 'inst_1',
+            name: 'Itaú Conta Corrente',
+            account_type: 'checking',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+        },
+      },
+    ])
+    vi.mocked(posService.derivePositionsFromMovements).mockReturnValue([])
+
+    render(
+      <MemoryRouter>
+        <PositionsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText(/Dinheiro em Caixa Disponível/i)).not.toBeNull()
+      expect(screen.getByText(/Dinheiro em Caixa \(Disponível para Transações\)/i)).not.toBeNull()
+      expect(screen.getByText('Itaú Conta Corrente')).not.toBeNull()
+      expect(screen.getAllByText('R$ 15.000,00').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  it('3. Exibe posições derivadas das movimentações com cálculo de Preço Médio e e8', async () => {
     vi.mocked(posService.listPositions).mockResolvedValue([])
     vi.mocked(movService.listMovements).mockResolvedValue([])
     vi.mocked(accService.listAccounts).mockResolvedValue([])
     vi.mocked(assetService.listAssets).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
 
     vi.mocked(posService.derivePositionsFromMovements).mockReturnValue([
       {

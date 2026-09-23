@@ -1,7 +1,16 @@
 import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
-import { Layers, Loader2, Coins, ArrowUpDown } from 'lucide-react'
+import {
+  Layers,
+  Loader2,
+  Coins,
+  ArrowUpDown,
+  Wallet,
+  Building2,
+  ArrowDownRight,
+  ArrowUpRight,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
@@ -15,6 +24,7 @@ import {
 import { listMovements, formatQuantityE8, type MovementRecord } from '@/services/movements'
 import { listAccounts, type AccountRecord } from '@/services/accounts'
 import { listAssets, type AssetRecord, ASSET_CLASS_LABELS } from '@/services/assets'
+import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
 
 export default function PositionsPage() {
   const [positions, setPositions] = React.useState<PositionRecord[]>([])
@@ -22,22 +32,25 @@ export default function PositionsPage() {
   const [accounts, setAccounts] = React.useState<AccountRecord[]>([])
   const [assets, setAssets] = React.useState<AssetRecord[]>([])
   const [, setMovements] = React.useState<MovementRecord[]>([])
+  const [accountBalances, setAccountBalances] = React.useState<AccountBalanceRecord[]>([])
   const [loading, setLoading] = React.useState(true)
 
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true)
-      const [posData, movData, accData, assetData] = await Promise.all([
+      const [posData, movData, accData, assetData, balData] = await Promise.all([
         listPositions(),
         listMovements(),
         listAccounts(),
         listAssets(),
+        listAccountBalances(),
       ])
 
       setPositions(posData)
       setMovements(movData)
       setAccounts(accData)
       setAssets(assetData)
+      setAccountBalances(balData)
 
       // Se a collection positions estiver vazia no momento (backend-only recalcs pendentes),
       // deriva posições em memória a partir dos lançamentos contábeis de movements
@@ -63,6 +76,9 @@ export default function PositionsPage() {
     ? positions.reduce((acc, p) => acc + (p.total_cost_cents || 0), 0)
     : derivedPositions.reduce((acc, p) => acc + p.total_cost_cents, 0)
 
+  // Saldo total em dinheiro em caixa disponível (todas as contas)
+  const totalCashCents = accountBalances.reduce((acc, b) => acc + (b.balance_cents || 0), 0)
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -81,7 +97,7 @@ export default function PositionsPage() {
       />
 
       {/* Resumo consolidado */}
-      {totalPositionsCount > 0 && (
+      {(totalPositionsCount > 0 || accountBalances.length > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium">Total de Posições Ativas</p>
@@ -89,13 +105,87 @@ export default function PositionsPage() {
               {totalPositionsCount}
             </p>
           </div>
-          <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:col-span-2">
+          <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium">
-              Custo Total Acumulado (Entrada)
+              Dinheiro em Caixa Disponível
+            </p>
+            <p
+              className={`text-2xl font-bold font-mono mt-1 ${
+                totalCashCents >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+              }`}
+            >
+              {formatCurrencyBRL(totalCashCents / 100)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground font-medium">
+              Custo Total em Ativos (Entrada)
             </p>
             <p className="text-2xl font-bold font-mono mt-1 text-primary">
               {formatCurrencyBRL(totalPortfolioCostCents / 100)}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Seção Destacada: Dinheiro em Caixa por Conta */}
+      {accountBalances.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Dinheiro em Caixa (Disponível para Transações)
+              </h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Alimentado por depósitos, vendas de ativos e dividendos recebidos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {accountBalances.map((bal) => {
+              const acc = bal.expand?.account_id || accounts.find((a) => a.id === bal.account_id)
+              const balanceBrl = (bal.balance_cents || 0) / 100
+
+              return (
+                <div
+                  key={bal.id}
+                  className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/10 p-3.5 flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Building2 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">
+                          {acc?.name || 'Conta Bancária'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Moeda: {bal.currency || 'BRL'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]"
+                    >
+                      Em Caixa
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-emerald-500/15 flex items-baseline justify-between">
+                    <span className="text-[11px] text-muted-foreground">Saldo Líquido</span>
+                    <span className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                      {bal.currency === 'USD'
+                        ? `$ ${balanceBrl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        : formatCurrencyBRL(balanceBrl)}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

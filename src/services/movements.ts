@@ -54,6 +54,20 @@ export interface CreateMovementPayload {
   notes?: string
 }
 
+export interface UpdateMovementPayload {
+  account_id?: string
+  asset_id?: string | null
+  movement_type?: MovementType
+  date?: string
+  quantity_e8?: number
+  unit_price_cents?: number
+  gross_amount_cents?: number
+  fees_cents?: number
+  taxes_cents?: number
+  net_amount_cents?: number
+  notes?: string | null
+}
+
 export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
   deposit: 'Aporte / Depósito',
   withdrawal: 'Resgate / Saque',
@@ -188,8 +202,14 @@ export function translateMovementError(error: unknown): string {
   ) {
     return 'Esta movimentação já foi registrada anteriormente (chave de idempotência duplicada).'
   }
+  if (strErr.includes('Saldo insuficiente na conta.') || strErr.includes('INSUFFICIENT_FUNDS')) {
+    return 'Saldo insuficiente na conta.'
+  }
   if (strErr.includes('NET_AMOUNT_MISMATCH')) {
     return 'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.'
+  }
+  if (strErr.includes('MOVEMENT_REVERSED')) {
+    return 'Não é possível editar uma movimentação que já foi estornada.'
   }
 
   return 'Ocorreu um erro ao registrar a movimentação. Tente novamente.'
@@ -256,6 +276,69 @@ export async function createMovement(payload: CreateMovementPayload): Promise<Mo
         notes: payload.notes,
       },
     })
+    return record
+  } catch (err) {
+    const userFriendlyMsg = translateMovementError(err)
+    const enhancedErr = new Error(userFriendlyMsg)
+    ;(enhancedErr as unknown as { original: unknown }).original = err
+    throw enhancedErr
+  }
+}
+
+/**
+ * Atualiza uma movimentação financeira existente via hook server-side e recalcula saldos e posições.
+ */
+export async function updateMovement(
+  id: string,
+  payload: UpdateMovementPayload,
+): Promise<MovementRecord> {
+  const userId = pb.authStore.record?.id
+  if (!userId) {
+    throw new Error('Usuário não autenticado.')
+  }
+
+  if (payload.gross_amount_cents !== undefined && payload.movement_type) {
+    const fees =
+      payload.fees_cents !== undefined && payload.fees_cents !== null ? payload.fees_cents : 0
+    const taxes =
+      payload.taxes_cents !== undefined && payload.taxes_cents !== null ? payload.taxes_cents : 0
+    const gross = payload.gross_amount_cents
+    const isBuy = payload.movement_type === 'buy'
+    const expectedNet = isBuy ? gross + fees : gross - fees - taxes
+
+    if (
+      payload.net_amount_cents !== undefined &&
+      payload.net_amount_cents !== null &&
+      payload.net_amount_cents !== expectedNet
+    ) {
+      throw new Error(
+        isBuy
+          ? 'Divergência no valor líquido: na compra de ativo, o valor líquido deve ser igual ao valor bruto mais taxas/emolumentos.'
+          : 'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
+      )
+    }
+  }
+
+  try {
+    const record = await pb.send<MovementRecord>(
+      `/backend/v1/movements/${encodeURIComponent(id)}`,
+      {
+        method: 'PUT',
+        body: {
+          account_id: payload.account_id,
+          asset_id: payload.asset_id,
+          movement_type: payload.movement_type,
+          date: payload.date,
+          quantity_e8: payload.quantity_e8,
+          unit_price_cents: payload.unit_price_cents,
+          gross_amount_cents: payload.gross_amount_cents,
+          fees_cents: payload.fees_cents,
+          taxes_cents: payload.taxes_cents,
+          net_amount_cents: payload.net_amount_cents,
+          notes: payload.notes,
+        },
+      },
+    )
     return record
   } catch (err) {
     const userFriendlyMsg = translateMovementError(err)

@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import pb from '@/lib/pocketbase/client'
 import {
   createMovement,
+  updateMovement,
   translateMovementError,
   type CreateMovementPayload,
+  type UpdateMovementPayload,
 } from '@/services/movements'
 
 vi.mock('@/lib/pocketbase/client', () => {
@@ -368,5 +370,105 @@ describe('movements service - createMovement e validações', () => {
     expect(result.fees_cents).toBe(8000)
     expect(result.taxes_cents).toBe(30000)
     expect(result.net_amount_cents).toBe(1962000)
+  })
+
+  it('10. updateMovement envia PUT /backend/v1/movements/{id} com dados atualizados', async () => {
+    const updatedResponse = {
+      id: 'mov_edit_1',
+      user_id: 'usr_mock_123',
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'buy' as const,
+      date: '2026-03-25',
+      quantity_e8: 15000000000,
+      unit_price_cents: 3600,
+      gross_amount_cents: 540000,
+      fees_cents: 500,
+      taxes_cents: 0,
+      net_amount_cents: 540500,
+      notes: 'Nota atualizada',
+      created: '2026-03-24T12:00:00Z',
+      updated: '2026-03-25T14:00:00Z',
+    }
+
+    vi.mocked(pb.send).mockResolvedValueOnce(updatedResponse)
+
+    const payload: UpdateMovementPayload = {
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'buy',
+      date: '2026-03-25',
+      quantity_e8: 15000000000,
+      unit_price_cents: 3600,
+      gross_amount_cents: 540000,
+      fees_cents: 500,
+      taxes_cents: 0,
+      net_amount_cents: 540500,
+      notes: 'Nota atualizada',
+    }
+
+    const result = await updateMovement('mov_edit_1', payload)
+
+    expect(pb.send).toHaveBeenCalledWith('/backend/v1/movements/mov_edit_1', {
+      method: 'PUT',
+      body: {
+        account_id: 'acc_1',
+        asset_id: 'ast_1',
+        movement_type: 'buy',
+        date: '2026-03-25',
+        quantity_e8: 15000000000,
+        unit_price_cents: 3600,
+        gross_amount_cents: 540000,
+        fees_cents: 500,
+        taxes_cents: 0,
+        net_amount_cents: 540500,
+        notes: 'Nota atualizada',
+      },
+    })
+    expect(result).toEqual(updatedResponse)
+  })
+
+  it('11. updateMovement rejeita usuário deslogado e divergência de líquido', async () => {
+    // @ts-expect-error mock unauthenticated authStore
+    pb.authStore = { record: null }
+
+    await expect(
+      updateMovement('mov_edit_1', {
+        movement_type: 'deposit',
+        gross_amount_cents: 1000,
+      }),
+    ).rejects.toThrow('Usuário não autenticado.')
+
+    // Restaura autenticado
+    // @ts-expect-error mock authStore
+    pb.authStore = { record: { id: 'usr_mock_123' } }
+
+    await expect(
+      updateMovement('mov_edit_1', {
+        movement_type: 'buy',
+        gross_amount_cents: 10000,
+        fees_cents: 500,
+        net_amount_cents: 9000, // Deveria ser 10500 na compra
+      }),
+    ).rejects.toThrow('Divergência no valor líquido')
+  })
+
+  it('12. Rejeição de saldo insuficiente retorna mensagem clara', async () => {
+    vi.mocked(pb.send).mockRejectedValueOnce({
+      response: {
+        message: 'Saldo insuficiente na conta.',
+        code: 'INSUFFICIENT_FUNDS',
+      },
+      status: 400,
+    })
+
+    await expect(
+      createMovement({
+        account_id: 'acc_1',
+        movement_type: 'withdrawal',
+        date: '2026-03-25',
+        gross_amount_cents: 500000,
+      }),
+    ).rejects.toThrow('Saldo insuficiente na conta.')
   })
 })

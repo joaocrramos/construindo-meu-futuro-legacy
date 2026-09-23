@@ -2,7 +2,16 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { CreditCard, Plus, Edit2, Building2, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import {
+  CreditCard,
+  Plus,
+  Edit2,
+  Building2,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Wallet,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -33,6 +42,8 @@ import {
   type AccountType,
 } from '@/services/accounts'
 import { listInstitutions, type InstitutionRecord } from '@/services/institutions'
+import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
+import { formatCurrencyBRL } from '@/lib/formatters'
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   checking: 'Conta Corrente',
@@ -46,6 +57,7 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 export default function AccountsPage() {
   const [accounts, setAccounts] = React.useState<AccountRecord[]>([])
   const [institutions, setInstitutions] = React.useState<InstitutionRecord[]>([])
+  const [balances, setBalances] = React.useState<AccountBalanceRecord[]>([])
   const [loading, setLoading] = React.useState(true)
 
   // Modal Create / Edit
@@ -68,9 +80,14 @@ export default function AccountsPage() {
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true)
-      const [accData, instData] = await Promise.all([listAccounts(), listInstitutions()])
+      const [accData, instData, balData] = await Promise.all([
+        listAccounts(),
+        listInstitutions(),
+        listAccountBalances(),
+      ])
       setAccounts(accData)
       setInstitutions(instData)
+      setBalances(balData)
     } catch (err: unknown) {
       toast.error((err as Error)?.message || 'Falha ao buscar dados de contas.')
     } finally {
@@ -403,77 +420,88 @@ export default function AccountsPage() {
                   <th className="px-4 py-3">Instituição</th>
                   <th className="px-4 py-3">Tipo</th>
                   <th className="px-4 py-3">Moeda</th>
+                  <th className="px-4 py-3 text-right">Saldo em Caixa</th>
                   <th className="px-4 py-3">Agência / Número</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {accounts.map((acc) => (
-                  <tr key={acc.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span>{acc.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {acc.expand?.institution_id?.name || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {ACCOUNT_TYPE_LABELS[acc.account_type] || acc.account_type}
-                    </td>
-                    <td className="px-4 py-3 font-mono font-medium text-foreground">
-                      {acc.currency || 'BRL'}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-muted-foreground">
-                      {acc.agency || acc.account_number
-                        ? `${acc.agency ? `Ag: ${acc.agency} ` : ''}${acc.account_number ? `CC: ${acc.account_number}` : ''}`
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {acc.is_active ? (
-                        <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Ativa
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-muted-foreground border-border gap-1"
-                        >
-                          <XCircle className="h-3 w-3" />
-                          Inativa
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => handleOpenEdit(acc)}
-                        >
-                          <Edit2 className="h-3.5 w-3.5 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`h-7 px-2 text-xs ${
-                            acc.is_active
-                              ? 'text-destructive hover:text-destructive hover:bg-destructive/10'
-                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10'
-                          }`}
-                          onClick={() => setToggleTarget(acc)}
-                        >
-                          {acc.is_active ? 'Desativar' : 'Ativar'}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {accounts.map((acc) => {
+                  const accBalance = balances.find((b) => b.account_id === acc.id)
+                  const balanceVal = accBalance ? (accBalance.balance_cents || 0) / 100 : 0
+
+                  return (
+                    <tr key={acc.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span>{acc.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {acc.expand?.institution_id?.name || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {ACCOUNT_TYPE_LABELS[acc.account_type] || acc.account_type}
+                      </td>
+                      <td className="px-4 py-3 font-mono font-medium text-foreground">
+                        {acc.currency || 'BRL'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                        {acc.currency === 'USD'
+                          ? `$ ${balanceVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          : formatCurrencyBRL(balanceVal)}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-muted-foreground">
+                        {acc.agency || acc.account_number
+                          ? `${acc.agency ? `Ag: ${acc.agency} ` : ''}${acc.account_number ? `CC: ${acc.account_number}` : ''}`
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {acc.is_active ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Ativa
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-muted-foreground border-border gap-1"
+                          >
+                            <XCircle className="h-3 w-3" />
+                            Inativa
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => handleOpenEdit(acc)}
+                          >
+                            <Edit2 className="h-3.5 w-3.5 mr-1" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-7 px-2 text-xs ${
+                              acc.is_active
+                                ? 'text-destructive hover:text-destructive hover:bg-destructive/10'
+                                : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10'
+                            }`}
+                            onClick={() => setToggleTarget(acc)}
+                          >
+                            {acc.is_active ? 'Desativar' : 'Ativar'}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

@@ -5,6 +5,7 @@ import { DatePicker } from '@/components/DatePicker'
 import {
   ArrowUpDown,
   Plus,
+  Edit2,
   Loader2,
   TrendingUp,
   TrendingDown,
@@ -36,11 +37,14 @@ import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
 import {
   listMovements,
   createMovement,
+  updateMovement,
   MOVEMENT_TYPE_LABELS,
   ASSET_REQUIRED_MOVEMENTS,
   decimalToE8,
+  e8ToDecimal,
   formatQuantityE8,
   brlToCents,
+  centsToBrl,
   type MovementRecord,
   type MovementType,
 } from '@/services/movements'
@@ -53,8 +57,9 @@ export default function MovementsPage() {
   const [assets, setAssets] = React.useState<AssetRecord[]>([])
   const [loading, setLoading] = React.useState(true)
 
-  // Modal Create
+  // Modal Create / Edit
   const [openModal, setOpenModal] = React.useState(false)
+  const [editingMovement, setEditingMovement] = React.useState<MovementRecord | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
 
   // Formulário
@@ -100,6 +105,7 @@ export default function MovementsPage() {
   }, [loadData])
 
   const handleOpenCreate = () => {
+    setEditingMovement(null)
     const activeAcc = accounts.find((a) => a.is_active) || accounts[0]
     setAccountId(activeAcc?.id || '')
     const activeAsset = assets.find((a) => a.is_active) || assets[0]
@@ -115,6 +121,57 @@ export default function MovementsPage() {
     setTaxesInput('0')
     setIdempotencyKey('')
     setNotes('')
+    setOpenModal(true)
+  }
+
+  const handleOpenEdit = (mov: MovementRecord) => {
+    if (mov.is_reversed) {
+      toast.error('Movimentações estornadas não podem ser editadas.')
+      return
+    }
+
+    setEditingMovement(mov)
+    setAccountId(mov.account_id)
+    setAssetId(mov.asset_id || 'none')
+    setMovementType(mov.movement_type)
+
+    if (mov.date) {
+      // Evitar distorção de fuso horário criando a partir de ano, mês, dia
+      const parts = mov.date.split('T')[0].split('-')
+      if (parts.length === 3) {
+        setMovementDate(new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])))
+      } else {
+        setMovementDate(new Date(mov.date))
+      }
+    } else {
+      setMovementDate(new Date())
+    }
+
+    const qtyDec = mov.quantity_e8 ? e8ToDecimal(mov.quantity_e8) : 0
+    setQuantityInput(qtyDec > 0 ? String(qtyDec).replace('.', ',') : '')
+
+    const unitPrice = mov.unit_price_cents ? centsToBrl(mov.unit_price_cents) : 0
+    setUnitPriceInput(unitPrice > 0 ? unitPrice.toFixed(2).replace('.', ',') : '')
+
+    const grossBrl = centsToBrl(mov.gross_amount_cents)
+    setGrossInput(grossBrl > 0 ? grossBrl.toFixed(2).replace('.', ',') : '')
+
+    const isBuyOrSellType = mov.movement_type === 'buy' || mov.movement_type === 'sell'
+    const totalFeesBrl = centsToBrl(mov.fees_cents)
+    if (isBuyOrSellType) {
+      // Como não temos detalhamento salvo separado de emolumentos vs liquidação,
+      // alocamos o total em emolumentos e 0 em liquidação na edição
+      setEmolumentsInput(totalFeesBrl > 0 ? totalFeesBrl.toFixed(2).replace('.', ',') : '0')
+      setSettlementFeesInput('0')
+    } else {
+      setFeesInput(totalFeesBrl > 0 ? totalFeesBrl.toFixed(2).replace('.', ',') : '0')
+    }
+
+    const taxesBrl = centsToBrl(mov.taxes_cents)
+    setTaxesInput(taxesBrl > 0 ? taxesBrl.toFixed(2).replace('.', ',') : '0')
+
+    setIdempotencyKey(mov.idempotency_key || '')
+    setNotes(mov.notes || '')
     setOpenModal(true)
   }
 
@@ -135,34 +192,42 @@ export default function MovementsPage() {
   const isBuyOrSell = movementType === 'buy' || movementType === 'sell'
   const isBuy = movementType === 'buy'
   const isSell = movementType === 'sell'
+  const isDepositOrWithdrawal = movementType === 'deposit' || movementType === 'withdrawal'
 
   // Para buy e sell: emolumentos + liquidação vão para fees_cents
   const computedFeesCents = React.useMemo(() => {
+    if (isDepositOrWithdrawal) {
+      return 0
+    }
     if (isBuyOrSell) {
       return brlToCents(emolumentsInput) + brlToCents(settlementFeesInput)
     }
     return brlToCents(feesInput)
-  }, [isBuyOrSell, emolumentsInput, settlementFeesInput, feesInput])
+  }, [isDepositOrWithdrawal, isBuyOrSell, emolumentsInput, settlementFeesInput, feesInput])
 
-  // Para buy: taxes_cents é sempre 0 (IR não se aplica na compra)
+  // Para buy, deposit e withdrawal: taxes_cents é sempre 0
   // Para sell e outros: taxes_cents vem do input
   const computedTaxesCents = React.useMemo(() => {
-    if (isBuy) {
+    if (isBuy || isDepositOrWithdrawal) {
       return 0
     }
     return brlToCents(taxesInput)
-  }, [isBuy, taxesInput])
+  }, [isBuy, isDepositOrWithdrawal, taxesInput])
 
   // Cálculo contábil:
   // - Na compra: valor líquido = bruto + emolumentos + liquidação (os custos entram no custo de aquisição)
+  // - No depósito e resgate: valor líquido = bruto
   // - Na venda e demais: valor líquido = bruto - taxas/emolumentos - impostos/IR
   const calculatedNetCents = React.useMemo(() => {
     const gross = brlToCents(grossInput)
     if (isBuy) {
       return gross + computedFeesCents
     }
+    if (isDepositOrWithdrawal) {
+      return gross
+    }
     return gross - computedFeesCents - computedTaxesCents
-  }, [grossInput, isBuy, computedFeesCents, computedTaxesCents])
+  }, [grossInput, isBuy, isDepositOrWithdrawal, computedFeesCents, computedTaxesCents])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -192,25 +257,42 @@ export default function MovementsPage() {
 
     setSubmitting(true)
     try {
-      await createMovement({
-        account_id: accountId,
-        asset_id: assetId && assetId !== 'none' ? assetId : undefined,
-        movement_type: movementType,
-        date: movementDate.toISOString().split('T')[0],
-        quantity_e8: qtyE8,
-        unit_price_cents: unitCents,
-        gross_amount_cents: grossCents,
-        fees_cents: feesCents,
-        taxes_cents: taxesCents,
-        net_amount_cents: calculatedNetCents,
-        idempotency_key: idempotencyKey.trim() || undefined,
-        notes: notes.trim() || undefined,
-      })
-      toast.success('Movimentação registrada com sucesso!')
+      if (editingMovement) {
+        await updateMovement(editingMovement.id, {
+          account_id: accountId,
+          asset_id: assetId && assetId !== 'none' ? assetId : null,
+          movement_type: movementType,
+          date: movementDate.toISOString().split('T')[0],
+          quantity_e8: qtyE8,
+          unit_price_cents: unitCents,
+          gross_amount_cents: grossCents,
+          fees_cents: feesCents,
+          taxes_cents: taxesCents,
+          net_amount_cents: calculatedNetCents,
+          notes: notes.trim() || null,
+        })
+        toast.success('Movimentação atualizada com sucesso!')
+      } else {
+        await createMovement({
+          account_id: accountId,
+          asset_id: assetId && assetId !== 'none' ? assetId : undefined,
+          movement_type: movementType,
+          date: movementDate.toISOString().split('T')[0],
+          quantity_e8: qtyE8,
+          unit_price_cents: unitCents,
+          gross_amount_cents: grossCents,
+          fees_cents: feesCents,
+          taxes_cents: taxesCents,
+          net_amount_cents: calculatedNetCents,
+          idempotency_key: idempotencyKey.trim() || undefined,
+          notes: notes.trim() || undefined,
+        })
+        toast.success('Movimentação registrada com sucesso!')
+      }
       setOpenModal(false)
       loadData()
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || 'Não foi possível registrar a movimentação.')
+      toast.error((err as Error)?.message || 'Não foi possível salvar a movimentação.')
     } finally {
       setSubmitting(false)
     }
@@ -234,14 +316,17 @@ export default function MovementsPage() {
         }
       />
 
-      {/* Modal de Criação */}
+      {/* Modal de Criação / Edição */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Nova Movimentação</DialogTitle>
+            <DialogTitle>
+              {editingMovement ? 'Editar Movimentação' : 'Nova Movimentação'}
+            </DialogTitle>
             <DialogDescription className="text-xs">
-              Lance compras, vendas, aportes ou proventos com cálculo contábil imediato de taxas e
-              líquido.
+              {editingMovement
+                ? 'Atualize os dados da movimentação com recálculo automático de saldos e posições.'
+                : 'Lance compras, vendas, aportes ou proventos com cálculo contábil imediato de taxas e líquido.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -368,6 +453,18 @@ export default function MovementsPage() {
                   </Select>
                 </div>
               </div>
+
+              {/* Informação sobre Depósito / Saque */}
+              {isDepositOrWithdrawal && (
+                <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {movementType === 'deposit' ? 'Aporte em Dinheiro' : 'Resgate / Saque'}:
+                  </span>{' '}
+                  {movementType === 'deposit'
+                    ? 'Este valor será creditado diretamente no saldo em caixa da conta selecionada.'
+                    : 'Este valor será debitado do saldo em caixa da conta selecionada. A operação será rejeitada se o saldo for insuficiente.'}
+                </div>
+              )}
 
               {/* Quantidade e Preço Unitário quando tipo envolve ativo */}
               {isAssetRequired && (
@@ -501,8 +598,23 @@ export default function MovementsPage() {
                       />
                     </div>
                   </div>
+                ) : isDepositOrWithdrawal ? (
+                  // Depósito ou Saque (Apenas valor em dinheiro em caixa)
+                  <div className="space-y-1">
+                    <Label htmlFor="movGross" className="text-xs font-semibold">
+                      Valor {movementType === 'deposit' ? 'do Aporte' : 'do Resgate'} (R$) *
+                    </Label>
+                    <Input
+                      id="movGross"
+                      placeholder="0,00"
+                      value={grossInput}
+                      onChange={(e) => setGrossInput(e.target.value)}
+                      className="h-8 text-xs font-mono font-medium"
+                      required
+                    />
+                  </div>
                 ) : (
-                  // Demais tipos (deposit, withdrawal, dividend, fee, tax, etc.): Mantém campos anteriores
+                  // Demais tipos (dividend, fee, tax, etc.)
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="movGross" className="text-xs font-semibold">
@@ -566,6 +678,22 @@ export default function MovementsPage() {
                         {formatCurrencyBRL(calculatedNetCents / 100)}
                       </span>
                     </>
+                  ) : isDepositOrWithdrawal ? (
+                    <>
+                      <span className="text-muted-foreground font-medium">
+                        Impacto em caixa da conta:
+                      </span>
+                      <span
+                        className={`font-mono font-bold ${
+                          movementType === 'deposit'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-amber-600 dark:text-amber-400'
+                        }`}
+                      >
+                        {movementType === 'deposit' ? '+' : '-'}
+                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                      </span>
+                    </>
                   ) : (
                     <>
                       <span className="text-muted-foreground font-medium">
@@ -590,7 +718,13 @@ export default function MovementsPage() {
                     value={idempotencyKey}
                     onChange={(e) => setIdempotencyKey(e.target.value)}
                     className="h-9 text-xs font-mono"
+                    disabled={Boolean(editingMovement)}
                   />
+                  {editingMovement && (
+                    <span className="text-[10px] text-muted-foreground">
+                      Chave original mantida pelo sistema na edição.
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -620,8 +754,10 @@ export default function MovementsPage() {
                   {submitting ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      Registrando...
+                      {editingMovement ? 'Salvando...' : 'Registrando...'}
                     </>
+                  ) : editingMovement ? (
+                    'Salvar Alterações'
                   ) : (
                     'Confirmar Lançamento'
                   )}
@@ -661,6 +797,7 @@ export default function MovementsPage() {
                   <th className="px-4 py-3 text-right">Valor Bruto</th>
                   <th className="px-4 py-3 text-right">Líquido</th>
                   <th className="px-4 py-3">Chave / Nota</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y border-border">
@@ -734,6 +871,19 @@ export default function MovementsPage() {
                           <span>{mov.notes}</span>
                         ) : (
                           '—'
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {!mov.is_reversed && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => handleOpenEdit(mov)}
+                          >
+                            <Edit2 className="h-3.5 w-3.5 mr-1" />
+                            Editar
+                          </Button>
                         )}
                       </td>
                     </tr>

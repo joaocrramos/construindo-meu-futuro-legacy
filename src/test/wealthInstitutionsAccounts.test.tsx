@@ -6,9 +6,11 @@ import InstitutionsPage from '@/pages/wealth/Institutions'
 import AccountsPage from '@/pages/wealth/Accounts'
 import * as instService from '@/services/institutions'
 import * as accService from '@/services/accounts'
+import * as balService from '@/services/accountBalances'
 
 vi.mock('@/services/institutions')
 vi.mock('@/services/accounts')
+vi.mock('@/services/accountBalances')
 
 describe('CRUD de Instituições Financeiras', () => {
   beforeEach(() => {
@@ -161,6 +163,7 @@ describe('CRUD de Contas & Custódias', () => {
   it('1. Exibe EmptyState com ação "Criar primeira conta" quando não há registros', async () => {
     vi.mocked(accService.listAccounts).mockResolvedValue([])
     vi.mocked(instService.listInstitutions).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
 
     render(
       <MemoryRouter>
@@ -174,7 +177,7 @@ describe('CRUD de Contas & Custódias', () => {
     })
   })
 
-  it('2. Lista contas cadastradas com instituição expandida, tipo e moeda', async () => {
+  it('2. Lista contas cadastradas com instituição expandida, tipo, moeda e saldo em caixa', async () => {
     vi.mocked(instService.listInstitutions).mockResolvedValue([
       {
         id: 'inst_1',
@@ -213,6 +216,18 @@ describe('CRUD de Contas & Custódias', () => {
         },
       },
     ])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([
+      {
+        id: 'bal_1',
+        user_id: 'usr_1',
+        account_id: 'acc_1',
+        currency: 'BRL',
+        balance_cents: 850000,
+        last_recalculated_at: new Date().toISOString(),
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
 
     render(
       <MemoryRouter>
@@ -225,11 +240,13 @@ describe('CRUD de Contas & Custódias', () => {
       expect(screen.getByText('Banco Itaú')).not.toBeNull()
       expect(screen.getByText('Conta Corrente')).not.toBeNull()
       expect(screen.getByText('BRL')).not.toBeNull()
+      expect(screen.getByText('R$ 8.500,00')).not.toBeNull()
     })
   })
 
   it('3. Modal de conta renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
     vi.mocked(accService.listAccounts).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
     vi.mocked(instService.listInstitutions).mockResolvedValue([
       {
         id: 'inst_1',
