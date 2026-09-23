@@ -198,4 +198,59 @@ describe('movements service - createMovement e validações', () => {
 
     expect(translateMovementError(new Error('Unknown error'))).toBe('Unknown error')
   })
+
+  it('7. fees_cents=0 e taxes_cents=0 são explicitamente aceitos e enviados ao endpoint', async () => {
+    const expectedResponse = {
+      id: 'mov_zero_fees_taxes_1',
+      user_id: 'usr_mock_123',
+      account_id: 'acc_1',
+      movement_type: 'deposit',
+      date: '2026-03-24',
+      quantity_e8: 0,
+      unit_price_cents: 0,
+      gross_amount_cents: 50000,
+      fees_cents: 0,
+      taxes_cents: 0,
+      net_amount_cents: 50000,
+      created: '2026-03-24T12:00:00Z',
+      updated: '2026-03-24T12:00:00Z',
+    }
+
+    vi.mocked(pb.send).mockResolvedValueOnce(expectedResponse)
+
+    const payload: CreateMovementPayload = {
+      account_id: 'acc_1',
+      movement_type: 'deposit',
+      date: '2026-03-24',
+      gross_amount_cents: 50000,
+      fees_cents: 0,
+      taxes_cents: 0,
+      net_amount_cents: 50000,
+    }
+
+    const result = await createMovement(payload)
+
+    expect(pb.send).toHaveBeenCalledTimes(1)
+    expect(pb.send).toHaveBeenCalledWith('/backend/v1/movements', {
+      method: 'POST',
+      body: {
+        account_id: 'acc_1',
+        asset_id: undefined,
+        movement_type: 'deposit',
+        date: '2026-03-24',
+        quantity_e8: undefined,
+        unit_price_cents: undefined,
+        gross_amount_cents: 50000,
+        fees_cents: 0,
+        taxes_cents: 0,
+        net_amount_cents: 50000,
+        idempotency_key: undefined,
+        notes: undefined,
+      },
+    })
+    expect(result.fees_cents).toBe(0)
+    expect(result.taxes_cents).toBe(0)
+    expect(result.net_amount_cents).toBe(50000)
+    expect(result).toEqual(expectedResponse)
+  })
 })

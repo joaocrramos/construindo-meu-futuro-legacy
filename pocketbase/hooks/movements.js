@@ -246,16 +246,21 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
       }
       movRecord.set('movement_type', movementType)
       movRecord.set('date', dateStr)
-      if (quantityE8 > 0) {
-        movRecord.set('quantity_e8', quantityE8)
-      }
-      if (unitPriceCents > 0) {
-        movRecord.set('unit_price_cents', unitPriceCents)
-      }
-      movRecord.set('gross_amount_cents', grossAmountCents)
-      movRecord.set('fees_cents', feesCents)
-      movRecord.set('taxes_cents', taxesCents)
-      movRecord.set('net_amount_cents', netAmountCents)
+      movRecord.set('quantity_e8', quantityE8 !== undefined && quantityE8 !== null ? quantityE8 : 0)
+      movRecord.set(
+        'unit_price_cents',
+        unitPriceCents !== undefined && unitPriceCents !== null ? unitPriceCents : 0,
+      )
+      movRecord.set(
+        'gross_amount_cents',
+        grossAmountCents !== undefined && grossAmountCents !== null ? grossAmountCents : 0,
+      )
+      movRecord.set('fees_cents', feesCents !== undefined && feesCents !== null ? feesCents : 0)
+      movRecord.set('taxes_cents', taxesCents !== undefined && taxesCents !== null ? taxesCents : 0)
+      movRecord.set(
+        'net_amount_cents',
+        netAmountCents !== undefined && netAmountCents !== null ? netAmountCents : 0,
+      )
       if (idempotencyKey) {
         movRecord.set('idempotency_key', idempotencyKey)
       }

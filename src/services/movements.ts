@@ -215,11 +215,18 @@ export async function createMovement(payload: CreateMovementPayload): Promise<Mo
     throw new Error('Usuário não autenticado.')
   }
 
-  const fees = payload.fees_cents || 0
-  const taxes = payload.taxes_cents || 0
-  const gross = payload.gross_amount_cents || 0
+  const fees =
+    payload.fees_cents !== undefined && payload.fees_cents !== null ? payload.fees_cents : 0
+  const taxes =
+    payload.taxes_cents !== undefined && payload.taxes_cents !== null ? payload.taxes_cents : 0
+  const gross =
+    payload.gross_amount_cents !== undefined && payload.gross_amount_cents !== null
+      ? payload.gross_amount_cents
+      : 0
   const calculatedNet =
-    payload.net_amount_cents !== undefined ? payload.net_amount_cents : gross - fees - taxes
+    payload.net_amount_cents !== undefined && payload.net_amount_cents !== null
+      ? payload.net_amount_cents
+      : gross - fees - taxes
 
   if (calculatedNet !== gross - fees - taxes) {
     throw new Error(
