@@ -4,6 +4,19 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.95] - 2026-09-23 (Botões de edição icon-only nas tabelas patrimoniais)
+
+### Modificado (Changed)
+
+- **Ações de Linha nas Tabelas Patrimoniais (`/wealth/assets`, `/wealth/accounts`, `/wealth/institutions`, `/wealth/movements`)**:
+  - Removido o rótulo textual 'Editar' dos botões de ação de linha, passando a exibir exclusivamente o ícone (`Edit2`).
+  - Preservados os atributos de acessibilidade e tooltip nativo `title="Editar"` e `aria-label="Editar"`, assegurando conformidade de acessibilidade (WCAG) e estabilidade de seletores de teste (`getByRole('button', { name: 'Editar' })` ou `getByRole('button', { name: /Editar/i })`).
+  - Ajustadas as dimensões e espaçamento para o padrão icon-only (`h-7 w-7 p-0 text-muted-foreground hover:text-foreground`), preservando o visual compacto e as variantes dos botões.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.95` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.94] - 2026-09-23 (Alinhamento dos mocks dos testes 6, 7 e 8 de Movimentações Patrimoniais)
 
 ### Corrigido (Fixed)

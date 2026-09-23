@@ -1136,11 +1136,12 @@ export default function MovementsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-xs"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                             onClick={() => handleOpenEdit(mov)}
+                            title="Editar"
+                            aria-label="Editar"
                           >
-                            <Edit2 className="h-3.5 w-3.5 mr-1" />
-                            Editar
+                            <Edit2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </td>
