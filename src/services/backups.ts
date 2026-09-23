@@ -102,7 +102,7 @@ export async function downloadBackup(key: string): Promise<Blob> {
           errorMessage = text
         }
       }
-    } catch (_) {
+    } catch {
       // Usar a mensagem padrão com status se não conseguir ler
     }
 

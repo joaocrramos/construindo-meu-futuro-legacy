@@ -26,7 +26,6 @@ export interface MultiSelectFilterProps {
   options: MultiSelectOption[]
   selectedValues: string[]
   onSelectionChange: (values: string[]) => void
-  placeholder?: string
   searchPlaceholder?: string
   className?: string
   id?: string
@@ -37,7 +36,6 @@ export function MultiSelectFilter({
   options,
   selectedValues,
   onSelectionChange,
-  placeholder = 'Selecionar...',
   searchPlaceholder = 'Buscar...',
   className,
   id,

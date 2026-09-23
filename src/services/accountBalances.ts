@@ -26,7 +26,7 @@ export async function listAccountBalances(): Promise<AccountBalanceRecord[]> {
       expand: 'account_id',
     })
     return records
-  } catch (_) {
+  } catch {
     return []
   }
 }

@@ -9,10 +9,6 @@ import {
   Target,
   Plus,
   Loader2,
-  FolderTree,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listPortfolios, type PortfolioRecord } from '@/services/portfolios'

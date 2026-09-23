@@ -11,15 +11,11 @@ import {
   Loader2,
   Clock,
   Coins,
-  Building2,
-  AlertCircle,
-  CheckCircle2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listPositions, type PositionRecord } from '@/services/positions'
 import { listAccounts, type AccountRecord } from '@/services/accounts'
 import { listAssets, type AssetRecord, ASSET_CLASS_LABELS } from '@/services/assets'
-import { formatQuantityE8 } from '@/services/movements'
 import { toast } from 'sonner'
 
 export default function DueDatesOverviewPage() {

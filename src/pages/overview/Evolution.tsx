@@ -4,22 +4,18 @@ import { EmptyState } from '@/components/EmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
+import { formatCurrencyBRL } from '@/lib/formatters'
 import {
   TrendingUp,
   ArrowUpDown,
-  Plus,
   Loader2,
   Calendar,
   ArrowDownRight,
   ArrowUpRight,
   BarChart2,
-  LineChart as LineChartIcon,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { listMovements, MOVEMENT_TYPE_LABELS, type MovementRecord } from '@/services/movements'
-import { listAccounts, type AccountRecord } from '@/services/accounts'
-import { listAssets, type AssetRecord } from '@/services/assets'
+import { listMovements, type MovementRecord } from '@/services/movements'
 import {
   ChartContainer,
   ChartTooltip,
@@ -27,14 +23,11 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  Legend,
 } from 'recharts'
 import { toast } from 'sonner'
 
@@ -66,21 +59,13 @@ const chartConfig = {
 export default function EvolutionPage() {
   const [loading, setLoading] = React.useState(true)
   const [movements, setMovements] = React.useState<MovementRecord[]>([])
-  const [accounts, setAccounts] = React.useState<AccountRecord[]>([])
-  const [assets, setAssets] = React.useState<AssetRecord[]>([])
 
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true)
-      const [movData, accData, assetData] = await Promise.all([
-        listMovements(),
-        listAccounts(),
-        listAssets(),
-      ])
+      const movData = await listMovements()
 
       setMovements(movData)
-      setAccounts(accData)
-      setAssets(assetData)
     } catch (err: unknown) {
       toast.error((err as Error)?.message || 'Erro ao carregar histórico de evolução.')
     } finally {

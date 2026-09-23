@@ -3,16 +3,12 @@ import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { formatCurrencyBRL } from '@/lib/formatters'
 import {
   PieChart as PieChartIcon,
   Plus,
   Loader2,
   Building2,
-  Coins,
-  ArrowUpDown,
-  CircleDot,
   Layers,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -23,7 +19,7 @@ import {
   type PositionRecord,
   type DerivedPosition,
 } from '@/services/positions'
-import { listMovements, type MovementRecord } from '@/services/movements'
+import { listMovements } from '@/services/movements'
 import { listAccounts, type AccountRecord } from '@/services/accounts'
 import {
   listAssets,
@@ -37,7 +33,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { PieChart, Pie, Cell } from 'recharts'
 import { toast } from 'sonner'
 
 // Paleta visual harmonizada para as classes de ativos e caixa
@@ -57,7 +53,6 @@ export default function DistributionPage() {
   const [accountBalances, setAccountBalances] = React.useState<AccountBalanceRecord[]>([])
   const [positions, setPositions] = React.useState<PositionRecord[]>([])
   const [derivedPositions, setDerivedPositions] = React.useState<DerivedPosition[]>([])
-  const [movements, setMovements] = React.useState<MovementRecord[]>([])
   const [accounts, setAccounts] = React.useState<AccountRecord[]>([])
   const [assets, setAssets] = React.useState<AssetRecord[]>([])
 
@@ -74,7 +69,6 @@ export default function DistributionPage() {
 
       setAccountBalances(balData)
       setPositions(posData)
-      setMovements(movData)
       setAccounts(accData)
       setAssets(assetData)
 

@@ -13,8 +13,6 @@ import {
   PieChart,
   Calendar,
   AlertCircle,
-  PlusCircle,
-  ShieldCheck,
   FolderTree,
   ArrowUpDown,
   Building2,

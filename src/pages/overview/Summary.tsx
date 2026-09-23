@@ -9,11 +9,8 @@ import {
   Wallet,
   Coins,
   Building2,
-  TrendingUp,
-  ArrowUpDown,
   Plus,
   Loader2,
-  AlertCircle,
   PiggyBank,
   CircleDot,
 } from 'lucide-react'

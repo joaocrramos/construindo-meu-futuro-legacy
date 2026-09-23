@@ -5,14 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
-import {
-  Bell,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  ShieldAlert,
-  Loader2,
-} from 'lucide-react'
+import { Bell, CheckCircle2, AlertTriangle, Clock, ShieldAlert, Loader2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listPositions, type PositionRecord } from '@/services/positions'
 import { listAccounts, type AccountRecord } from '@/services/accounts'
