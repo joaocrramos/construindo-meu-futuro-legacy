@@ -117,6 +117,6 @@ pnpm run preview
 
 - **Fundação Visual e Estrutural Concluída**: Estrutura visual completa, paleta profissional com suporte a tema Claro, Escuro (*Deep Obsidian*) e Automático, layout responsivo (Desktop Sidebar e Mobile Drawer), navegação e todas as rotas mapeadas com estados vazios instrutivos.
 - **Estado da Autenticação**: A fundação estrutural e o cliente PocketBase estão integrados, mas a autenticação e fluxos reais serão implementados e ativados em fase posterior (Fase 2). Não há sessões simuladas, tokens fixos, usuários mockados nem sucesso falso.
-- **Diretório `pocketbase/` e Ausência de Backend Funcional / Migrations**: O diretório `pocketbase/` contém documentação de planejamento. Nenhuma migration foi criada ou aplicada ao banco de dados no momento, e não há backend funcional ou collections de negócio criadas nesta fase.
-- **Ausência de Integração Efetiva com Resend**: O disparo de e-mails transacionais não está ativo nesta etapa.
-- **Fluxos Desabilitados com Avisos Claros**: Telas de cadastro por convite (`/register`), recuperação de senha (`/forgot-password`), primeiro acesso (`/first-access`), alteração de senha (`/account/password`) e edição de perfil (`/account/profile`) exibem avisos explícitos de funcionalidade em implementação, sem qualquer simulação de sucesso.
+- **Catálogo e Tipos de Ativos**: Detalhamento completo de classes de ativos, títulos de renda fixa com aplicação por valor, vencimento, indexador e regras contábeis em [docs/ASSET_TYPES.md](docs/ASSET_TYPES.md).
+- **Backend Funcional com PocketBase**: Coleções e regras de negócio integradas em `pocketbase/migrations/` e rotas seguras em `pocketbase/hooks/`.
+- **E-mails Transacionais com Resend**: Hook de convites integrado via API do Resend com fallback suave quando credenciais não estiverem configuradas.
