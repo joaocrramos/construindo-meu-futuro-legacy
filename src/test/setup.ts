@@ -27,6 +27,12 @@ beforeAll(() => {
     }
   }
 
+  // Polyfill de APIs de Element ausentes no JSDOM e usadas pelo Radix Select ao abrir
+  // (scrollIntoView no item selecionado)
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {}
+  }
+
   // Disable CSS animations and transitions globally in tests so Radix Dialog and Tooltips mount synchronously
   const style = document.createElement('style')
   style.innerHTML = `
