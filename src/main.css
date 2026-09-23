@@ -9,6 +9,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     /* Sóbrio, financeiro, moderno, alta legibilidade */
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
@@ -58,6 +59,7 @@
   }
 
   .dark {
+    color-scheme: dark;
     /* Obsidian profundo e elegante com toques de azul e contraste alto */
     --background: 222 47% 7%;
     --foreground: 210 40% 98%;

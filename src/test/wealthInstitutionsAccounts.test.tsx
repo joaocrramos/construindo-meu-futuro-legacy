@@ -99,6 +99,58 @@ describe('CRUD de Instituições Financeiras', () => {
       expect(instService.createInstitution).toHaveBeenCalled()
     })
   })
+
+  it('4. Modal de instituição renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
+    vi.mocked(instService.listInstitutions).mockResolvedValue([])
+    vi.mocked(instService.createInstitution).mockResolvedValue({
+      id: 'inst_new',
+      user_id: 'usr_1',
+      name: 'Banco Teste',
+      institution_type: 'bank',
+      is_active: false,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <InstitutionsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Criar primeira instituição/i })).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Criar primeira instituição/i }))
+
+    // O checkbox do design system tem role="checkbox" e label associado via htmlFor/id
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Instituição ativa para novas operações/i,
+    })
+    expect(checkbox).not.toBeNull()
+    expect(checkbox.getAttribute('id')).toBe('instActive')
+    expect(checkbox.getAttribute('data-state')).toBe('checked')
+
+    // Alterna o checkbox desmarcando-o
+    fireEvent.click(checkbox)
+    expect(checkbox.getAttribute('data-state')).toBe('unchecked')
+
+    const nameInput = screen.getByPlaceholderText(/Ex.: Itaú Unibanco/i)
+    fireEvent.change(nameInput, { target: { value: 'Banco Teste' } })
+
+    const submitBtn = screen.getByRole('button', { name: /Criar Instituição/i })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(instService.createInstitution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Banco Teste',
+          is_active: false,
+        }),
+      )
+    })
+  })
 })
 
 describe('CRUD de Contas & Custódias', () => {
@@ -173,6 +225,72 @@ describe('CRUD de Contas & Custódias', () => {
       expect(screen.getByText('Banco Itaú')).not.toBeNull()
       expect(screen.getByText('Conta Corrente')).not.toBeNull()
       expect(screen.getByText('BRL')).not.toBeNull()
+    })
+  })
+
+  it('3. Modal de conta renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
+    vi.mocked(accService.listAccounts).mockResolvedValue([])
+    vi.mocked(instService.listInstitutions).mockResolvedValue([
+      {
+        id: 'inst_1',
+        user_id: 'usr_1',
+        name: 'Banco Itaú',
+        institution_type: 'bank',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(accService.createAccount).mockResolvedValue({
+      id: 'acc_new',
+      user_id: 'usr_1',
+      institution_id: 'inst_1',
+      name: 'Reserva Emergência',
+      account_type: 'checking',
+      currency: 'BRL',
+      is_active: false,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Criar primeira conta/i })).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Criar primeira conta/i }))
+
+    // O checkbox do design system tem role="checkbox" e label associado via htmlFor/id
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Conta ativa para movimentações financeiras/i,
+    })
+    expect(checkbox).not.toBeNull()
+    expect(checkbox.getAttribute('id')).toBe('accActive')
+    expect(checkbox.getAttribute('data-state')).toBe('checked')
+
+    // Alterna o checkbox desmarcando-o clicando no label ou no próprio checkbox
+    const label = screen.getByText(/Conta ativa para movimentações financeiras/i)
+    fireEvent.click(label)
+    expect(checkbox.getAttribute('data-state')).toBe('unchecked')
+
+    const nameInput = screen.getByPlaceholderText(/Ex.: Itaú Conta Principal/i)
+    fireEvent.change(nameInput, { target: { value: 'Reserva Emergência' } })
+
+    const submitBtn = screen.getByRole('button', { name: /Criar Conta/i })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(accService.createAccount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Reserva Emergência',
+          is_active: false,
+        }),
+      )
     })
   })
 })

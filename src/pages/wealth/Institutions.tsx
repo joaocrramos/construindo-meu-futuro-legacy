@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -254,14 +255,15 @@ export default function InstitutionsPage() {
             </div>
 
             <div className="flex items-center gap-2 pt-1">
-              <input
+              <Checkbox
                 id="instActive"
-                type="checkbox"
                 checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="rounded border-input text-primary focus:ring-ring h-4 w-4"
+                onCheckedChange={(checked) => setIsActive(checked === true)}
               />
-              <Label htmlFor="instActive" className="text-xs font-normal cursor-pointer">
+              <Label
+                htmlFor="instActive"
+                className="text-xs font-normal cursor-pointer select-none"
+              >
                 Instituição ativa para novas operações
               </Label>
             </div>
