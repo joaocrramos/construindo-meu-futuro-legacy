@@ -128,7 +128,10 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
     })
   }
 
-  const expectedNetCents = grossAmountCents - feesCents - taxesCents
+  const isBuy = movementType === 'buy'
+  const expectedNetCents = isBuy
+    ? grossAmountCents + feesCents
+    : grossAmountCents - feesCents - taxesCents
   const providedNetCents =
     body.net_amount_cents !== undefined && body.net_amount_cents !== null
       ? Math.round(body.net_amount_cents)
@@ -137,8 +140,9 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
   if (providedNetCents !== expectedNetCents) {
     return e.json(400, {
       code: 'NET_AMOUNT_MISMATCH',
-      message:
-        'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
+      message: isBuy
+        ? 'Divergência no valor líquido: na compra de ativo, o valor líquido deve ser igual ao valor bruto mais taxas e emolumentos.'
+        : 'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
     })
   }
 

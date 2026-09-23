@@ -51,13 +51,13 @@ describe('movements service - createMovement e validações', () => {
       date: '2026-03-24',
       gross_amount_cents: 10000,
       fees_cents: 200,
-      taxes_cents: 300,
-      // Líquido correto seria 9500 (10000 - 200 - 300)
+      taxes_cents: 0,
+      // Na compra, o líquido correto seria 10200 (10000 + 200). 9999 deve divergir
       net_amount_cents: 9999,
     }
 
     await expect(createMovement(payload)).rejects.toThrow(
-      'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
+      'Divergência no valor líquido: na compra de ativo, o valor líquido deve ser igual ao valor bruto mais taxas/emolumentos.',
     )
     expect(pb.send).not.toHaveBeenCalled()
   })
@@ -75,7 +75,7 @@ describe('movements service - createMovement e validações', () => {
       gross_amount_cents: 355000,
       fees_cents: 500,
       taxes_cents: 0,
-      net_amount_cents: 354500,
+      net_amount_cents: 355500,
       created: '2026-03-24T12:00:00Z',
       updated: '2026-03-24T12:00:00Z',
     }
@@ -109,7 +109,7 @@ describe('movements service - createMovement e validações', () => {
         gross_amount_cents: 355000,
         fees_cents: 500,
         taxes_cents: 0,
-        net_amount_cents: 354500,
+        net_amount_cents: 355500,
         idempotency_key: undefined,
         notes: undefined,
       },
@@ -254,14 +254,14 @@ describe('movements service - createMovement e validações', () => {
     expect(result).toEqual(expectedResponse)
   })
 
-  it('8. Compra de ativo: soma emolumentos e liquidação em fees_cents com taxes_cents=0 e calcula líquido', async () => {
+  it('8. Compra de ativo: soma emolumentos e liquidação em fees_cents com taxes_cents=0 e calcula líquido (bruto + custos)', async () => {
     // Cenário: compra de R$ 10.000,00 com R$ 15,00 de emolumentos e R$ 25,00 de liquidação (total fees = R$ 40,00, taxes = 0)
     const grossCents = 1000000 // R$ 10.000,00
     const emolumentosCents = 1500 // R$ 15,00
     const liquidacaoCents = 2500 // R$ 25,00
     const feesCents = emolumentosCents + liquidacaoCents // 4000 (R$ 40,00)
     const taxesCents = 0 // Compra não tem IR
-    const netCents = grossCents - feesCents - taxesCents // 996000
+    const netCents = grossCents + feesCents // 1004000 (os custos somam no valor de aquisição)
 
     const mockResponse = {
       id: 'mov_buy_1',
@@ -304,12 +304,12 @@ describe('movements service - createMovement e validações', () => {
         gross_amount_cents: 1000000,
         fees_cents: 4000,
         taxes_cents: 0,
-        net_amount_cents: 996000,
+        net_amount_cents: 1004000,
       }),
     })
     expect(result.taxes_cents).toBe(0)
     expect(result.fees_cents).toBe(4000)
-    expect(result.net_amount_cents).toBe(996000)
+    expect(result.net_amount_cents).toBe(1004000)
   })
 
   it('9. Venda de ativo: envia emolumentos + liquidação em fees_cents, IR em taxes_cents e calcula líquido', async () => {

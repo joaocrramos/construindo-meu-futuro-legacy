@@ -291,7 +291,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     })
   })
 
-  it('4. Compra exibe Emolumentos e Custos de liquidação (sem IR), resume Custo total e envia fees_cents somados e taxes_cents = 0', async () => {
+  it('4. Compra exibe Emolumentos e Liquidação (sem IR), resume Custo total e envia fees_cents somados e taxes_cents = 0', async () => {
     vi.mocked(movService.listMovements).mockResolvedValue([])
     vi.mocked(accService.listAccounts).mockResolvedValue([
       {
@@ -329,7 +329,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       gross_amount_cents: 1000000,
       fees_cents: 4000,
       taxes_cents: 0,
-      net_amount_cents: 996000,
+      net_amount_cents: 1004000,
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
     })
@@ -349,18 +349,18 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
 
     // O modal abre com padrão 'buy'
-    // Verifica que existem os campos "Emolumentos" e "Custos de liquidação"
+    // Verifica que existem os campos "Emolumentos" e "Liquidação"
     expect(screen.getByLabelText(/Emolumentos/i)).not.toBeNull()
-    expect(screen.getByLabelText(/Custos de liquidação/i)).not.toBeNull()
+    expect(screen.getByLabelText(/^Liquidação/i)).not.toBeNull()
     // E NÃO deve existir o campo de IR na compra
     expect(screen.queryByLabelText(/IR \(R\$\)/i)).toBeNull()
     // Resumo deve ser "Custo total da aquisição"
     expect(screen.getByText(/Custo total da aquisição/i)).not.toBeNull()
 
-    // Preenche valor bruto (10000), emolumentos (15) e custos de liquidação (25)
+    // Preenche valor bruto (10000), emolumentos (15) e liquidação (25)
     fireEvent.change(screen.getByLabelText(/Valor Bruto/i), { target: { value: '10000' } })
     fireEvent.change(screen.getByLabelText(/Emolumentos/i), { target: { value: '15' } })
-    fireEvent.change(screen.getByLabelText(/Custos de liquidação/i), { target: { value: '25' } })
+    fireEvent.change(screen.getByLabelText(/^Liquidação/i), { target: { value: '25' } })
 
     const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
     fireEvent.click(submitBtn)
@@ -374,7 +374,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
           gross_amount_cents: 1000000,
           fees_cents: 4000, // 1500 + 2500
           taxes_cents: 0, // Compra não tem IR
-          net_amount_cents: 996000, // 1000000 - 4000 - 0
+          net_amount_cents: 1004000, // 1000000 + 4000
         }),
       )
     })

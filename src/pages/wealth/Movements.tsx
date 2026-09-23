@@ -153,19 +153,16 @@ export default function MovementsPage() {
     return brlToCents(taxesInput)
   }, [isBuy, taxesInput])
 
-  // Cálculo contábil do backend: net_amount_cents = gross_amount_cents - fees_cents - taxes_cents
+  // Cálculo contábil:
+  // - Na compra: valor líquido = bruto + emolumentos + liquidação (os custos entram no custo de aquisição)
+  // - Na venda e demais: valor líquido = bruto - taxas/emolumentos - impostos/IR
   const calculatedNetCents = React.useMemo(() => {
     const gross = brlToCents(grossInput)
+    if (isBuy) {
+      return gross + computedFeesCents
+    }
     return gross - computedFeesCents - computedTaxesCents
-  }, [grossInput, computedFeesCents, computedTaxesCents])
-
-  // Resumo exibido ao usuário:
-  // - Na compra: Custo total da aquisição = bruto + emolumentos + custos de liquidação
-  // - Na venda: Valor líquido da venda = bruto - emolumentos - custos de liquidação - IR
-  const totalAcquisitionCostCents = React.useMemo(() => {
-    const gross = brlToCents(grossInput)
-    return gross + computedFeesCents
-  }, [grossInput, computedFeesCents])
+  }, [grossInput, isBuy, computedFeesCents, computedTaxesCents])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -403,10 +400,10 @@ export default function MovementsPage() {
                 </div>
               )}
 
-              {/* Valores Financeiros: Bruto, Emolumentos, Custos de liquidação, IR / Impostos e Totais */}
+              {/* Valores Financeiros: Bruto, Emolumentos, Liquidação, IR / Impostos e Totais */}
               <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-3">
                 {isBuy ? (
-                  // Compra de Ativo: Valor Bruto, Emolumentos e Custos de liquidação (SEM campo de IR)
+                  // Compra de Ativo: Valor Bruto, Emolumentos e Liquidação (SEM campo de IR)
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="movGross" className="text-xs font-semibold">
@@ -437,7 +434,7 @@ export default function MovementsPage() {
 
                     <div className="space-y-1">
                       <Label htmlFor="movSettlement" className="text-xs font-semibold">
-                        Custos de liquidação (R$)
+                        Liquidação (R$)
                       </Label>
                       <Input
                         id="movSettlement"
@@ -449,7 +446,7 @@ export default function MovementsPage() {
                     </div>
                   </div>
                 ) : isSell ? (
-                  // Venda de Ativo: Valor Bruto, Emolumentos, Custos de liquidação e IR
+                  // Venda de Ativo: Valor Bruto, Emolumentos, Liquidação e IR
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="movGross" className="text-xs font-semibold">
@@ -480,7 +477,7 @@ export default function MovementsPage() {
 
                     <div className="space-y-1">
                       <Label htmlFor="movSettlement" className="text-xs font-semibold">
-                        Custos de liquidação (R$)
+                        Liquidação (R$)
                       </Label>
                       <Input
                         id="movSettlement"
@@ -557,7 +554,7 @@ export default function MovementsPage() {
                         Custo total da aquisição:
                       </span>
                       <span className="font-mono font-bold text-foreground">
-                        {formatCurrencyBRL(totalAcquisitionCostCents / 100)}
+                        {formatCurrencyBRL(calculatedNetCents / 100)}
                       </span>
                     </>
                   ) : isSell ? (

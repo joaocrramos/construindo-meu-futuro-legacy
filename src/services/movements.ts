@@ -223,14 +223,18 @@ export async function createMovement(payload: CreateMovementPayload): Promise<Mo
     payload.gross_amount_cents !== undefined && payload.gross_amount_cents !== null
       ? payload.gross_amount_cents
       : 0
+  const isBuy = payload.movement_type === 'buy'
+  const expectedNet = isBuy ? gross + fees : gross - fees - taxes
   const calculatedNet =
     payload.net_amount_cents !== undefined && payload.net_amount_cents !== null
       ? payload.net_amount_cents
-      : gross - fees - taxes
+      : expectedNet
 
-  if (calculatedNet !== gross - fees - taxes) {
+  if (calculatedNet !== expectedNet) {
     throw new Error(
-      'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
+      isBuy
+        ? 'Divergência no valor líquido: na compra de ativo, o valor líquido deve ser igual ao valor bruto mais taxas/emolumentos.'
+        : 'Divergência no valor líquido: o valor líquido deve ser igual ao valor bruto menos taxas e impostos.',
     )
   }
 
