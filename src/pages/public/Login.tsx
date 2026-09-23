@@ -19,7 +19,7 @@ import { Lock, Mail, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, user } = useAuth()
 
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -34,9 +34,15 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true })
+      // Se o usuário precisa obrigatoriamente trocar de senha no primeiro login,
+      // redireciona para a tela /account/password (decisão de UX e segurança do primeiro acesso).
+      if (user?.must_change_password) {
+        navigate('/account/password', { replace: true })
+      } else {
+        navigate(from, { replace: true })
+      }
     }
-  }, [isAuthenticated, navigate, from])
+  }, [isAuthenticated, user?.must_change_password, navigate, from])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +57,13 @@ export default function LoginPage() {
     try {
       const res = await login(email, password)
       if (res.success) {
-        navigate(from, { replace: true })
+        // Se o usuário precisa obrigatoriamente trocar de senha no primeiro login,
+        // redireciona diretamente para a tela /account/password.
+        if (res.must_change_password) {
+          navigate('/account/password', { replace: true })
+        } else {
+          navigate(from, { replace: true })
+        }
       } else {
         setErrorMessage(res.error || 'Credenciais inválidas. Verifique seu e-mail e senha.')
       }

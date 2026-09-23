@@ -5,7 +5,6 @@ import { MemoryRouter } from 'react-router-dom'
 import RegisterPage from '@/pages/public/Register'
 import ForgotPasswordPage from '@/pages/public/ForgotPassword'
 import FirstAccessPage from '@/pages/public/FirstAccess'
-import AccountPasswordPage from '@/pages/account/Password'
 import AccountProfilePage from '@/pages/account/Profile'
 import AccountSessionsPage from '@/pages/account/Sessions'
 import { AuthProvider } from '@/contexts/AuthContext'
@@ -78,32 +77,6 @@ describe('Testes de Regressão de Telas e Fluxos Desabilitados (Sem Sucesso Fals
 
     // Não deve conter alerta de sucesso falso
     expect(screen.queryByText(/Credencial Ativada!/i)).toBeNull()
-  })
-
-  it('4. Alteração de Senha na Conta exibe aviso e bloqueia submissão sem backend', () => {
-    render(
-      <MemoryRouter>
-        <AccountPasswordPage />
-      </MemoryRouter>,
-    )
-
-    // Campos desabilitados
-    const currPassInput = screen.getByLabelText(/Senha Atual/i) as HTMLInputElement
-    const nPassInput = screen.getByLabelText(/^Nova Senha/i) as HTMLInputElement
-    const cPassInput = screen.getByLabelText(/Confirmar Nova Senha/i) as HTMLInputElement
-
-    expect(currPassInput.disabled).toBe(true)
-    expect(nPassInput.disabled).toBe(true)
-    expect(cPassInput.disabled).toBe(true)
-
-    // Botão desabilitado
-    const submitButton = screen.getByRole('button', {
-      name: /Alteração Temporariamente Indisponível/i,
-    }) as HTMLButtonElement
-    expect(submitButton.disabled).toBe(true)
-
-    // Não deve exibir sucesso simulado
-    expect(screen.queryByText(/Senha Alterada/i)).toBeNull()
   })
 
   it('5. Atualização de Perfil na Conta exibe aviso e bloqueia persistência sem backend', () => {

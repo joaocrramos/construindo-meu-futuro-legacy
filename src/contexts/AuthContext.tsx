@@ -22,7 +22,10 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   isLoading: boolean
-  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>
+  login: (
+    email: string,
+    pass: string,
+  ) => Promise<{ success: boolean; error?: string; must_change_password?: boolean }>
   logout: () => void
   refreshAuth: () => Promise<void>
 }
@@ -43,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role?: string
             name?: string
             status?: string
+            must_change_password?: boolean
           }
           setUser({
             id: rec.id,
@@ -50,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: rec.name || rec.email?.split('@')[0] || 'Usuário',
             role: (rec.role as 'admin' | 'user') || 'user',
             status: (rec.status as 'active') || 'active',
+            must_change_password: Boolean(rec.must_change_password),
           })
           setToken(pb.authStore.token)
         } else {
@@ -69,13 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Ouve alterações no store do PocketBase
     const unsubscribe = pb.authStore.onChange((tokenVal, model) => {
       if (tokenVal && model) {
-        const rec = model as AuthRecord & { role?: string; name?: string; status?: string }
+        const rec = model as AuthRecord & {
+          role?: string
+          name?: string
+          status?: string
+          must_change_password?: boolean
+        }
         setUser({
           id: rec.id,
           email: rec.email || '',
           name: rec.name || rec.email?.split('@')[0] || 'Usuário',
           role: (rec.role as 'admin' | 'user') || 'user',
           status: (rec.status as 'active') || 'active',
+          must_change_password: Boolean(rec.must_change_password),
         })
         setToken(tokenVal)
       } else {
@@ -98,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role?: string
           name?: string
           status?: string
+          must_change_password?: boolean
         }
         const u: UserProfile = {
           id: rec.id,
@@ -105,10 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: rec.name || email.split('@')[0],
           role: (rec.role as 'admin' | 'user') || 'user',
           status: (rec.status as 'active') || 'active',
+          must_change_password: Boolean(rec.must_change_password),
         }
         setUser(u)
         setToken(authData.token)
-        return { success: true }
+        return {
+          success: true,
+          must_change_password: Boolean(rec.must_change_password),
+        }
       }
       return { success: false, error: 'Credenciais inválidas' }
     } catch {
