@@ -29,6 +29,7 @@ import {
   Palette,
   HelpCircle,
   BarChart3,
+  HardDrive,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -206,6 +207,13 @@ export const navigationConfig: NavSection[] = [
         href: '/admin/audit',
         icon: FileText,
         description: 'Registro cronológico e imutável de eventos de segurança',
+        requireAdmin: true,
+      },
+      {
+        title: 'Backup & Restore',
+        href: '/admin/backups',
+        icon: HardDrive,
+        description: 'Snapshots completos do banco de dados e restauração de segurança',
         requireAdmin: true,
       },
       {

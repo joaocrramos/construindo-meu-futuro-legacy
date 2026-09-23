@@ -17,6 +17,12 @@ export interface CreateBackupResponse {
   message: string
 }
 
+export interface RestoreBackupResponse {
+  success: boolean
+  key: string
+  message: string
+}
+
 export async function listBackups(): Promise<ListBackupsResponse> {
   const token = pb.authStore.token
   const baseUrl = pb.baseUrl
@@ -108,4 +114,29 @@ export async function downloadBackup(key: string): Promise<Blob> {
   }
 
   return res.blob()
+}
+
+export async function restoreBackup(key: string): Promise<RestoreBackupResponse> {
+  const token = pb.authStore.token
+  const baseUrl = pb.baseUrl
+
+  const cleanKey = key?.trim()
+  if (!cleanKey) {
+    throw new Error('Chave de snapshot inválida.')
+  }
+
+  const res = await fetch(`${baseUrl}/backend/v1/backups/${encodeURIComponent(cleanKey)}/restore`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.message || `Erro ao restaurar backup (HTTP ${res.status})`)
+  }
+
+  return res.json()
 }

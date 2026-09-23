@@ -47,6 +47,7 @@ describe('Configuração da Navegação Estrutural', () => {
     expect(titles).toContain('Convites')
     expect(titles).toContain('Papéis e Permissões')
     expect(titles).toContain('Auditoria')
+    expect(titles).toContain('Backup & Restore')
     expect(titles).toContain('Segurança')
     expect(titles).toContain('E-mail Transacional')
     expect(titles).toContain('Configurações do Ambiente')

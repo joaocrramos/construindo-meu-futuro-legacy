@@ -46,6 +46,7 @@ const AdminUsersPage = lazy(() => import('@/pages/admin/Users'))
 const AdminInvitesPage = lazy(() => import('@/pages/admin/Invites'))
 const AdminRolesPage = lazy(() => import('@/pages/admin/Roles'))
 const AdminAuditPage = lazy(() => import('@/pages/admin/Audit'))
+const AdminBackupsPage = lazy(() => import('@/pages/admin/Backups'))
 const AdminSecurityPage = lazy(() => import('@/pages/admin/Security'))
 const AdminEmailPage = lazy(() => import('@/pages/admin/Email'))
 const AdminSettingsPage = lazy(() => import('@/pages/admin/Settings'))
@@ -325,6 +326,16 @@ const App = () => (
                     <ProtectedRoute requireAdmin>
                       <AppLayout>
                         <AdminAuditPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/backups"
+                  element={
+                    <ProtectedRoute requireAdmin>
+                      <AppLayout>
+                        <AdminBackupsPage />
                       </AppLayout>
                     </ProtectedRoute>
                   }

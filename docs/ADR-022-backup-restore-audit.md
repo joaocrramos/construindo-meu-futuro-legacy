@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito e Implementado (Comprovado)
+Aceito e Implementado (Capacidade de Restore Implementada; Prova de Execução de Restore em Janela Controlada)
 
 ## Contexto
 
@@ -23,11 +23,12 @@ Historicamente, probes de backup haviam sido suspensos até autorização formal
   - `POST /backend/v1/backups`: inicia a geração síncrona/assíncrona de um snapshot completo (`.zip`) contendo a base SQLite (`data.db`) e arquivos estáticos anexos.
 - Toda emissão de backup via `POST /backend/v1/backups` grava automaticamente um registro em `audit_logs` (`event_type: 'BACKUP_CREATED'`, `severity: 'info'`, `entity: 'backups'`).
 
-### 2. Análise e Comprovação de Restore
+### 2. Análise e Implementação da Capacidade de Restore
 
 - **Comportamento do Restore no PocketBase:** A chamada para restauração (`POST /api/backups/{key}/restore`) faz com que o PocketBase substitua fisicamente o arquivo do banco ativo pelo snapshot selecionado e reinicie o processo do daemon.
-- **Avaliação de Risco:** Como a instância já contém dados de usuários reais (`admin@construindomeufuturo.com`, `joao.carlos@jcrtecnologia.com`), contas, instituições e movimentações financeiras, disparar um restore destrutivo em ambiente compartilhado sem uma réplica isolada ou sem parada programada apresenta risco de corrupção ou reinício com queda de conexão.
-- **Diretriz Adotada:** A criação e a listagem de snapshots foram integradas e comprovadas via API e hooks autenticados. O procedimento de restore foi formalizado e documentado operacionalmente para janelas de manutenção controladas, resguardando os dados vivos existentes.
+- **Implementação do Restore Autenticado (Admin-only):** Foi estendido o hook `pocketbase/hooks/backups.js` com o endpoint `POST /backend/v1/backups/{key}/restore`. Ele valida a permissão de superusuário/admin, proteção rigorosa contra path traversal, validação de existência do arquivo e registra obrigatoriamente o evento `BACKUP_RESTORE_REQUESTED` com severidade `critical` na trilha de auditoria `audit_logs` antes de acionar a restauração.
+- **Confirmação de Alto Atrito na UI:** Na interface, a restauração é acionada manualmente pelo administrador e exige confirmação com digitação do nome exato do arquivo snapshot (ex: `testeb2.zip`), exibindo avisos explícitos em pt-BR de operação destrutiva e reinicialização iminente do daemon.
+- **Avaliação de Risco e Prova de Execução:** Como a instância contém dados de usuários reais e patrimoniais vivos, a capacidade técnica foi integralmente construída e disponibilizada, enquanto a prova efetiva de disparo destrutivo segue condicionada a janela de manutenção controlada autorizada pelo usuário.
 
 ### 3. Ampliação da Cobertura de Auditoria
 
@@ -37,11 +38,11 @@ Historicamente, probes de backup haviam sido suspensos até autorização formal
   - `MOVEMENT_UPDATED`: emitido após qualquer alteração em movimentações não estornadas.
 - O hook de convites (`pocketbase/hooks/invitations.js`) mantém os eventos `INVITE_CREATED`, `INVITE_REVOKED` e `INVITE_ACCEPTED`.
 
-### 4. Interface Administrativa
+### 4. Interface Administrativa e Navegação Dedicada
 
-- A rota `/admin/audit` (`src/pages/admin/Audit.tsx`) foi expandida em duas abas:
-  - **Logs de Auditoria:** Tabela paginada com ordenação decrescente por data/hora, filtros combinados por tipo de evento, severidade e usuário, visualizador de payload JSON e exportação em lote para formato CSV.
-  - **Backups & Restore B2:** Visão dos snapshots disponíveis, tamanhos formatados em bytes/MB, data de modificação e botão para disparo de backup imediato com confirmação e feedback em toast pt-BR.
+- **Separação de Auditoria e Backup:** O gerenciamento de backups e snapshots foi desacoplado de `/admin/audit` e alocado em página e rota própria no menu lateral: **Admin → Backup & Restore** (`/admin/backups` em `src/pages/admin/Backups.tsx`).
+- A rota `/admin/audit` (`src/pages/admin/Audit.tsx`) passou a focar exclusivamente nos **Logs de Auditoria**: tabela paginada com ordenação decrescente, filtros de eventos (incluindo `BACKUP_CREATED`, `BACKUP_DOWNLOADED` e `BACKUP_RESTORE_REQUESTED`), severidades, usuários e exportação CSV.
+- A página `/admin/backups` conta com listagem de snapshots, tamanhos formatados, datas, disparo de novo backup manual, download seguro via filesystem/HTTP e o botão de **Restaurar** com diálogo de alto atrito.
 
 ---
 

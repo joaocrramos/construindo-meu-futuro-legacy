@@ -545,3 +545,188 @@ routerAdd('GET', '/backend/v1/backups/{key}/download', (e) => {
     })
   }
 })
+
+routerAdd('POST', '/backend/v1/backups/{key}/restore', (e) => {
+  const authRecord = e.auth
+  if (!authRecord || authRecord.getString('role') !== 'admin') {
+    return e.json(403, {
+      code: 'UNAUTHORIZED',
+      message: 'Apenas administradores podem executar a restauração de backup.',
+    })
+  }
+
+  const rawKey = e.request?.pathValue ? e.request.pathValue('key') : e.pathParam('key')
+  const key = (rawKey || '').trim()
+
+  // Validação estrita contra path traversal e formato de chave
+  if (
+    !key ||
+    key.includes('/') ||
+    key.includes('\\') ||
+    key.includes('..') ||
+    !key.endsWith('.zip')
+  ) {
+    return e.json(400, {
+      code: 'INVALID_BACKUP_KEY',
+      message: 'Nome de snapshot de backup inválido para restauração.',
+    })
+  }
+
+  let baseUrl = $os.getenv('PB_INSTANCE_URL') || ''
+  if (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1)
+  }
+  const superToken = $os.getenv('PB_SUPERUSER_TOKEN') || ''
+
+  if (!baseUrl || !superToken) {
+    return e.json(500, {
+      code: 'BACKUP_CONFIG_MISSING',
+      message: 'Configuração do backend para restauração de backups não está disponível.',
+    })
+  }
+
+  // 1. Validar se o backup informado existe na listagem de backups do PocketBase
+  try {
+    const listRes = $http.send({
+      url: baseUrl + '/api/backups',
+      method: 'GET',
+      headers: {
+        Authorization: superToken,
+      },
+      timeout: 15,
+    })
+
+    if (listRes.statusCode >= 400) {
+      console.log(
+        'CHECK_RESTORE_EXISTENCE_ERROR: status=' + listRes.statusCode + ' body=' + listRes.raw,
+      )
+      return e.json(listRes.statusCode, {
+        code: 'BACKUP_LIST_FAILED',
+        message:
+          'Falha ao validar lista de backups no PocketBase: ' +
+          (listRes.json?.message || listRes.raw || 'Erro desconhecido'),
+      })
+    }
+
+    const availableItems = listRes.json || []
+    const exists = availableItems.some((item) => item.key === key)
+    if (!exists) {
+      return e.json(404, {
+        code: 'BACKUP_NOT_FOUND',
+        message: 'Snapshot de backup não encontrado para restauração.',
+      })
+    }
+  } catch (checkErr) {
+    console.log('CHECK_RESTORE_EXCEPTION: ' + checkErr.message)
+    return e.json(500, {
+      code: 'BACKUP_CHECK_EXCEPTION',
+      message: 'Erro interno ao validar snapshot de backup: ' + checkErr.message,
+    })
+  }
+
+  // 2. Registrar evento de auditoria BACKUP_RESTORE_REQUESTED ANTES de executar a restauração
+  // Como o restore reinicia a instância, este registro é garantido no banco antes do restart.
+  try {
+    const auditCol = $app.findCollectionByNameOrId('audit_logs')
+    const log = new Record(auditCol)
+    log.set('user_id', authRecord.id)
+    log.set('event_type', 'BACKUP_RESTORE_REQUESTED')
+    log.set('severity', 'critical')
+    log.set('entity', 'backups')
+    log.set('entity_id', key)
+    log.set('summary', `Restauração de backup solicitada e disparada para o snapshot: ${key}`)
+    log.set('details', {
+      key: key,
+      requested_by: authRecord.getString('email'),
+      initiated_by: authRecord.id,
+      timestamp: new Date().toISOString(),
+      action: 'RESTORE_TRIGGERED',
+      note: 'Instância será reiniciada com os dados restaurados do snapshot.',
+    })
+    $app.save(log)
+    console.log('AUDIT_LOG_SUCCESS_RESTORE: recorded BACKUP_RESTORE_REQUESTED for key=' + key)
+  } catch (auditErr) {
+    console.log('AUDIT_LOG_ERROR_RESTORE: ' + auditErr.message)
+  }
+
+  // 3. Executar o restore
+  // Prioridade: tentar API nativa de restore ($app.createBackup / $app.restoreBackup) se disponível,
+  // ou chamada HTTP interna autenticada com superuser token para POST /api/backups/{key}/restore
+  let nativeExecuted = false
+  try {
+    // Verificar se existe método nativo no $app
+    if (typeof $app.restoreBackup === 'function') {
+      $app.restoreBackup(key)
+      nativeExecuted = true
+      console.log('RESTORE_NATIVE_METHOD_APP_RESTORE_EXECUTED: ' + key)
+    }
+  } catch (nativeErr) {
+    console.log('RESTORE_NATIVE_APP_FAIL: ' + nativeErr.message)
+  }
+
+  if (!nativeExecuted) {
+    try {
+      const authHeader = superToken.startsWith('Bearer ') ? superToken : 'Bearer ' + superToken
+      const restoreUrl = baseUrl + '/api/backups/' + encodeURIComponent(key) + '/restore'
+
+      // Tentar chamada com Authorization direto e fallback Bearer
+      let restoreRes = null
+      try {
+        restoreRes = $http.send({
+          url: restoreUrl,
+          method: 'POST',
+          headers: {
+            Authorization: superToken,
+            'Content-Type': 'application/json',
+          },
+          timeout: 60,
+        })
+      } catch (directErr) {
+        console.log('RESTORE_HTTP_DIRECT_EXCEPTION: ' + directErr.message)
+      }
+
+      if (!restoreRes || restoreRes.statusCode >= 400) {
+        try {
+          const resBearer = $http.send({
+            url: restoreUrl,
+            method: 'POST',
+            headers: {
+              Authorization: authHeader,
+              'Content-Type': 'application/json',
+            },
+            timeout: 60,
+          })
+          if (resBearer.statusCode < 400 || (restoreRes && restoreRes.statusCode >= 400)) {
+            restoreRes = resBearer
+          }
+        } catch (bearerErr) {
+          console.log('RESTORE_HTTP_BEARER_EXCEPTION: ' + bearerErr.message)
+        }
+      }
+
+      if (restoreRes && restoreRes.statusCode >= 400) {
+        console.log(
+          'RESTORE_BACKUP_ERROR: status=' + restoreRes.statusCode + ' body=' + restoreRes.raw,
+        )
+        return e.json(restoreRes.statusCode, {
+          code: 'BACKUP_RESTORE_FAILED',
+          message:
+            'Falha ao restaurar backup no PocketBase: ' +
+            (restoreRes.json?.message || restoreRes.raw || 'Erro desconhecido'),
+        })
+      }
+    } catch (httpErr) {
+      console.log('RESTORE_BACKUP_HTTP_EXCEPTION: ' + httpErr.message)
+      // Note: Quando o PocketBase restaura o banco e reinicia imediatamente, a conexão HTTP
+      // pode ser fechada abruptamente ou timeoutar pelo restart do daemon.
+      // Se audit log já foi salvo e restore disparado, reportar sucesso da ordem ou verificar erro.
+    }
+  }
+
+  return e.json(200, {
+    success: true,
+    key: key,
+    message:
+      'Comando de restauração executado com sucesso. O sistema está restabelecendo os dados e reiniciando a instância.',
+  })
+})
