@@ -7,6 +7,7 @@ export type AssetClass =
   | 'mutual_funds'
   | 'crypto'
   | 'cash_equivalent'
+  | 'international'
   | 'other'
 
 export interface AssetRecord {
@@ -18,6 +19,7 @@ export interface AssetRecord {
   sub_type?: string
   currency: string
   cnpj_issuer?: string
+  issuer?: string
   due_date?: string
   indexer_rate?: string
   is_active: boolean
@@ -32,6 +34,7 @@ export interface CreateAssetPayload {
   sub_type?: string
   currency?: string
   cnpj_issuer?: string
+  issuer?: string
   due_date?: string
   indexer_rate?: string
   is_active?: boolean
@@ -44,6 +47,7 @@ export interface UpdateAssetPayload {
   sub_type?: string
   currency?: string
   cnpj_issuer?: string
+  issuer?: string
   due_date?: string
   indexer_rate?: string
   is_active?: boolean
@@ -56,6 +60,7 @@ export const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
   mutual_funds: 'Fundos de Investimento',
   crypto: 'Criptoativos',
   cash_equivalent: 'Equivalente de Caixa',
+  international: 'Internacional (Stocks / REITs)',
   other: 'Outro',
 }
 

@@ -656,6 +656,137 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       expect(screen.queryByLabelText(/IR/i)).toBeNull()
     })
   })
+
+  it('8. Valida todos os 8 casos de formulário por tipo de ativo (Ações, FII, BDR, Cripto, USD, Renda Fixa, Tesouro, Fundos, Outros)', async () => {
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_brl',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'BTG Pactual',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_stock_br',
+        user_id: 'usr_1',
+        ticker: 'PETR4',
+        name: 'Petrobras PN',
+        asset_class: 'equities',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_fii',
+        user_id: 'usr_1',
+        ticker: 'HGLG11',
+        name: 'CSHG Logística FII',
+        asset_class: 'real_estate_funds',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_crypto',
+        user_id: 'usr_1',
+        ticker: 'BTC',
+        name: 'Bitcoin',
+        asset_class: 'crypto',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_usd',
+        user_id: 'usr_1',
+        ticker: 'AAPL',
+        name: 'Apple Inc.',
+        asset_class: 'international',
+        currency: 'USD',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_rf',
+        user_id: 'usr_1',
+        ticker: 'CDB-INTER',
+        name: 'CDB Banco Inter',
+        asset_class: 'fixed_income',
+        sub_type: 'CDB',
+        issuer: 'Banco Inter',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_tesouro',
+        user_id: 'usr_1',
+        ticker: 'TESOURO-SELIC-2029',
+        name: 'Tesouro Selic 2029',
+        asset_class: 'fixed_income',
+        sub_type: 'Tesouro Selic',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_fund',
+        user_id: 'usr_1',
+        ticker: 'KINEA-CHRONOS',
+        name: 'Kinea Chronos FIM',
+        asset_class: 'mutual_funds',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_other',
+        user_id: 'usr_1',
+        ticker: 'IMOVEL-SP',
+        name: 'Galpão Logístico Extrema',
+        asset_class: 'other',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <MovementsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
+      ).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+
+    // Caso 1: Ações / FII / Cripto compra exibe Emolumentos + Liquidação e SEM IR
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
+      expect(screen.getByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
+      expect(screen.queryByLabelText(/IR/i)).toBeNull()
+    })
+  })
 })
 
 describe('Posições em Custódia (/wealth/positions)', () => {

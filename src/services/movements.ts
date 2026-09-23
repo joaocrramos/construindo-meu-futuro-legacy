@@ -21,8 +21,8 @@ export interface MovementRecord {
   asset_id?: string
   movement_type: MovementType
   date: string // ISO date string
-  quantity_e8: number
-  unit_price_cents: number
+  quantity_e8?: number
+  unit_price_cents?: number
   gross_amount_cents: number
   fees_cents: number
   taxes_cents: number
@@ -30,7 +30,7 @@ export interface MovementRecord {
   due_date?: string
   indexer_rate?: string
   idempotency_key?: string
-  is_reversed: boolean
+  is_reversed?: boolean
   reversal_of_id?: string
   notes?: string
   created: string

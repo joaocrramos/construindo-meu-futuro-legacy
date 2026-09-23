@@ -91,6 +91,23 @@ export default function MovementsPage() {
     return assets.find((a) => a.id === assetId) || null
   }, [assetId, assets])
 
+  // Verificações de classe de ativo para adequação dos formulários
+  const isUsdAsset =
+    selectedAsset?.currency === 'USD' ||
+    (selectedAsset as { asset_class?: string })?.asset_class === 'international'
+
+  const isMutualFund =
+    selectedAsset?.asset_class === 'mutual_funds' ||
+    (selectedAsset as { asset_class?: string })?.asset_class === 'fund'
+
+  const isTesouroDireto =
+    selectedAsset?.asset_class === 'fixed_income' &&
+    (selectedAsset.sub_type?.toLowerCase().includes('tesouro') ||
+      selectedAsset.name?.toLowerCase().includes('tesouro'))
+
+  const isOtherCostsCategory =
+    isUsdAsset || isMutualFund || isTesouroDireto || selectedAsset?.asset_class === 'other'
+
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true)
@@ -879,7 +896,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1.5">
                         <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
-                          Preço {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                          Preço {isUsdAsset ? '(USD)' : '(R$)'}
                         </Label>
                         <Input
                           id="movUnitPrice"
@@ -900,18 +917,12 @@ export default function MovementsPage() {
               <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-3">
                 {isBuy ? (
                   // Compra de Ativo (SEM campo de IR)
-                  selectedAsset?.asset_class === 'international' ||
-                  selectedAsset?.asset_class === 'fund' ||
-                  selectedAsset?.asset_class === 'other' ||
-                  (selectedAsset?.asset_class === 'fixed_income' &&
-                    (selectedAsset.sub_type?.includes('Tesouro') ||
-                      selectedAsset.name?.toLowerCase().includes('tesouro'))) ? (
+                  isOtherCostsCategory ? (
                     // Stocks/REITs (USD), Fundos, Outros, Tesouro Direto: Bruto + Outros Custos
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label htmlFor="movGross" className="text-xs font-semibold">
-                          Valor Bruto{' '}
-                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'} *
+                          Valor Bruto {isUsdAsset ? '(USD)' : '(R$)'} *
                         </Label>
                         <Input
                           id="movGross"
@@ -925,8 +936,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                          Outros Custos{' '}
-                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                          Outros Custos {isUsdAsset ? '(USD)' : '(R$)'}
                         </Label>
                         <Input
                           id="movEmoluments"
@@ -983,18 +993,12 @@ export default function MovementsPage() {
                   )
                 ) : isSell ? (
                   // Venda de Ativo: com campo de IR
-                  selectedAsset?.asset_class === 'international' ||
-                  selectedAsset?.asset_class === 'fund' ||
-                  selectedAsset?.asset_class === 'other' ||
-                  (selectedAsset?.asset_class === 'fixed_income' &&
-                    (selectedAsset.sub_type?.includes('Tesouro') ||
-                      selectedAsset.name?.toLowerCase().includes('tesouro'))) ? (
+                  isOtherCostsCategory ? (
                     // Stocks/REITs (USD), Fundos, Outros, Tesouro Direto: Bruto + Outros Custos + IR
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
                         <Label htmlFor="movGross" className="text-xs font-semibold">
-                          Valor Bruto{' '}
-                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'} *
+                          Valor Bruto {isUsdAsset ? '(USD)' : '(R$)'} *
                         </Label>
                         <Input
                           id="movGross"
@@ -1008,8 +1012,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                          Outros Custos{' '}
-                          {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                          Outros Custos {isUsdAsset ? '(USD)' : '(R$)'}
                         </Label>
                         <Input
                           id="movEmoluments"
@@ -1022,7 +1025,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movTaxes" className="text-xs font-semibold">
-                          IR {selectedAsset?.asset_class === 'international' ? '(USD)' : '(R$)'}
+                          IR {isUsdAsset ? '(USD)' : '(R$)'}
                         </Label>
                         <Input
                           id="movTaxes"
