@@ -24,9 +24,7 @@ import {
   Trash2,
   User,
   Shield,
-  KeyRound,
   Laptop,
-  Palette,
   HelpCircle,
   BarChart3,
   HardDrive,
@@ -252,7 +250,7 @@ export const navigationConfig: NavSection[] = [
     items: [
       {
         title: 'Meu Perfil',
-        href: '/account/profile',
+        href: '/profile',
         icon: User,
         description: 'Dados pessoais, identificação e preferências',
       },
@@ -263,22 +261,10 @@ export const navigationConfig: NavSection[] = [
         description: 'Status de proteção e registros de acesso',
       },
       {
-        title: 'Alteração de Senha',
-        href: '/account/password',
-        icon: KeyRound,
-        description: 'Atualização periódica de senha de acesso',
-      },
-      {
         title: 'Sessões Ativas',
         href: '/account/sessions',
         icon: Laptop,
         description: 'Dispositivos e conexões ativas no momento',
-      },
-      {
-        title: 'Preferências de Aparência',
-        href: '/account/profile?tab=appearance',
-        icon: Palette,
-        description: 'Personalização de cores e tema do sistema',
       },
       {
         title: 'Ajuda e Informações',

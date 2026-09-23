@@ -35,9 +35,9 @@ export default function LoginPage() {
   React.useEffect(() => {
     if (isAuthenticated) {
       // Se o usuário precisa obrigatoriamente trocar de senha no primeiro login,
-      // redireciona para a tela /account/password (decisão de UX e segurança do primeiro acesso).
+      // redireciona para a aba de alteração de senha em /profile?tab=password
       if (user?.must_change_password) {
-        navigate('/account/password', { replace: true })
+        navigate('/profile?tab=password', { replace: true })
       } else {
         navigate(from, { replace: true })
       }
@@ -58,9 +58,9 @@ export default function LoginPage() {
       const res = await login(email, password)
       if (res.success) {
         // Se o usuário precisa obrigatoriamente trocar de senha no primeiro login,
-        // redireciona diretamente para a tela /account/password.
+        // redireciona diretamente para a aba de senha do perfil.
         if (res.must_change_password) {
-          navigate('/account/password', { replace: true })
+          navigate('/profile?tab=password', { replace: true })
         } else {
           navigate(from, { replace: true })
         }

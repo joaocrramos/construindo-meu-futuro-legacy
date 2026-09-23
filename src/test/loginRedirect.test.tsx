@@ -28,7 +28,7 @@ describe('Redirecionamento pós-login com must_change_password', () => {
     })
   })
 
-  it('1. Redireciona para /account/password no login bem-sucedido com must_change_password=true', async () => {
+  it('1. Redireciona para /profile?tab=password no login bem-sucedido com must_change_password=true', async () => {
     mockLogin.mockResolvedValueOnce({
       success: true,
       must_change_password: true,
@@ -39,7 +39,7 @@ describe('Redirecionamento pós-login com must_change_password', () => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
-            path="/account/password"
+            path="/profile"
             element={<div data-testid="pagina-troca-senha">Tela de Troca Obrigatória</div>}
           />
           <Route
@@ -75,7 +75,7 @@ describe('Redirecionamento pós-login com must_change_password', () => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
-            path="/account/password"
+            path="/profile"
             element={<div data-testid="pagina-troca-senha">Tela de Troca Obrigatória</div>}
           />
           <Route

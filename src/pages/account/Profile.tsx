@@ -165,6 +165,8 @@ export function AccountProfilePage() {
     ? formatDistanceToNow(new Date(user.created), { addSuffix: true, locale: ptBR })
     : 'data indisponível'
 
+  const mustChangePassword = Boolean(user?.must_change_password)
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -295,7 +297,22 @@ export function AccountProfilePage() {
                     Defina uma nova senha forte para acessar sua conta pessoal com segurança.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                  {mustChangePassword && (
+                    <div
+                      role="alert"
+                      className="p-3 rounded-md text-xs border border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col gap-1 max-w-md"
+                    >
+                      <span className="font-semibold text-amber-800 dark:text-amber-300">
+                        Troca Obrigatória de Senha
+                      </span>
+                      <span className="text-[12px] leading-relaxed text-amber-700 dark:text-amber-300/90">
+                        Por segurança, você deve definir uma nova senha definitiva antes de
+                        prosseguir com o uso do sistema.
+                      </span>
+                    </div>
+                  )}
+
                   <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
                     <div className="space-y-1.5">
                       <Label htmlFor="old-password">Senha Atual</Label>

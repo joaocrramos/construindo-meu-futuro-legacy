@@ -54,15 +54,21 @@ describe('Configuração da Navegação Estrutural', () => {
     expect(titles).toContain('Limpeza do Ambiente de Dev')
   })
 
-  it('deve conter todos os subitens de Conta', () => {
+  it('deve conter os subitens consolidados de Conta sem entradas duplicadas de senha ou aparência', () => {
     const account = navigationConfig.find((s) => s.id === 'account')
     expect(account).toBeDefined()
     const titles = account?.items.map((i) => i.title)
-    expect(titles).toContain('Meu Perfil')
-    expect(titles).toContain('Segurança da Conta')
-    expect(titles).toContain('Alteração de Senha')
-    expect(titles).toContain('Sessões Ativas')
-    expect(titles).toContain('Preferências de Aparência')
-    expect(titles).toContain('Ajuda e Informações')
+    expect(titles).toEqual([
+      'Meu Perfil',
+      'Segurança da Conta',
+      'Sessões Ativas',
+      'Ajuda e Informações',
+    ])
+    // Garante que Meu Perfil aponta para /profile consolidado e que itens removidos não constam
+    const profileItem = account?.items.find((i) => i.title === 'Meu Perfil')
+    expect(profileItem?.href).toBe('/profile')
+    expect(titles).not.toContain('Alteração de Senha')
+    expect(titles).not.toContain('Preferências de Aparência')
+    expect(titles).not.toContain('Aparência')
   })
 })
