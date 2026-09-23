@@ -82,6 +82,12 @@ export default function MovementsPage() {
 
   const isAssetRequired = ASSET_REQUIRED_MOVEMENTS.includes(movementType)
 
+  // Ativo atualmente selecionado (se houver)
+  const selectedAsset = React.useMemo(() => {
+    if (!assetId || assetId === 'none') return null
+    return assets.find((a) => a.id === assetId) || null
+  }, [assetId, assets])
+
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true)
@@ -252,8 +258,18 @@ export default function MovementsPage() {
 
     const feesCents = computedFeesCents
     const taxesCents = computedTaxesCents
-    const qtyE8 = isAssetRequired || quantityInput.trim() ? decimalToE8(quantityInput) : undefined
-    const unitCents = unitPriceInput.trim() ? brlToCents(unitPriceInput) : undefined
+
+    // Em renda fixa (CDB, CRA, CRI, LCI, LCA), se a quantidade não for digitada, padroniza para 1 (escala e8)
+    const isFixedIncome = selectedAsset?.asset_class === 'fixed_income'
+    const resolvedQtyInput = isFixedIncome && !quantityInput.trim() ? '1' : quantityInput.trim()
+
+    const qtyE8 = isAssetRequired || resolvedQtyInput ? decimalToE8(resolvedQtyInput) : undefined
+    const unitCents =
+      isFixedIncome && !unitPriceInput.trim() && grossCents > 0
+        ? grossCents // Se for renda fixa com 1 título/aplicação, o preço unitário equivale ao valor aplicado
+        : unitPriceInput.trim()
+          ? brlToCents(unitPriceInput)
+          : undefined
 
     setSubmitting(true)
     try {
@@ -466,34 +482,92 @@ export default function MovementsPage() {
                 </div>
               )}
 
-              {/* Quantidade e Preço Unitário quando tipo envolve ativo */}
+              {/* Campos adaptados conforme a classe do ativo (Renda Fixa vs Variável) */}
               {isAssetRequired && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="movQty" className="text-xs font-semibold">
-                      Quantidade (cotas/títulos)
-                    </Label>
-                    <Input
-                      id="movQty"
-                      placeholder="Ex.: 100 ou 0,05"
-                      value={quantityInput}
-                      onChange={(e) => handleQuantityOrPriceChange(e.target.value, unitPriceInput)}
-                      className="h-9 text-xs font-mono"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  {selectedAsset?.asset_class === 'fixed_income' ? (
+                    <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-foreground">
+                          Lançamento de Título de Renda Fixa
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] border-primary/30 text-primary"
+                        >
+                          {selectedAsset.sub_type || 'Renda Fixa'}
+                        </Badge>
+                      </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
-                      Preço Unitário (R$)
-                    </Label>
-                    <Input
-                      id="movUnitPrice"
-                      placeholder="Ex.: 35,50"
-                      value={unitPriceInput}
-                      onChange={(e) => handleQuantityOrPriceChange(quantityInput, e.target.value)}
-                      className="h-9 text-xs font-mono"
-                    />
-                  </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movGross" className="text-xs font-semibold">
+                            {isBuy
+                              ? 'Valor Aplicado / Investido (R$) *'
+                              : 'Valor do Resgate Bruto (R$) *'}
+                          </Label>
+                          <Input
+                            id="movGross"
+                            placeholder="Ex.: 5000,00"
+                            value={grossInput}
+                            onChange={(e) => setGrossInput(e.target.value)}
+                            className="h-9 text-xs font-mono font-medium"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="movQty" className="text-xs font-semibold">
+                            Qtd. de Títulos / Frações
+                          </Label>
+                          <Input
+                            id="movQty"
+                            placeholder="1 (padrão p/ valor total)"
+                            value={quantityInput}
+                            onChange={(e) => setQuantityInput(e.target.value)}
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground">
+                        Em títulos como CDB, LCI, LCA e RDB, informe o valor financeiro aplicado. A
+                        quantidade pode permanecer 1 para representar o título integral.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="movQty" className="text-xs font-semibold">
+                          Quantidade (cotas/ações)
+                        </Label>
+                        <Input
+                          id="movQty"
+                          placeholder="Ex.: 100 ou 0,05"
+                          value={quantityInput}
+                          onChange={(e) =>
+                            handleQuantityOrPriceChange(e.target.value, unitPriceInput)
+                          }
+                          className="h-9 text-xs font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
+                          Preço Unitário (R$)
+                        </Label>
+                        <Input
+                          id="movUnitPrice"
+                          placeholder="Ex.: 35,50"
+                          value={unitPriceInput}
+                          onChange={(e) =>
+                            handleQuantityOrPriceChange(quantityInput, e.target.value)
+                          }
+                          className="h-9 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

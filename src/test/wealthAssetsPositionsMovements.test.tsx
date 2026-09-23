@@ -505,6 +505,93 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       )
     })
   })
+
+  it('6. Lançamento de Renda Fixa adapta campos para Valor Aplicado e quantidade padrão 1', async () => {
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Banco XP',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_rf',
+        user_id: 'usr_1',
+        ticker: 'CDB-ITAU-2028',
+        name: 'CDB Itaú 120% CDI',
+        asset_class: 'fixed_income',
+        sub_type: 'CDB (Certificado de Depósito Bancário)',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(movService.createMovement).mockResolvedValue({
+      id: 'mov_rf_created',
+      user_id: 'usr_1',
+      account_id: 'acc_1',
+      asset_id: 'ast_rf',
+      movement_type: 'buy',
+      date: '2026-03-24',
+      quantity_e8: 100000000, // 1 unidade
+      unit_price_cents: 500000, // R$ 5.000,00
+      gross_amount_cents: 500000,
+      fees_cents: 0,
+      taxes_cents: 0,
+      net_amount_cents: 500000,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <MovementsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
+      ).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Lançamento de Título de Renda Fixa/i)).not.toBeNull()
+      expect(screen.getByLabelText(/Valor Aplicado \/ Investido/i)).not.toBeNull()
+    })
+
+    // Preenche valor aplicado de R$ 5.000
+    fireEvent.change(screen.getByLabelText(/Valor Aplicado \/ Investido/i), {
+      target: { value: '5000' },
+    })
+
+    const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(movService.createMovement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          account_id: 'acc_1',
+          asset_id: 'ast_rf',
+          movement_type: 'buy',
+          gross_amount_cents: 500000,
+          quantity_e8: 100000000, // padronizado em 1 se não informado
+          unit_price_cents: 500000,
+        }),
+      )
+    })
+  })
 })
 
 describe('Posições em Custódia (/wealth/positions)', () => {
@@ -644,7 +731,206 @@ describe('Posições em Custódia (/wealth/positions)', () => {
       expect(screen.getByText('ITUB4')).not.toBeNull()
       expect(screen.getByText('Itaú Unibanco PN')).not.toBeNull()
       expect(screen.getByText('BTG Investimentos')).not.toBeNull()
-      expect(screen.getByText(/Derivado \(2 movs\)/i)).not.toBeNull()
+      // A coluna Origem ("Derivado (2 movs)") foi removida a pedido do usuário
+      expect(screen.queryByText(/Derivado \(2 movs\)/i)).toBeNull()
+      expect(screen.queryByText(/^Origem$/i)).toBeNull()
+    })
+  })
+
+  it('4. Permite alternar entre o modo Tabela Única e Modo Agrupado por Classe com expansão/retração', async () => {
+    vi.mocked(posService.listPositions).mockResolvedValue([
+      {
+        id: 'pos_1',
+        user_id: 'usr_1',
+        account_id: 'acc_1',
+        asset_id: 'ast_1',
+        quantity_e8: 10000000000,
+        average_price_cents: 3500,
+        total_cost_cents: 350000,
+        last_recalculated_at: new Date().toISOString(),
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        expand: {
+          account_id: {
+            id: 'acc_1',
+            user_id: 'usr_1',
+            institution_id: 'inst_1',
+            name: 'XP Investimentos',
+            account_type: 'investment',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+          asset_id: {
+            id: 'ast_1',
+            user_id: 'usr_1',
+            ticker: 'PETR4',
+            name: 'Petrobras PN',
+            asset_class: 'equities',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+        },
+      },
+      {
+        id: 'pos_2',
+        user_id: 'usr_1',
+        account_id: 'acc_1',
+        asset_id: 'ast_2',
+        quantity_e8: 100000000, // 1 título
+        average_price_cents: 1000000,
+        total_cost_cents: 1000000,
+        last_recalculated_at: new Date().toISOString(),
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        expand: {
+          account_id: {
+            id: 'acc_1',
+            user_id: 'usr_1',
+            institution_id: 'inst_1',
+            name: 'XP Investimentos',
+            account_type: 'investment',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+          asset_id: {
+            id: 'ast_2',
+            user_id: 'usr_1',
+            ticker: 'CDB-DI',
+            name: 'CDB Banco Master 120% CDI',
+            asset_class: 'fixed_income',
+            sub_type: 'CDB (Certificado de Depósito Bancário)',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+        },
+      },
+    ])
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([])
+    vi.mocked(assetService.listAssets).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
+
+    render(
+      <MemoryRouter>
+        <PositionsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('PETR4')).not.toBeNull()
+      expect(screen.getByText('CDB-DI')).not.toBeNull()
+    })
+
+    // Alterna para o modo agrupado por classe
+    const groupedToggleBtn = screen.getByRole('button', { name: /Agrupado por Classe/i })
+    fireEvent.click(groupedToggleBtn)
+
+    await waitFor(() => {
+      // Devem aparecer os cabeçalhos das classes agrupadas
+      expect(screen.getByText('Ações / Ações Globais')).not.toBeNull()
+      expect(screen.getByText('Renda Fixa')).not.toBeNull()
+    })
+
+    // Retrai e expande grupos
+    const collapseAllBtn = screen.getByRole('button', { name: /Retrair tudo/i })
+    fireEvent.click(collapseAllBtn)
+
+    // Ao retrair, a tabela da classe fica oculta mas o cabeçalho continua visível
+    const expandAllBtn = screen.getByRole('button', { name: /Expandir tudo/i })
+    fireEvent.click(expandAllBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText('Petrobras PN')).not.toBeNull()
+      expect(screen.getByText('CDB Banco Master 120% CDI')).not.toBeNull()
+    })
+  })
+
+  it('5. Permite filtrar posições através dos componentes de múltipla escolha', async () => {
+    vi.mocked(posService.listPositions).mockResolvedValue([
+      {
+        id: 'pos_1',
+        user_id: 'usr_1',
+        account_id: 'acc_1',
+        asset_id: 'ast_1',
+        quantity_e8: 10000000000,
+        average_price_cents: 3500,
+        total_cost_cents: 350000,
+        last_recalculated_at: new Date().toISOString(),
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        expand: {
+          account_id: {
+            id: 'acc_1',
+            user_id: 'usr_1',
+            institution_id: 'inst_1',
+            name: 'XP Investimentos',
+            account_type: 'investment',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+          asset_id: {
+            id: 'ast_1',
+            user_id: 'usr_1',
+            ticker: 'PETR4',
+            name: 'Petrobras PN',
+            asset_class: 'equities',
+            currency: 'BRL',
+            is_active: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          },
+        },
+      },
+    ])
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'XP Investimentos',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_1',
+        user_id: 'usr_1',
+        ticker: 'PETR4',
+        name: 'Petrobras PN',
+        asset_class: 'equities',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
+
+    render(
+      <MemoryRouter>
+        <PositionsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /^Ativo$/i })).not.toBeNull()
+      expect(screen.getByRole('combobox', { name: /^Conta$/i })).not.toBeNull()
+      expect(screen.getByRole('combobox', { name: /^Classe$/i })).not.toBeNull()
     })
   })
 })

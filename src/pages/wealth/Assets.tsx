@@ -30,6 +30,7 @@ import {
   updateAsset,
   toggleAssetActive,
   ASSET_CLASS_LABELS,
+  FIXED_INCOME_SUBTYPES,
   type AssetRecord,
   type AssetClass,
 } from '@/services/assets'
@@ -183,11 +184,17 @@ export default function AssetsPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-1 space-y-1.5">
                 <Label htmlFor="assetTicker" className="text-xs font-semibold">
-                  Ticker / Código *
+                  {assetClass === 'fixed_income' ? 'Código / Sigla *' : 'Ticker / Código *'}
                 </Label>
                 <Input
                   id="assetTicker"
-                  placeholder="PETR4"
+                  placeholder={
+                    assetClass === 'fixed_income'
+                      ? 'CDB-ITAU-2028'
+                      : assetClass === 'crypto'
+                        ? 'BTC'
+                        : 'PETR4'
+                  }
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
                   className="h-9 text-xs uppercase font-mono font-semibold"
@@ -201,7 +208,11 @@ export default function AssetsPage() {
                 </Label>
                 <Input
                   id="assetName"
-                  placeholder="Ex.: Petrobras PN, Tesouro Selic 2029"
+                  placeholder={
+                    assetClass === 'fixed_income'
+                      ? 'Ex.: CDB Banco Itaú 120% CDI, Tesouro IPCA+ 2029'
+                      : 'Ex.: Petrobras PN, Tesouro Selic 2029'
+                  }
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="h-9 text-xs"
@@ -268,15 +279,36 @@ export default function AssetsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="assetSubType" className="text-xs font-semibold">
-                  Subtipo / Segmento
+                  {assetClass === 'fixed_income'
+                    ? 'Tipo de Título / Produto'
+                    : 'Subtipo / Segmento'}
                 </Label>
-                <Input
-                  id="assetSubType"
-                  placeholder="Ex.: Papel, Logística, Pré-fixado"
-                  value={subType}
-                  onChange={(e) => setSubType(e.target.value)}
-                  className="h-9 text-xs"
-                />
+                {assetClass === 'fixed_income' ? (
+                  <Select value={subType} onValueChange={(val) => setSubType(val)}>
+                    <SelectTrigger
+                      id="assetSubType"
+                      aria-label="Tipo de Título de Renda Fixa"
+                      className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                    >
+                      <SelectValue placeholder="Selecione (CDB, LCI, Tesouro...)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border max-h-56">
+                      {FIXED_INCOME_SUBTYPES.map((st) => (
+                        <SelectItem key={st} value={st} className="text-xs">
+                          {st}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="assetSubType"
+                    placeholder="Ex.: Papel, Logística, Pré-fixado"
+                    value={subType}
+                    onChange={(e) => setSubType(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                )}
               </div>
 
               <div className="space-y-1.5">
