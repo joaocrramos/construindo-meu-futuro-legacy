@@ -2,16 +2,7 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import {
-  CreditCard,
-  Plus,
-  Edit2,
-  Building2,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Wallet,
-} from 'lucide-react'
+import { CreditCard, Plus, Edit2, Building2, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

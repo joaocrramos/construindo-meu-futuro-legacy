@@ -932,5 +932,8 @@ describe('Posições em Custódia (/wealth/positions)', () => {
       expect(screen.getByRole('combobox', { name: /^Conta$/i })).not.toBeNull()
       expect(screen.getByRole('combobox', { name: /^Classe$/i })).not.toBeNull()
     })
+
+    // Garante que a coluna Origem não existe
+    expect(screen.queryByText(/^Origem$/i)).toBeNull()
   })
 })

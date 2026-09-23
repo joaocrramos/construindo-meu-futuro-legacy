@@ -21,6 +21,7 @@ import {
   ArrowDownRight,
   Loader2,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react'
 import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
 import {

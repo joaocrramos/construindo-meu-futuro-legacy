@@ -4,13 +4,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrencyBRL } from '@/lib/formatters'
-import {
-  PieChart as PieChartIcon,
-  Plus,
-  Loader2,
-  Building2,
-  Layers,
-} from 'lucide-react'
+import { PieChart as PieChartIcon, Plus, Loader2, Building2, Layers } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
 import {

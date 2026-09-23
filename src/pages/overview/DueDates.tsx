@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
-import {
-  Calendar,
-  Plus,
-  Loader2,
-  Clock,
-  Coins,
-} from 'lucide-react'
+import { Calendar, Plus, Loader2, Clock, Coins } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listPositions, type PositionRecord } from '@/services/positions'
 import { listAccounts, type AccountRecord } from '@/services/accounts'

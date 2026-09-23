@@ -26,6 +26,7 @@ export interface MultiSelectFilterProps {
   options: MultiSelectOption[]
   selectedValues: string[]
   onSelectionChange: (values: string[]) => void
+  placeholder?: string
   searchPlaceholder?: string
   className?: string
   id?: string
@@ -36,6 +37,7 @@ export function MultiSelectFilter({
   options,
   selectedValues,
   onSelectionChange,
+  placeholder = 'Todas',
   searchPlaceholder = 'Buscar...',
   className,
   id,
@@ -77,7 +79,7 @@ export function MultiSelectFilter({
           <div className="flex items-center gap-1.5 truncate">
             <span className="text-muted-foreground">{title}:</span>
             {selectedValues.length === 0 ? (
-              <span className="text-muted-foreground font-normal">Todas</span>
+              <span className="text-muted-foreground font-normal">{placeholder}</span>
             ) : selectedValues.length === 1 ? (
               <span className="truncate max-w-[120px]">
                 {options.find((o) => o.value === selectedValues[0])?.label || selectedValues[0]}

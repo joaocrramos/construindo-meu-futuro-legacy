@@ -5,15 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrencyBRL } from '@/lib/formatters'
-import {
-  Wallet,
-  Coins,
-  Building2,
-  Plus,
-  Loader2,
-  PiggyBank,
-  CircleDot,
-} from 'lucide-react'
+import { Wallet, Coins, Building2, Plus, Loader2, PiggyBank, CircleDot } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
 import {
