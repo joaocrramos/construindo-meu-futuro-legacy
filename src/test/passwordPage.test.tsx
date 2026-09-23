@@ -223,7 +223,88 @@ describe('Tela de Alteração de Senha (AccountPasswordPage)', () => {
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(screen.getByText('A senha atual informada está incorreta.')).toBeDefined()
+      expect(screen.getByText('A senha atual está incorreta.')).toBeDefined()
     })
+  })
+
+  it('8. Exibe erro amigável ao receber HTTP 400 com validation_invalid_old_password', async () => {
+    const clientError = new ClientResponseError({
+      status: 400,
+      response: {
+        code: 400,
+        message: 'Failed to update record.',
+        data: {
+          oldPassword: {
+            code: 'validation_invalid_old_password',
+            message: 'Missing or invalid old password.',
+          },
+        },
+      },
+    })
+
+    vi.spyOn(pb.collection('users'), 'update').mockRejectedValueOnce(clientError)
+
+    render(
+      <MemoryRouter>
+        <AccountPasswordPage />
+      </MemoryRouter>,
+    )
+
+    const currPassInput = screen.getByLabelText(/Senha Atual/i)
+    const nPassInput = screen.getByLabelText(/^Nova Senha/i)
+    const cPassInput = screen.getByLabelText(/Confirmar Nova Senha/i)
+    const submitBtn = screen.getByRole('button', { name: /Salvar Nova Senha/i })
+
+    // Simula usuário digitando com Caps Lock
+    fireEvent.change(currPassInput, { target: { value: 'FUTURO2026!ADMIN' } })
+    fireEvent.change(nPassInput, { target: { value: 'EADMQT.28' } })
+    fireEvent.change(cPassInput, { target: { value: 'EADMQT.28' } })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText('A senha atual está incorreta.')).toBeDefined()
+    })
+  })
+
+  it('9. Inputs de senha possuem autoCapitalize="none", autoCorrect="off" e spellCheck=false', () => {
+    render(
+      <MemoryRouter>
+        <AccountPasswordPage />
+      </MemoryRouter>,
+    )
+
+    const currPassInput = screen.getByLabelText(/Senha Atual/i)
+    const nPassInput = screen.getByLabelText(/^Nova Senha/i)
+    const cPassInput = screen.getByLabelText(/Confirmar Nova Senha/i)
+
+    expect(currPassInput.getAttribute('autocapitalize')).toBe('none')
+    expect(currPassInput.getAttribute('autocorrect')).toBe('off')
+    expect(currPassInput.getAttribute('spellcheck')).toBe('false')
+
+    expect(nPassInput.getAttribute('autocapitalize')).toBe('none')
+    expect(nPassInput.getAttribute('autocorrect')).toBe('off')
+    expect(nPassInput.getAttribute('spellcheck')).toBe('false')
+
+    expect(cPassInput.getAttribute('autocapitalize')).toBe('none')
+    expect(cPassInput.getAttribute('autocorrect')).toBe('off')
+    expect(cPassInput.getAttribute('spellcheck')).toBe('false')
+  })
+
+  it('10. Exibe dica de maiúsculas e minúsculas quando o usuário digita a senha atual', () => {
+    render(
+      <MemoryRouter>
+        <AccountPasswordPage />
+      </MemoryRouter>,
+    )
+
+    const currPassInput = screen.getByLabelText(/Senha Atual/i)
+
+    // Antes de digitar, a dica não deve aparecer
+    expect(screen.queryByText('Atenção: a senha diferencia maiúsculas de minúsculas.')).toBeNull()
+
+    // Ao digitar algo no campo de senha atual
+    fireEvent.change(currPassInput, { target: { value: 'a' } })
+
+    expect(screen.getByText('Atenção: a senha diferencia maiúsculas de minúsculas.')).toBeDefined()
   })
 })

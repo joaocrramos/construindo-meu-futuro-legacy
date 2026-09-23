@@ -115,15 +115,23 @@ export default function AccountPasswordPage() {
           const fieldErrors: typeof errors = {}
 
           // Tratamento de erro na senha antiga (oldPassword)
-          if (data.oldPassword?.message) {
-            const msg = String(data.oldPassword.message).toLowerCase()
-            if (msg.includes('invalid') || msg.includes('match') || msg.includes('incorrect')) {
-              fieldErrors.currentPassword = 'A senha atual informada está incorreta.'
+          if (data.oldPassword) {
+            const code = String(data.oldPassword.code || '').toLowerCase()
+            const msg = String(data.oldPassword.message || '').toLowerCase()
+            if (
+              code.includes('invalid_old_password') ||
+              code.includes('match') ||
+              msg.includes('invalid') ||
+              msg.includes('match') ||
+              msg.includes('incorrect') ||
+              msg.includes('missing or invalid')
+            ) {
+              fieldErrors.currentPassword = 'A senha atual está incorreta.'
             } else {
-              fieldErrors.currentPassword = data.oldPassword.message
+              fieldErrors.currentPassword =
+                data.oldPassword.message || 'A senha atual está incorreta.'
             }
           }
-
           // Tratamento de erro na nova senha (password)
           if (data.password?.message) {
             const msg = String(data.password.message).toLowerCase()
@@ -149,7 +157,7 @@ export default function AccountPasswordPage() {
         // Mensagens gerais de erro do PocketBase
         const rawMessage = (err.message || '').toLowerCase()
         if (rawMessage.includes('old password') || rawMessage.includes('failed to authenticate')) {
-          friendlyError = 'A senha atual informada está incorreta.'
+          friendlyError = 'A senha atual está incorreta.'
         } else if (rawMessage.includes('password') && rawMessage.includes('length')) {
           friendlyError = 'A nova senha deve possuir pelo menos 8 caracteres.'
         }
@@ -239,13 +247,20 @@ export default function AccountPasswordPage() {
                   className={`h-10 text-xs ${errors.currentPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   disabled={loading}
                   autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
-                {errors.currentPassword && (
+                {errors.currentPassword ? (
                   <p className="text-[11px] text-destructive font-medium">
                     {errors.currentPassword}
                   </p>
-                )}
+                ) : currentPassword.length > 0 ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Atenção: a senha diferencia maiúsculas de minúsculas.
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-1.5">
@@ -266,6 +281,9 @@ export default function AccountPasswordPage() {
                   className={`h-10 text-xs ${errors.newPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   disabled={loading}
                   autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
                 {errors.newPassword && (
@@ -291,6 +309,9 @@ export default function AccountPasswordPage() {
                   className={`h-10 text-xs ${errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   disabled={loading}
                   autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
                 {errors.confirmPassword && (
