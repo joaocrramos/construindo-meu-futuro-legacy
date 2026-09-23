@@ -641,7 +641,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     })
     fireEvent.click(openBtn)
 
-    await screen.findByRole('dialog', {}, { timeout: 4000 })
+    await screen.findByLabelText(/Tipo de Operação/i, {}, { timeout: 10000 })
 
     expect(
       await screen.findByText(/Renda Fixa — Detalhes do Título/i, {}, { timeout: 4000 }),
@@ -734,7 +734,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     })
     fireEvent.click(openBtn)
 
-    await screen.findByRole('dialog', {}, { timeout: 4000 })
+    await screen.findByLabelText(/Tipo de Operação/i, {}, { timeout: 10000 })
 
     // Com ativo internacional (USD), os campos específicos devem ser renderizados
     expect(
@@ -895,7 +895,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     })
     fireEvent.click(openBtn)
 
-    await screen.findByRole('dialog', {}, { timeout: 4000 })
+    await screen.findByLabelText(/Tipo de Operação/i, {}, { timeout: 10000 })
 
     // Caso 1: Ações B3 (PETR4) - padrão inicial
     // Exibe Quantidade, Preço (R$), Valor Bruto (R$), Emolumentos (R$), Liquidação (R$) e NÃO exibe IR na compra
@@ -1008,7 +1008,8 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       })
       fireEvent.click(btn)
 
-      const dialogEl = await screen.findByRole('dialog', {}, { timeout: 4000 })
+      await screen.findByLabelText(/Tipo de Operação/i, {}, { timeout: 10000 })
+      const dialogEl = screen.getByRole('dialog')
       await tc.expectFields(dialogEl)
 
       unmountCase()

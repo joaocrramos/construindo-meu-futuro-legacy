@@ -4,6 +4,20 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.97] - 2026-09-23 (Aguardar renderização do formulário de Movimentações com findByLabelText Tipo de Operação)
+
+### Corrigido (Fixed)
+
+- **Estabilização da Suíte de Movimentações (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Nos testes 6, 7 e 8 do bloco `CRUD de Movimentações (/wealth/movements)` (incluindo o loop de casos do teste 8), substituída a espera `findByRole('dialog')` por `await screen.findByLabelText(/Tipo de Operação/i, {}, { timeout: 10000 })`.
+  - Garante que as asserções só ocorram após a efetiva montagem dos campos do formulário no DOM, prevenindo falsos negativos caso o modal abra antes da prontidão do formulário.
+  - Verificados os mocks dos testes 6, 7 e 8: todos já forneciam contas válidas (`accService.listAccounts`), confirmando pré-condição atendida.
+  - 100% das asserções de negócio e regras patrimoniais preservadas sem qualquer alteração no código de produção.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.97` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.96] - 2026-09-23 (Eliminação de condição de corrida nos testes 6, 7 e 8 de Movimentações Patrimoniais)
 
 ### Corrigido (Fixed)
