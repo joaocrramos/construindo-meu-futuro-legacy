@@ -4,6 +4,20 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.96] - 2026-09-23 (Eliminação de condição de corrida nos testes 6, 7 e 8 de Movimentações Patrimoniais)
+
+### Corrigido (Fixed)
+
+- **Estabilização Determinística da Suíte de Movimentações (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Eliminada a condição de corrida em ambientes com contenção de CPU (como runners do GitHub Actions) nos testes 3, 5, 6, 7 e 8 do bloco `CRUD de Movimentações (/wealth/movements)`.
+  - Adicionada sincronização assíncrona explícita aguardando a resolução de `loadData()` através da renderização de seu empty state (`await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })`) antes de acionar a abertura da modal de cadastro de movimentações.
+  - Assegurado que `selectedAsset` e a lista de contas/ativos estejam plenamente populados ao abrir a modal, garantindo que os blocos condicionais do formulário ("Renda Fixa — Detalhes do Título", "Preço (USD)", "Outros Custos (USD)", "Quantidade") renderizem deterministicamente.
+  - 100% das asserções de negócio e regras patrimoniais rigorosamente preservadas, sem qualquer alteração no código de produção.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.96` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.95] - 2026-09-23 (Botões de edição icon-only nas tabelas patrimoniais)
 
 ### Modificado (Changed)

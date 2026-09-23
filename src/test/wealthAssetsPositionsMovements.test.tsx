@@ -340,13 +340,12 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
-      ).not.toBeNull()
+    // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
+    await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+    const openBtn = screen.getByRole('button', {
+      name: /Registrar primeira movimentação/i,
     })
-
-    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+    fireEvent.click(openBtn)
 
     // Preenche valor bruto
     const grossInput = await screen.findByLabelText(/Valor Bruto/i)
@@ -540,13 +539,12 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
-      ).not.toBeNull()
+    // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
+    await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+    const openBtn = screen.getByRole('button', {
+      name: /Registrar primeira movimentação/i,
     })
-
-    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+    fireEvent.click(openBtn)
 
     // O modal abre com padrão 'buy'
     // Verifica que existem os campos "Emolumentos" e "Liquidação"
@@ -636,12 +634,11 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    // Aguarda carregar os dados antes de interagir com o botão de Nova Movimentação
-    const openBtn = await screen.findByRole(
-      'button',
-      { name: /Nova Movimentação|Registrar primeira movimentação/i },
-      { timeout: 4000 },
-    )
+    // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
+    await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+    const openBtn = screen.getByRole('button', {
+      name: /Nova Movimentação|Registrar primeira movimentação/i,
+    })
     fireEvent.click(openBtn)
 
     await screen.findByRole('dialog', {}, { timeout: 4000 })
@@ -730,12 +727,11 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    // Aguarda carregar os dados antes de interagir com o botão de Nova Movimentação
-    const openBtn = await screen.findByRole(
-      'button',
-      { name: /Nova Movimentação|Registrar primeira movimentação/i },
-      { timeout: 4000 },
-    )
+    // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
+    await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+    const openBtn = screen.getByRole('button', {
+      name: /Nova Movimentação|Registrar primeira movimentação/i,
+    })
     fireEvent.click(openBtn)
 
     await screen.findByRole('dialog', {}, { timeout: 4000 })
@@ -892,12 +888,11 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    // Aguarda carregar os dados antes de interagir com o botão de Nova Movimentação
-    const openBtn = await screen.findByRole(
-      'button',
-      { name: /Nova Movimentação|Registrar primeira movimentação/i },
-      { timeout: 4000 },
-    )
+    // Aguarda a conclusão de loadData (empty state é renderizado após carregar)
+    await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+    const openBtn = screen.getByRole('button', {
+      name: /Nova Movimentação|Registrar primeira movimentação/i,
+    })
     fireEvent.click(openBtn)
 
     await screen.findByRole('dialog', {}, { timeout: 4000 })
@@ -1007,11 +1002,10 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         </MemoryRouter>,
       )
 
-      const btn = await screen.findByRole(
-        'button',
-        { name: /Nova Movimentação|Registrar primeira movimentação/i },
-        { timeout: 4000 },
-      )
+      await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+      const btn = screen.getByRole('button', {
+        name: /Nova Movimentação|Registrar primeira movimentação/i,
+      })
       fireEvent.click(btn)
 
       const dialogEl = await screen.findByRole('dialog', {}, { timeout: 4000 })
