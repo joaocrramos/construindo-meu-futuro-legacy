@@ -230,6 +230,7 @@
   2. **Preservação do Histórico e Integridade:** As 7 entradas de canário/probe no backend permanecem intocadas como registro histórico de auditoria e desenvolvimento. Nada é apagado da tabela `_migrations`.
   3. **Vedação de Edição Manual:** Fica terminantemente vedado editar, truncar ou manipular a tabela `_migrations` manualmente (via SQL direto ou scripts ad-hoc). Toda evolução de banco é governada exclusivamente pelo fluxo canônico de migrations via ferramenta de backend (`apply_migrations`).
   4. **Referência Operacional:** Esta decisão complementa as diretrizes operacionais descritas em `docs/RESET_DEVELOPMENT.md`.
+- **Nota Histórica da Aplicação do Lote 1:** Na aplicação do Lote 1, o pipeline renumerou os arquivos ao aplicá-los (o repositório contém `0002_create_invitations.js` a `0010_create_movements.js` e a instância registrou `0011_create_invitations.js` a `0019_create_movements.js`). Cada migration foi aplicada exatamente uma vez, os arquivos do repositório mantêm os seus nomes originais e não há risco de reaplicação.
 - **Consequências:** O repositório inicia seu Lote 1 canônico a partir do ordinal `0001_extend_users_and_bootstrap.js` de forma limpa, previsível e em total conformidade com a ADR-019 e a guarda `check:migrations`, enquanto o backend aplica com sucesso a nova migration sem colisão de nome de arquivo (`file`).
 
 ---

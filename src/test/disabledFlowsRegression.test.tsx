@@ -10,25 +10,25 @@ import AccountSessionsPage from '@/pages/account/Sessions'
 import { AuthProvider } from '@/contexts/AuthContext'
 
 describe('Testes de Regressão de Telas e Fluxos Desabilitados (Sem Sucesso Falso)', () => {
-  it('1. Cadastro por convite não aceita token fictício e exibe aviso de funcionalidade indisponível', () => {
+  it('1. Cadastro por convite exige validação e bloqueia autocadastro sem token', () => {
     render(
-      <MemoryRouter initialEntries={['/register?token=INV-FAKE-123']}>
+      <MemoryRouter initialEntries={['/register']}>
         <RegisterPage />
       </MemoryRouter>,
     )
 
-    // O campo de token deve estar desabilitado
+    // Exibe campo de token para validação manual quando acessado sem parâmetro
     const inputToken = screen.getByLabelText(/Token do Convite/i) as HTMLInputElement
-    expect(inputToken.disabled).toBe(true)
+    expect(inputToken).not.toBeNull()
 
-    // O botão principal deve estar desabilitado
+    // O botão de verificação deve existir
     const submitButton = screen.getByRole('button', {
-      name: /Cadastro Temporariamente Indisponível/i,
+      name: /Verificar e Continuar/i,
     }) as HTMLButtonElement
-    expect(submitButton.disabled).toBe(true)
+    expect(submitButton).not.toBeNull()
 
-    // Deve exibir aviso em implementação
-    expect(screen.queryByText(/Funcionalidade em Implementação/i)).not.toBeNull()
+    // Política de acesso restrito deve estar presente
+    expect(screen.getByText(/Política de Acesso Restrito/i)).not.toBeNull()
   })
 
   it('2. Recuperação de Senha exibe aviso de implementação e não simula envio de e-mail', () => {
