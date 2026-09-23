@@ -107,32 +107,70 @@ export function derivePositionsFromMovements(
 
     current.movementsCount += 1
 
-    if (mov.movement_type === 'buy') {
-      const addedQty = mov.quantity_e8
-      // Custo da compra = líquido gasto ou (unitário * quantidade)
-      const addedCost =
-        mov.net_amount_cents > 0
-          ? mov.net_amount_cents
-          : (mov.unit_price_cents || 0) * e8ToDecimal(addedQty)
+    const asset = assetMap.get(mov.asset_id)
+    const isFixedIncome = asset?.asset_class === 'fixed_income'
 
-      const newQty = current.quantity_e8 + addedQty
-      const newCost = current.total_cost_cents + Math.round(addedCost)
-      const newAvgPrice = newQty > 0 ? Math.round(newCost / e8ToDecimal(newQty)) : 0
+    if (isFixedIncome) {
+      // Renda Fixa opera por VALOR (reais), não por contagem de cotas
+      if (mov.movement_type === 'buy') {
+        const addedCost =
+          mov.net_amount_cents > 0 ? mov.net_amount_cents : mov.gross_amount_cents || 0
+        current.total_cost_cents += addedCost
+      } else if (mov.movement_type === 'sell') {
+        const soldAmount =
+          mov.gross_amount_cents > 0 ? mov.gross_amount_cents : mov.net_amount_cents || 0
+        current.total_cost_cents = Math.max(0, current.total_cost_cents - soldAmount)
+      } else if (mov.movement_type === 'amortization') {
+        const amortAmount =
+          mov.net_amount_cents > 0 ? mov.net_amount_cents : mov.gross_amount_cents || 0
+        current.total_cost_cents = Math.max(0, current.total_cost_cents - amortAmount)
+      }
 
-      current.quantity_e8 = newQty
-      current.total_cost_cents = newCost
-      current.average_price_cents = newAvgPrice
-    } else if (mov.movement_type === 'sell') {
-      const soldQty = Math.min(mov.quantity_e8, current.quantity_e8)
-      const remainingQty = current.quantity_e8 - soldQty
-      // Na venda, o preço médio se mantém, e o custo total diminui proporcionalmente
-      const remainingCost =
-        remainingQty > 0 ? Math.round(current.average_price_cents * e8ToDecimal(remainingQty)) : 0
-
-      current.quantity_e8 = remainingQty
-      current.total_cost_cents = remainingCost
-      if (remainingQty === 0) {
+      if (current.total_cost_cents > 0) {
+        current.quantity_e8 = current.total_cost_cents * 1000000
+        current.average_price_cents = 100
+      } else {
+        current.quantity_e8 = 0
         current.average_price_cents = 0
+        current.total_cost_cents = 0
+      }
+    } else {
+      // Ativos cotizados (ações, FIIs, cripto, fundos, etc.): cálculo por cotas inalterado
+      if (mov.movement_type === 'buy') {
+        const addedQty = mov.quantity_e8
+        // Custo da compra = líquido gasto ou (unitário * quantidade)
+        const addedCost =
+          mov.net_amount_cents > 0
+            ? mov.net_amount_cents
+            : (mov.unit_price_cents || 0) * e8ToDecimal(addedQty)
+
+        const newQty = current.quantity_e8 + addedQty
+        const newCost = current.total_cost_cents + Math.round(addedCost)
+        const newAvgPrice = newQty > 0 ? Math.round(newCost / e8ToDecimal(newQty)) : 0
+
+        current.quantity_e8 = newQty
+        current.total_cost_cents = newCost
+        current.average_price_cents = newAvgPrice
+      } else if (mov.movement_type === 'sell') {
+        const soldQty = Math.min(mov.quantity_e8, current.quantity_e8)
+        const remainingQty = current.quantity_e8 - soldQty
+        // Na venda, o preço médio se mantém, e o custo total diminui proporcionalmente
+        const remainingCost =
+          remainingQty > 0 ? Math.round(current.average_price_cents * e8ToDecimal(remainingQty)) : 0
+
+        current.quantity_e8 = remainingQty
+        current.total_cost_cents = remainingCost
+        if (remainingQty === 0) {
+          current.average_price_cents = 0
+        }
+      } else if (mov.movement_type === 'amortization') {
+        const amortAmount =
+          mov.net_amount_cents > 0 ? mov.net_amount_cents : mov.gross_amount_cents || 0
+        current.total_cost_cents = Math.max(0, current.total_cost_cents - amortAmount)
+        current.average_price_cents =
+          current.quantity_e8 > 0
+            ? Math.round((current.total_cost_cents * 100000000) / current.quantity_e8)
+            : 0
       }
     }
   }

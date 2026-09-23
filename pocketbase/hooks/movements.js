@@ -387,47 +387,81 @@ routerAdd('POST', '/backend/v1/movements', (e) => {
           0,
         )
 
+        const isFixedIncome = assetRec && assetRec.getString('asset_class') === 'fixed_income'
+
         let accQtyE8 = 0
         let accTotalCostCents = 0
         let accAvgPriceCents = 0
 
-        for (let i = 0; i < movList.length; i++) {
-          const m = movList[i]
-          const mType = m.getString('movement_type')
-          const mQtyE8 = m.getInt('quantity_e8') || 0
-          const mGross = m.getInt('gross_amount_cents') || 0
-          const mNet = m.getInt('net_amount_cents') || 0
-          const mUnitPrice = m.getInt('unit_price_cents') || 0
+        if (isFixedIncome) {
+          // Renda Fixa opera por VALOR (reais), não por contagem de cotas
+          for (let i = 0; i < movList.length; i++) {
+            const m = movList[i]
+            const mType = m.getString('movement_type')
+            const mGross = m.getInt('gross_amount_cents') || 0
+            const mNet = m.getInt('net_amount_cents') || 0
 
-          if (mType === 'buy') {
-            const addedQty = mQtyE8
-            const addedCost =
-              mNet > 0
-                ? mNet
-                : mUnitPrice > 0
-                  ? Math.round((mUnitPrice * addedQty) / 100000000)
-                  : mGross
-            const newQty = accQtyE8 + addedQty
-            const newCost = accTotalCostCents + addedCost
-            accQtyE8 = newQty
-            accTotalCostCents = newCost
-            accAvgPriceCents = newQty > 0 ? Math.round((newCost * 100000000) / newQty) : 0
-          } else if (mType === 'sell') {
-            const soldQty = Math.min(mQtyE8, accQtyE8)
-            const remainingQty = accQtyE8 - soldQty
-            const remainingCost =
-              remainingQty > 0 ? Math.round((accAvgPriceCents * remainingQty) / 100000000) : 0
-            accQtyE8 = remainingQty
-            accTotalCostCents = remainingCost
-            if (remainingQty === 0) {
-              accAvgPriceCents = 0
+            if (mType === 'buy') {
+              const addedCost = mNet > 0 ? mNet : mGross
+              accTotalCostCents += addedCost
+            } else if (mType === 'sell') {
+              const soldAmount = mGross > 0 ? mGross : mNet
+              accTotalCostCents = Math.max(0, accTotalCostCents - soldAmount)
+            } else if (mType === 'amortization') {
+              const amortAmount = mNet > 0 ? mNet : mGross
+              accTotalCostCents = Math.max(0, accTotalCostCents - amortAmount)
             }
-          } else if (mType === 'amortization') {
-            // Amortização devolve capital investido, reduzindo o custo total contábil
-            const amortAmount = mNet > 0 ? mNet : mGross
-            accTotalCostCents = Math.max(0, accTotalCostCents - amortAmount)
-            accAvgPriceCents =
-              accQtyE8 > 0 ? Math.round((accTotalCostCents * 100000000) / accQtyE8) : 0
+          }
+
+          if (accTotalCostCents > 0) {
+            // Normalização canônica: 1 unidade (100000000 e8) = R$ 1,00 de saldo principal
+            // average_price_cents = 100 (R$ 1,00/unidade)
+            accQtyE8 = accTotalCostCents * 1000000
+            accAvgPriceCents = 100
+          } else {
+            accQtyE8 = 0
+            accAvgPriceCents = 0
+            accTotalCostCents = 0
+          }
+        } else {
+          // Ativos cotizados (ações, FIIs, cripto, fundos, outros): algoritmo contábil por cotas inalterado
+          for (let i = 0; i < movList.length; i++) {
+            const m = movList[i]
+            const mType = m.getString('movement_type')
+            const mQtyE8 = m.getInt('quantity_e8') || 0
+            const mGross = m.getInt('gross_amount_cents') || 0
+            const mNet = m.getInt('net_amount_cents') || 0
+            const mUnitPrice = m.getInt('unit_price_cents') || 0
+
+            if (mType === 'buy') {
+              const addedQty = mQtyE8
+              const addedCost =
+                mNet > 0
+                  ? mNet
+                  : mUnitPrice > 0
+                    ? Math.round((mUnitPrice * addedQty) / 100000000)
+                    : mGross
+              const newQty = accQtyE8 + addedQty
+              const newCost = accTotalCostCents + addedCost
+              accQtyE8 = newQty
+              accTotalCostCents = newCost
+              accAvgPriceCents = newQty > 0 ? Math.round((newCost * 100000000) / newQty) : 0
+            } else if (mType === 'sell') {
+              const soldQty = Math.min(mQtyE8, accQtyE8)
+              const remainingQty = accQtyE8 - soldQty
+              const remainingCost =
+                remainingQty > 0 ? Math.round((accAvgPriceCents * remainingQty) / 100000000) : 0
+              accQtyE8 = remainingQty
+              accTotalCostCents = remainingCost
+              if (remainingQty === 0) {
+                accAvgPriceCents = 0
+              }
+            } else if (mType === 'amortization') {
+              const amortAmount = mNet > 0 ? mNet : mGross
+              accTotalCostCents = Math.max(0, accTotalCostCents - amortAmount)
+              accAvgPriceCents =
+                accQtyE8 > 0 ? Math.round((accTotalCostCents * 100000000) / accQtyE8) : 0
+            }
           }
         }
 
@@ -961,46 +995,83 @@ routerAdd('PUT', '/backend/v1/movements/{id}', (e) => {
           0,
         )
 
+        let pairAssetRec = null
+        try {
+          pairAssetRec = txApp.findRecordById('assets', pair.astId)
+        } catch (_) {}
+
+        const isFixedIncome =
+          pairAssetRec && pairAssetRec.getString('asset_class') === 'fixed_income'
+
         let accQtyE8 = 0
         let accTotalCostCents = 0
         let accAvgPriceCents = 0
 
-        for (let i = 0; i < movList.length; i++) {
-          const m = movList[i]
-          const mType = m.getString('movement_type')
-          const mQtyE8 = m.getInt('quantity_e8') || 0
-          const mGross = m.getInt('gross_amount_cents') || 0
-          const mNet = m.getInt('net_amount_cents') || 0
-          const mUnitPrice = m.getInt('unit_price_cents') || 0
+        if (isFixedIncome) {
+          for (let i = 0; i < movList.length; i++) {
+            const m = movList[i]
+            const mType = m.getString('movement_type')
+            const mGross = m.getInt('gross_amount_cents') || 0
+            const mNet = m.getInt('net_amount_cents') || 0
 
-          if (mType === 'buy') {
-            const addedQty = mQtyE8
-            const addedCost =
-              mNet > 0
-                ? mNet
-                : mUnitPrice > 0
-                  ? Math.round((mUnitPrice * addedQty) / 100000000)
-                  : mGross
-            const newQty = accQtyE8 + addedQty
-            const newCost = accTotalCostCents + addedCost
-            accQtyE8 = newQty
-            accTotalCostCents = newCost
-            accAvgPriceCents = newQty > 0 ? Math.round((newCost * 100000000) / newQty) : 0
-          } else if (mType === 'sell') {
-            const soldQty = Math.min(mQtyE8, accQtyE8)
-            const remainingQty = accQtyE8 - soldQty
-            const remainingCost =
-              remainingQty > 0 ? Math.round((accAvgPriceCents * remainingQty) / 100000000) : 0
-            accQtyE8 = remainingQty
-            accTotalCostCents = remainingCost
-            if (remainingQty === 0) {
-              accAvgPriceCents = 0
+            if (mType === 'buy') {
+              const addedCost = mNet > 0 ? mNet : mGross
+              accTotalCostCents += addedCost
+            } else if (mType === 'sell') {
+              const soldAmount = mGross > 0 ? mGross : mNet
+              accTotalCostCents = Math.max(0, accTotalCostCents - soldAmount)
+            } else if (mType === 'amortization') {
+              const amortAmount = mNet > 0 ? mNet : mGross
+              accTotalCostCents = Math.max(0, accTotalCostCents - amortAmount)
             }
-          } else if (mType === 'amortization') {
-            const amortAmount = mNet > 0 ? mNet : mGross
-            accTotalCostCents = Math.max(0, accTotalCostCents - amortAmount)
-            accAvgPriceCents =
-              accQtyE8 > 0 ? Math.round((accTotalCostCents * 100000000) / accQtyE8) : 0
+          }
+
+          if (accTotalCostCents > 0) {
+            accQtyE8 = accTotalCostCents * 1000000
+            accAvgPriceCents = 100
+          } else {
+            accQtyE8 = 0
+            accAvgPriceCents = 0
+            accTotalCostCents = 0
+          }
+        } else {
+          for (let i = 0; i < movList.length; i++) {
+            const m = movList[i]
+            const mType = m.getString('movement_type')
+            const mQtyE8 = m.getInt('quantity_e8') || 0
+            const mGross = m.getInt('gross_amount_cents') || 0
+            const mNet = m.getInt('net_amount_cents') || 0
+            const mUnitPrice = m.getInt('unit_price_cents') || 0
+
+            if (mType === 'buy') {
+              const addedQty = mQtyE8
+              const addedCost =
+                mNet > 0
+                  ? mNet
+                  : mUnitPrice > 0
+                    ? Math.round((mUnitPrice * addedQty) / 100000000)
+                    : mGross
+              const newQty = accQtyE8 + addedQty
+              const newCost = accTotalCostCents + addedCost
+              accQtyE8 = newQty
+              accTotalCostCents = newCost
+              accAvgPriceCents = newQty > 0 ? Math.round((newCost * 100000000) / newQty) : 0
+            } else if (mType === 'sell') {
+              const soldQty = Math.min(mQtyE8, accQtyE8)
+              const remainingQty = accQtyE8 - soldQty
+              const remainingCost =
+                remainingQty > 0 ? Math.round((accAvgPriceCents * remainingQty) / 100000000) : 0
+              accQtyE8 = remainingQty
+              accTotalCostCents = remainingCost
+              if (remainingQty === 0) {
+                accAvgPriceCents = 0
+              }
+            } else if (mType === 'amortization') {
+              const amortAmount = mNet > 0 ? mNet : mGross
+              accTotalCostCents = Math.max(0, accTotalCostCents - amortAmount)
+              accAvgPriceCents =
+                accQtyE8 > 0 ? Math.round((accTotalCostCents * 100000000) / accQtyE8) : 0
+            }
           }
         }
 
@@ -1031,11 +1102,6 @@ routerAdd('PUT', '/backend/v1/movements/{id}', (e) => {
         posRec.set('total_cost_cents', accTotalCostCents)
 
         // Sincronizar maturity_date e indexer a partir do cadastro do ativo ou movimentação
-        let pairAssetRec = null
-        try {
-          pairAssetRec = txApp.findRecordById('assets', pair.astId)
-        } catch (_) {}
-
         const effectiveDueDate =
           dueDate ||
           (pairAssetRec ? pairAssetRec.getString('due_date') : '') ||

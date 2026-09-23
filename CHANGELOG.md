@@ -4,6 +4,27 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.102] - 2026-09-24 (Cálculo de posições de Renda Fixa por valor e reparo do CDB XP)
+
+### Corrigido (Fixed)
+
+- **Cálculo de Posições de Renda Fixa por Valor (`pocketbase/hooks/movements.js`)**:
+  - Nas rotas `POST` e `PUT /backend/v1/movements`, o recálculo contábil de posições agora diferencia a classe do ativo: para `asset_class === 'fixed_income'`, o cálculo opera por valor financeiro (reais) em vez de contagem de cotas.
+  - Aportes/compras somam o valor aplicado ao custo total; resgates/vendas parciais abatem o valor resgatado diretamente do custo total (com piso zero).
+  - Posições com saldo positivo mantêm `quantity_e8 > 0` normalizado na escala R$ 1,00/unidade e `average_price_cents = 100`, tornando a posição imediatamente elegível para varreduras do motor de alertas (`alerts.js`).
+  - As demais classes (ações, FIIs, cripto, fundos, outros) mantêm estritamente o algoritmo ponderado por cotas inalterado.
+- **Derivação de Posições no Frontend (`src/services/positions.ts`)**:
+  - Ajustada a função `derivePositionsFromMovements` com a mesma regra por valor para ativos com `asset_class === 'fixed_income'`, garantindo paridade total entre a projeção do frontend e a persistência no backend.
+- **Migration de Reparo (`pocketbase/migrations/0023_repair_fixed_income_cdbxp_position.js`)**:
+  - Posição `e5ryvrhz6kbcwoq` (CDB XP id `yd09o24dmlc4rbg`, conta `0n8mennpev0x5kp`, usuário `6ib7abl76x921af`) recalculada e corrigida para saldo de R$ 3.000,00 (`total_cost_cents = 300000`, `quantity_e8 = 300000000000`, `average_price_cents = 100`, `maturity_date = 2026-09-30`, `indexer = CDI (100%)`).
+  - Registro de auditoria gerado na collection `audit_logs` (`event_type = 'POSITION_RECALCULATED'`).
+- **Testes Automatizados (`src/test/fixedIncomePositions.test.ts`)**:
+  - Cobertura de compra R$ 5.000 + venda parcial R$ 2.000 em renda fixa com saldo R$ 3.000 e `quantity_e8 > 0`, resgate total zerando posição e preservação do algoritmo por cotas em ações.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.102` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.101] - 2026-09-24 (Sincronização de vencimento de ativos para posições e motor de alertas)
 
 ### Corrigido (Fixed)
