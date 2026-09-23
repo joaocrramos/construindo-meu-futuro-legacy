@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T08:27:42.291Z",
+  "generatedAt": "2026-09-23T08:46:10.854Z",
   "collections": [
     {
       "name": "users",
@@ -74,6 +74,807 @@
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "invitations",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "token_hash",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "token_public_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["admin", "user"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pending", "accepted", "expired", "revoked"]
+        },
+        {
+          "name": "invited_by",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "expires_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "accepted_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_invitations_token_hash ON invitations (token_hash)",
+        "CREATE UNIQUE INDEX idx_invitations_public_id ON invitations (token_public_id)",
+        "CREATE INDEX idx_invitations_email_status ON invitations (email, status)"
+      ]
+    },
+    {
+      "name": "audit_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "severity",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["info", "warn", "critical"]
+        },
+        {
+          "name": "ip_address",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "user_agent",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entity",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entity_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "summary",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "details",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_audit_logs_user_created ON audit_logs (user_id, created DESC)",
+        "CREATE INDEX idx_audit_logs_type_created ON audit_logs (event_type, created DESC)",
+        "CREATE INDEX idx_audit_logs_retention ON audit_logs (created)"
+      ]
+    },
+    {
+      "name": "portfolios",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": "@request.auth.id != '' && @request.body.user_id = @request.auth.id",
+        "update": "@request.auth.id != '' && user_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_archived",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "target_amount_cents",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_portfolios_user_archived ON portfolios (user_id, is_archived)",
+        "CREATE UNIQUE INDEX idx_portfolios_user_name ON portfolios (user_id, name)"
+      ]
+    },
+    {
+      "name": "institutions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": "@request.auth.id != '' && @request.body.user_id = @request.auth.id",
+        "update": "@request.auth.id != '' && user_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "institution_type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["bank", "broker", "crypto_exchange", "international", "other"]
+        },
+        {
+          "name": "website",
+          "type": "url",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_institutions_user_active ON institutions (user_id, is_active)",
+        "CREATE UNIQUE INDEX idx_institutions_user_name ON institutions (user_id, name)"
+      ]
+    },
+    {
+      "name": "accounts",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": "@request.auth.id != '' && @request.body.user_id = @request.auth.id",
+        "update": "@request.auth.id != '' && user_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "institution_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "institutions"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "account_type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "checking",
+            "investment",
+            "savings",
+            "international_checking",
+            "cash",
+            "other"
+          ]
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "account_number",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "agency",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_accounts_user_institution ON accounts (user_id, institution_id)",
+        "CREATE INDEX idx_accounts_user_active ON accounts (user_id, is_active)",
+        "CREATE UNIQUE INDEX idx_accounts_user_name ON accounts (user_id, name)"
+      ]
+    },
+    {
+      "name": "account_balances",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "account_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "accounts"
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "balance_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "last_recalculated_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "last_movement_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "movements"
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_account_balances_user_acc_curr ON account_balances (user_id, account_id, currency)"
+      ]
+    },
+    {
+      "name": "assets",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": "@request.auth.id != '' && @request.body.user_id = @request.auth.id",
+        "update": "@request.auth.id != '' && user_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "ticker",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "asset_class",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "fixed_income",
+            "equities",
+            "real_estate_funds",
+            "mutual_funds",
+            "crypto",
+            "cash_equivalent",
+            "other"
+          ]
+        },
+        {
+          "name": "sub_type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cnpj_issuer",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_assets_user_ticker ON assets (user_id, ticker)",
+        "CREATE INDEX idx_assets_user_class ON assets (user_id, asset_class)"
+      ]
+    },
+    {
+      "name": "positions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "account_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "accounts"
+        },
+        {
+          "name": "asset_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "assets"
+        },
+        {
+          "name": "quantity_e8",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "average_price_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "total_cost_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "current_price_cents",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "total_market_value_cents",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "maturity_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "indexer",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "last_recalculated_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_positions_user_acc_asset ON positions (user_id, account_id, asset_id)",
+        "CREATE INDEX idx_positions_user_maturity ON positions (user_id, maturity_date)"
+      ]
+    },
+    {
+      "name": "movements",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user_id = @request.auth.id",
+        "view": "@request.auth.id != '' && user_id = @request.auth.id",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "account_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "accounts"
+        },
+        {
+          "name": "asset_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "assets"
+        },
+        {
+          "name": "movement_type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "deposit",
+            "withdrawal",
+            "buy",
+            "sell",
+            "dividend",
+            "interest_on_capital",
+            "amortization",
+            "fee",
+            "tax",
+            "reversal"
+          ]
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "quantity_e8",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "unit_price_cents",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gross_amount_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "fees_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "taxes_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "net_amount_cents",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "idempotency_key",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_reversed",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "reversal_of_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "movements"
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_movements_user_acc_date ON movements (user_id, account_id, date DESC)",
+        "CREATE INDEX idx_movements_user_asset_date ON movements (user_id, asset_id, date DESC)",
+        "CREATE UNIQUE INDEX idx_movements_user_idempotency ON movements (user_id, idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key != ''",
+        "CREATE UNIQUE INDEX idx_movements_reversal_unique ON movements (reversal_of_id) WHERE movement_type = 'reversal' AND reversal_of_id IS NOT NULL"
       ]
     }
   ]
