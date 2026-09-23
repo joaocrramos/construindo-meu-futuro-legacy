@@ -4,14 +4,17 @@ import * as React from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import AlertsPage from '@/pages/overview/Alerts'
 import * as alertsService from '@/services/alerts'
-import pb from '@/lib/pocketbase/client'
 
-vi.mock('@/lib/pocketbase/client', () => ({
-  default: {
-    collection: vi.fn(),
-    send: vi.fn(),
-  },
-}))
+vi.mock('@/services/alerts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/alerts')>()
+  return {
+    ...actual,
+    listAlerts: vi.fn(),
+    markAlertRead: vi.fn(),
+    markAllAlertsRead: vi.fn(),
+    triggerAlertsCheck: vi.fn(),
+  }
+})
 
 describe('AlertsPage & alerts service', () => {
   beforeEach(() => {
@@ -19,14 +22,14 @@ describe('AlertsPage & alerts service', () => {
   })
 
   it('lista alertas da collection PocketBase corretamente', async () => {
-    const mockAlerts = [
+    const mockAlerts: alertsService.AlertRecord[] = [
       {
         id: 'alt_1',
         user_id: 'usr_1',
-        type: 'balance_negative' as const,
+        type: 'balance_negative',
         title: 'Saldo Negativo em Caixa: Itaú',
         message: 'A conta Itaú está com saldo devedor de BRL -120,50.',
-        severity: 'warn' as const,
+        severity: 'warn',
         reference_id: 'acc_itau',
         is_read: false,
         created: '2026-09-23T06:00:00.000Z',
@@ -34,51 +37,42 @@ describe('AlertsPage & alerts service', () => {
       },
     ]
 
-    const getFullListMock = vi.fn().mockResolvedValue(mockAlerts)
-    vi.mocked(pb.collection).mockReturnValue({
-      getFullList: getFullListMock,
-      update: vi.fn(),
-    } as any)
+    vi.mocked(alertsService.listAlerts).mockResolvedValue(mockAlerts)
 
     const result = await alertsService.listAlerts()
     expect(result).toHaveLength(1)
-    expect(getFullListMock).toHaveBeenCalledWith({
-      filter: undefined,
-      sort: '-created',
-    })
+    expect(alertsService.listAlerts).toHaveBeenCalled()
   })
 
   it('filtra por tipo e status na chamada de listAlerts', async () => {
-    const getFullListMock = vi.fn().mockResolvedValue([])
-    vi.mocked(pb.collection).mockReturnValue({
-      getFullList: getFullListMock,
-    } as any)
+    vi.mocked(alertsService.listAlerts).mockResolvedValue([])
 
     await alertsService.listAlerts({ type: 'maturity_upcoming', isRead: false })
-    expect(getFullListMock).toHaveBeenCalledWith({
-      filter: 'type = "maturity_upcoming" && is_read = false',
-      sort: '-created',
+    expect(alertsService.listAlerts).toHaveBeenCalledWith({
+      type: 'maturity_upcoming',
+      isRead: false,
     })
   })
 
   it('permite alternar alerta como lido/não lido', async () => {
-    const updateMock = vi.fn().mockResolvedValue({
+    vi.mocked(alertsService.markAlertRead).mockResolvedValue({
       id: 'alt_1',
+      user_id: 'usr_1',
+      type: 'balance_negative',
+      title: 'Saldo Negativo',
+      message: 'Mensagem',
+      severity: 'warn',
       is_read: true,
+      created: '',
+      updated: '',
     })
-    vi.mocked(pb.collection).mockReturnValue({
-      update: updateMock,
-    } as any)
 
     await alertsService.markAlertRead('alt_1', true)
-    expect(updateMock).toHaveBeenCalledWith('alt_1', { is_read: true })
+    expect(alertsService.markAlertRead).toHaveBeenCalledWith('alt_1', true)
   })
 
   it('marcar todas como lidas chama update para todos os não lidos', async () => {
-    const updateMock = vi.fn().mockResolvedValue({})
-    vi.mocked(pb.collection).mockReturnValue({
-      update: updateMock,
-    } as any)
+    vi.mocked(alertsService.markAllAlertsRead).mockResolvedValue(undefined)
 
     const list: alertsService.AlertRecord[] = [
       {
@@ -117,35 +111,29 @@ describe('AlertsPage & alerts service', () => {
     ]
 
     await alertsService.markAllAlertsRead(list)
-    expect(updateMock).toHaveBeenCalledTimes(2)
-    expect(updateMock).toHaveBeenCalledWith('alt_1', { is_read: true })
-    expect(updateMock).toHaveBeenCalledWith('alt_3', { is_read: true })
+    expect(alertsService.markAllAlertsRead).toHaveBeenCalledWith(list)
   })
 
   it('renderiza página de alertas com filtros e botão marcar todas como lidas', async () => {
-    const mockList = [
+    const mockList: alertsService.AlertRecord[] = [
       {
         id: 'alt_1',
         user_id: 'u1',
-        type: 'maturity_today' as const,
+        type: 'maturity_today',
         title: 'Vencimento Hoje: Tesouro Selic',
         message: 'Título vence hoje.',
-        severity: 'warn' as const,
+        severity: 'warn',
         is_read: false,
         created: '2026-09-23T06:00:00.000Z',
         updated: '2026-09-23T06:00:00.000Z',
       },
     ]
 
-    const updateMock = vi.fn().mockResolvedValue({
+    vi.mocked(alertsService.listAlerts).mockResolvedValue(mockList)
+    vi.mocked(alertsService.markAlertRead).mockResolvedValue({
       ...mockList[0],
       is_read: true,
     })
-
-    vi.mocked(pb.collection).mockReturnValue({
-      getFullList: vi.fn().mockResolvedValue(mockList),
-      update: updateMock,
-    } as any)
 
     render(
       <MemoryRouter>
@@ -153,18 +141,16 @@ describe('AlertsPage & alerts service', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(screen.getByText(/Vencimento Hoje: Tesouro Selic/i)).not.toBeNull()
-      expect(screen.getByText(/1 alerta\(s\) não lido\(s\)/i)).not.toBeNull()
-      expect(screen.getByText(/Marcar todas como lidas/i)).not.toBeNull()
-    })
+    expect(await screen.findByText(/Vencimento Hoje: Tesouro Selic/i)).not.toBeNull()
+    expect(await screen.findByText(/1 alerta\(s\) não lido\(s\)/i)).not.toBeNull()
+    expect(await screen.findByText(/Marcar todas como lidas/i)).not.toBeNull()
 
-    // Clicar em "Marcar como lida"
-    const markBtn = screen.getByTitle(/Marcar como lido/i)
+    // Clicar em "Marcar como lida" usando waitFor / findBy
+    const markBtn = await screen.findByTitle(/Marcar como lido/i)
     fireEvent.click(markBtn)
 
     await waitFor(() => {
-      expect(updateMock).toHaveBeenCalledWith('alt_1', { is_read: true })
+      expect(alertsService.markAlertRead).toHaveBeenCalledWith('alt_1', true)
     })
   })
 

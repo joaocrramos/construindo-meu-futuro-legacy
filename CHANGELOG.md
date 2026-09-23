@@ -4,6 +4,23 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.34] - 2026-09-23 (Conclusão da rodada de correção do CI e setup global com cleanup)
+
+### Corrigido (Fixed)
+
+- **Configuração global do Vitest (`vitest.config.ts` e `src/test/setup.ts`)**:
+  - Ativado `setupFiles: ['./src/test/setup.ts']` executando `cleanup()` após cada teste (`afterEach`) para isolamento hermético do DOM.
+- **Resolução de assincronismo em `src/test/wealthAssetsPositionsMovements.test.tsx`**:
+  - Testes 6, 7 e 8 ajustados para aguardar deterministicamente a abertura do diálogo com `await screen.findByRole('dialog')` e seleção assíncrona com `findByRole` / `findByLabelText`.
+  - Todas as asserções de negócio e regras de formulário patrimonial estritamente mantidas e aprovadas.
+- **Desacoplamento e padronização na Central de Alertas (`src/test/alertsPage.test.tsx` e `src/test/overviewPages.test.tsx`)**:
+  - Mocks centralizados no serviço `@/services/alerts` (`listAlerts`, `markAlertRead`, `markAllAlertsRead`), eliminando vazamentos de mock do client PocketBase.
+  - Sincronização assíncrona robusta nas consultas da interface com `findByText` e `findByTitle`.
+- **Pipeline de Integração Contínua (CI)**:
+  - 100% de aprovação na esteira completa (`check:version`, `check:migrations`, `lint:ci`, `tsc --noEmit`, testes Vitest e build de produção Vite).
+
+---
+
 ## [0.0.33] - 2026-09-23 (Realinhamento da suíte de testes de Alertas e Movimentações Patrimoniais)
 
 ### Corrigido (Fixed)

@@ -703,11 +703,9 @@ describe('Telas de Overview conectadas a dados reais', () => {
         </MemoryRouter>,
       )
 
-      await waitFor(() => {
-        expect(screen.getByText(/Saldo Negativo em Caixa: Bradesco Corrente/i)).not.toBeNull()
-        expect(screen.getByText(/Vencimento em 30 dias: CDB Banco Master/i)).not.toBeNull()
-        expect(screen.getByText(/2 alerta\(s\) não lido\(s\)/i)).not.toBeNull()
-      })
+      expect(await screen.findByText(/Saldo Negativo em Caixa: Bradesco Corrente/i)).not.toBeNull()
+      expect(await screen.findByText(/Vencimento em 30 dias: CDB Banco Master/i)).not.toBeNull()
+      expect(await screen.findByText(/2 alerta\(s\) não lido\(s\)/i)).not.toBeNull()
     })
   })
 })

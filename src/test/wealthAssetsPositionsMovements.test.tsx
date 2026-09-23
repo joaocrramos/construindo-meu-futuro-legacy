@@ -275,10 +275,10 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
 
     // Preenche valor bruto
-    const grossInput = screen.getByLabelText(/Valor Bruto/i)
+    const grossInput = await screen.findByLabelText(/Valor Bruto/i)
     fireEvent.change(grossInput, { target: { value: '6000' } })
 
-    const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
+    const submitBtn = await screen.findByRole('button', { name: /Confirmar Lançamento/i })
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
@@ -398,10 +398,10 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     })
 
     // Altera o valor bruto para 4000
-    const grossInput = screen.getByLabelText(/Valor Bruto/i)
+    const grossInput = await screen.findByLabelText(/Valor Bruto/i)
     fireEvent.change(grossInput, { target: { value: '4000' } })
 
-    const saveBtn = screen.getByRole('button', { name: /Salvar Alterações/i })
+    const saveBtn = await screen.findByRole('button', { name: /Salvar Alterações/i })
     fireEvent.click(saveBtn)
 
     await waitFor(() => {
@@ -484,9 +484,10 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     expect(screen.getByText(/Custo total da aquisição/i)).not.toBeNull()
 
     // Preenche valor bruto (10000), emolumentos (15) e liquidação (25)
-    fireEvent.change(screen.getByLabelText(/Valor Bruto/i), { target: { value: '10000' } })
-    fireEvent.change(screen.getByLabelText(/Emolumentos/i), { target: { value: '15' } })
-    fireEvent.change(screen.getByLabelText(/^Liquidação/i), { target: { value: '25' } })
+    const grossInput = await screen.findByLabelText(/Valor Bruto/i)
+    fireEvent.change(grossInput, { target: { value: '10000' } })
+    fireEvent.change(await screen.findByLabelText(/Emolumentos/i), { target: { value: '15' } })
+    fireEvent.change(await screen.findByLabelText(/^Liquidação/i), { target: { value: '25' } })
 
     const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
     fireEvent.click(submitBtn)
@@ -559,25 +560,23 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
-      ).not.toBeNull()
+    const firstMovBtn = await screen.findByRole('button', {
+      name: /Registrar primeira movimentação/i,
     })
+    fireEvent.click(firstMovBtn)
 
-    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+    await screen.findByRole('dialog')
 
-    await waitFor(() => {
-      expect(screen.getByText(/Renda Fixa — Detalhes do Título/i)).not.toBeNull()
-      expect(screen.getByLabelText(/Valor \(R\$\)/i)).not.toBeNull()
-    })
+    expect(await screen.findByText(/Renda Fixa — Detalhes do Título/i)).not.toBeNull()
+    const valorInput = await screen.findByLabelText(/Valor \(R\$\)/i)
+    expect(valorInput).not.toBeNull()
 
     // Preenche valor aplicado de R$ 5.000
-    fireEvent.change(screen.getByLabelText(/Valor \(R\$\)/i), {
+    fireEvent.change(valorInput, {
       target: { value: '5000' },
     })
 
-    const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
+    const submitBtn = await screen.findByRole('button', { name: /Confirmar Lançamento/i })
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
@@ -641,24 +640,20 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
-      ).not.toBeNull()
+    const firstMovBtn = await screen.findByRole('button', {
+      name: /Registrar primeira movimentação/i,
     })
+    fireEvent.click(firstMovBtn)
 
-    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+    await screen.findByRole('dialog')
 
     // Com ativo internacional (USD), os campos específicos devem ser renderizados
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Outros Custos \(USD\)/i)).not.toBeNull()
-      expect(screen.getByLabelText(/Preço \(USD\)/i)).not.toBeNull()
-      // Não exibe Emolumentos nem IR na compra de Stock
-      expect(screen.queryByLabelText(/^Emolumentos/i)).toBeNull()
-      expect(screen.queryByLabelText(/IR/i)).toBeNull()
-    })
+    expect(await screen.findByLabelText(/Outros Custos \(USD\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Preço \(USD\)/i)).not.toBeNull()
+    // Não exibe Emolumentos nem IR na compra de Stock
+    expect(screen.queryByLabelText(/^Emolumentos/i)).toBeNull()
+    expect(screen.queryByLabelText(/IR/i)).toBeNull()
   })
-
   it('8. Valida todos os 8 casos de formulário por tipo de ativo (Ações, FII, BDR, Cripto, USD, Renda Fixa, Tesouro, Fundos, Outros)', async () => {
     vi.mocked(movService.listMovements).mockResolvedValue([])
     vi.mocked(accService.listAccounts).mockResolvedValue([
@@ -782,12 +777,12 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
 
+    await screen.findByRole('dialog')
+
     // Caso 1: Ações / FII / Cripto compra exibe Emolumentos + Liquidação e SEM IR
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
-      expect(screen.getByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
-      expect(screen.queryByLabelText(/IR/i)).toBeNull()
-    })
+    expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
+    expect(screen.queryByLabelText(/IR/i)).toBeNull()
   })
 })
 
