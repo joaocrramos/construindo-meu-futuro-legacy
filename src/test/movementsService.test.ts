@@ -253,4 +253,120 @@ describe('movements service - createMovement e validações', () => {
     expect(result.net_amount_cents).toBe(50000)
     expect(result).toEqual(expectedResponse)
   })
+
+  it('8. Compra de ativo: soma emolumentos e liquidação em fees_cents com taxes_cents=0 e calcula líquido', async () => {
+    // Cenário: compra de R$ 10.000,00 com R$ 15,00 de emolumentos e R$ 25,00 de liquidação (total fees = R$ 40,00, taxes = 0)
+    const grossCents = 1000000 // R$ 10.000,00
+    const emolumentosCents = 1500 // R$ 15,00
+    const liquidacaoCents = 2500 // R$ 25,00
+    const feesCents = emolumentosCents + liquidacaoCents // 4000 (R$ 40,00)
+    const taxesCents = 0 // Compra não tem IR
+    const netCents = grossCents - feesCents - taxesCents // 996000
+
+    const mockResponse = {
+      id: 'mov_buy_1',
+      user_id: 'usr_mock_123',
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'buy' as const,
+      date: '2026-03-24',
+      quantity_e8: 10000000000,
+      unit_price_cents: 10000,
+      gross_amount_cents: grossCents,
+      fees_cents: feesCents,
+      taxes_cents: taxesCents,
+      net_amount_cents: netCents,
+      created: '2026-03-24T12:00:00Z',
+      updated: '2026-03-24T12:00:00Z',
+    }
+
+    vi.mocked(pb.send).mockResolvedValueOnce(mockResponse)
+
+    const payload: CreateMovementPayload = {
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'buy',
+      date: '2026-03-24',
+      quantity_e8: 10000000000,
+      unit_price_cents: 10000,
+      gross_amount_cents: grossCents,
+      fees_cents: feesCents,
+      taxes_cents: taxesCents,
+      net_amount_cents: netCents,
+    }
+
+    const result = await createMovement(payload)
+
+    expect(pb.send).toHaveBeenCalledWith('/backend/v1/movements', {
+      method: 'POST',
+      body: expect.objectContaining({
+        movement_type: 'buy',
+        gross_amount_cents: 1000000,
+        fees_cents: 4000,
+        taxes_cents: 0,
+        net_amount_cents: 996000,
+      }),
+    })
+    expect(result.taxes_cents).toBe(0)
+    expect(result.fees_cents).toBe(4000)
+    expect(result.net_amount_cents).toBe(996000)
+  })
+
+  it('9. Venda de ativo: envia emolumentos + liquidação em fees_cents, IR em taxes_cents e calcula líquido', async () => {
+    // Cenário: venda de R$ 20.000,00 com emolumentos R$ 30, liquidação R$ 50 (fees = R$ 80) e IR R$ 300 (taxes = R$ 300)
+    const grossCents = 2000000 // R$ 20.000,00
+    const emolumentosCents = 3000 // R$ 30,00
+    const liquidacaoCents = 5000 // R$ 50,00
+    const feesCents = emolumentosCents + liquidacaoCents // 8000 (R$ 80,00)
+    const taxesCents = 30000 // R$ 300,00 (IR)
+    const netCents = grossCents - feesCents - taxesCents // 2000000 - 8000 - 30000 = 1962000
+
+    const mockResponse = {
+      id: 'mov_sell_1',
+      user_id: 'usr_mock_123',
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'sell' as const,
+      date: '2026-03-24',
+      quantity_e8: 10000000000,
+      unit_price_cents: 20000,
+      gross_amount_cents: grossCents,
+      fees_cents: feesCents,
+      taxes_cents: taxesCents,
+      net_amount_cents: netCents,
+      created: '2026-03-24T12:00:00Z',
+      updated: '2026-03-24T12:00:00Z',
+    }
+
+    vi.mocked(pb.send).mockResolvedValueOnce(mockResponse)
+
+    const payload: CreateMovementPayload = {
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'sell',
+      date: '2026-03-24',
+      quantity_e8: 10000000000,
+      unit_price_cents: 20000,
+      gross_amount_cents: grossCents,
+      fees_cents: feesCents,
+      taxes_cents: taxesCents,
+      net_amount_cents: netCents,
+    }
+
+    const result = await createMovement(payload)
+
+    expect(pb.send).toHaveBeenCalledWith('/backend/v1/movements', {
+      method: 'POST',
+      body: expect.objectContaining({
+        movement_type: 'sell',
+        gross_amount_cents: 2000000,
+        fees_cents: 8000,
+        taxes_cents: 30000,
+        net_amount_cents: 1962000,
+      }),
+    })
+    expect(result.fees_cents).toBe(8000)
+    expect(result.taxes_cents).toBe(30000)
+    expect(result.net_amount_cents).toBe(1962000)
+  })
 })

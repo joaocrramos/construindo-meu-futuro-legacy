@@ -65,7 +65,12 @@ export default function MovementsPage() {
   const [quantityInput, setQuantityInput] = React.useState('')
   const [unitPriceInput, setUnitPriceInput] = React.useState('')
   const [grossInput, setGrossInput] = React.useState('')
+  // Para buy/sell: emolumentos e custos de liquidação somam em fees_cents
+  const [emolumentsInput, setEmolumentsInput] = React.useState('0')
+  const [settlementFeesInput, setSettlementFeesInput] = React.useState('0')
+  // Para demais tipos (fee, etc.):
   const [feesInput, setFeesInput] = React.useState('0')
+  // Para sell e outros tipos com imposto:
   const [taxesInput, setTaxesInput] = React.useState('0')
   const [idempotencyKey, setIdempotencyKey] = React.useState('')
   const [notes, setNotes] = React.useState('')
@@ -104,6 +109,8 @@ export default function MovementsPage() {
     setQuantityInput('')
     setUnitPriceInput('')
     setGrossInput('')
+    setEmolumentsInput('0')
+    setSettlementFeesInput('0')
     setFeesInput('0')
     setTaxesInput('0')
     setIdempotencyKey('')
@@ -124,13 +131,41 @@ export default function MovementsPage() {
     }
   }
 
-  // Cálculo reativo do valor líquido
+  // Cálculo de taxas (fees) e impostos (taxes) conforme o tipo de operação
+  const isBuyOrSell = movementType === 'buy' || movementType === 'sell'
+  const isBuy = movementType === 'buy'
+  const isSell = movementType === 'sell'
+
+  // Para buy e sell: emolumentos + liquidação vão para fees_cents
+  const computedFeesCents = React.useMemo(() => {
+    if (isBuyOrSell) {
+      return brlToCents(emolumentsInput) + brlToCents(settlementFeesInput)
+    }
+    return brlToCents(feesInput)
+  }, [isBuyOrSell, emolumentsInput, settlementFeesInput, feesInput])
+
+  // Para buy: taxes_cents é sempre 0 (IR não se aplica na compra)
+  // Para sell e outros: taxes_cents vem do input
+  const computedTaxesCents = React.useMemo(() => {
+    if (isBuy) {
+      return 0
+    }
+    return brlToCents(taxesInput)
+  }, [isBuy, taxesInput])
+
+  // Cálculo contábil do backend: net_amount_cents = gross_amount_cents - fees_cents - taxes_cents
   const calculatedNetCents = React.useMemo(() => {
     const gross = brlToCents(grossInput)
-    const fees = brlToCents(feesInput)
-    const taxes = brlToCents(taxesInput)
-    return gross - fees - taxes
-  }, [grossInput, feesInput, taxesInput])
+    return gross - computedFeesCents - computedTaxesCents
+  }, [grossInput, computedFeesCents, computedTaxesCents])
+
+  // Resumo exibido ao usuário:
+  // - Na compra: Custo total da aquisição = bruto + emolumentos + custos de liquidação
+  // - Na venda: Valor líquido da venda = bruto - emolumentos - custos de liquidação - IR
+  const totalAcquisitionCostCents = React.useMemo(() => {
+    const gross = brlToCents(grossInput)
+    return gross + computedFeesCents
+  }, [grossInput, computedFeesCents])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -153,8 +188,8 @@ export default function MovementsPage() {
       return
     }
 
-    const feesCents = brlToCents(feesInput)
-    const taxesCents = brlToCents(taxesInput)
+    const feesCents = computedFeesCents
+    const taxesCents = computedTaxesCents
     const qtyE8 = isAssetRequired || quantityInput.trim() ? decimalToE8(quantityInput) : undefined
     const unitCents = unitPriceInput.trim() ? brlToCents(unitPriceInput) : undefined
 
@@ -368,57 +403,182 @@ export default function MovementsPage() {
                 </div>
               )}
 
-              {/* Valores Financeiros: Bruto, Taxas, Impostos e Líquido Calculado */}
+              {/* Valores Financeiros: Bruto, Emolumentos, Custos de liquidação, IR / Impostos e Totais */}
               <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="movGross" className="text-xs font-semibold">
-                      Valor Bruto (R$) *
-                    </Label>
-                    <Input
-                      id="movGross"
-                      placeholder="0,00"
-                      value={grossInput}
-                      onChange={(e) => setGrossInput(e.target.value)}
-                      className="h-8 text-xs font-mono font-medium"
-                      required
-                    />
-                  </div>
+                {isBuy ? (
+                  // Compra de Ativo: Valor Bruto, Emolumentos e Custos de liquidação (SEM campo de IR)
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="movGross" className="text-xs font-semibold">
+                        Valor Bruto (R$) *
+                      </Label>
+                      <Input
+                        id="movGross"
+                        placeholder="0,00"
+                        value={grossInput}
+                        onChange={(e) => setGrossInput(e.target.value)}
+                        className="h-8 text-xs font-mono font-medium"
+                        required
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="movFees" className="text-xs font-semibold">
-                      Taxas / Corret. (R$)
-                    </Label>
-                    <Input
-                      id="movFees"
-                      placeholder="0,00"
-                      value={feesInput}
-                      onChange={(e) => setFeesInput(e.target.value)}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="movEmoluments" className="text-xs font-semibold">
+                        Emolumentos (R$)
+                      </Label>
+                      <Input
+                        id="movEmoluments"
+                        placeholder="0,00"
+                        value={emolumentsInput}
+                        onChange={(e) => setEmolumentsInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="movTaxes" className="text-xs font-semibold">
-                      Impostos / IR (R$)
-                    </Label>
-                    <Input
-                      id="movTaxes"
-                      placeholder="0,00"
-                      value={taxesInput}
-                      onChange={(e) => setTaxesInput(e.target.value)}
-                      className="h-8 text-xs font-mono"
-                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="movSettlement" className="text-xs font-semibold">
+                        Custos de liquidação (R$)
+                      </Label>
+                      <Input
+                        id="movSettlement"
+                        placeholder="0,00"
+                        value={settlementFeesInput}
+                        onChange={(e) => setSettlementFeesInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : isSell ? (
+                  // Venda de Ativo: Valor Bruto, Emolumentos, Custos de liquidação e IR
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="movGross" className="text-xs font-semibold">
+                        Valor Bruto (R$) *
+                      </Label>
+                      <Input
+                        id="movGross"
+                        placeholder="0,00"
+                        value={grossInput}
+                        onChange={(e) => setGrossInput(e.target.value)}
+                        className="h-8 text-xs font-mono font-medium"
+                        required
+                      />
+                    </div>
 
+                    <div className="space-y-1">
+                      <Label htmlFor="movEmoluments" className="text-xs font-semibold">
+                        Emolumentos (R$)
+                      </Label>
+                      <Input
+                        id="movEmoluments"
+                        placeholder="0,00"
+                        value={emolumentsInput}
+                        onChange={(e) => setEmolumentsInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="movSettlement" className="text-xs font-semibold">
+                        Custos de liquidação (R$)
+                      </Label>
+                      <Input
+                        id="movSettlement"
+                        placeholder="0,00"
+                        value={settlementFeesInput}
+                        onChange={(e) => setSettlementFeesInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="movTaxes" className="text-xs font-semibold">
+                        IR (R$)
+                      </Label>
+                      <Input
+                        id="movTaxes"
+                        placeholder="0,00"
+                        value={taxesInput}
+                        onChange={(e) => setTaxesInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // Demais tipos (deposit, withdrawal, dividend, fee, tax, etc.): Mantém campos anteriores
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="movGross" className="text-xs font-semibold">
+                        Valor Bruto (R$) *
+                      </Label>
+                      <Input
+                        id="movGross"
+                        placeholder="0,00"
+                        value={grossInput}
+                        onChange={(e) => setGrossInput(e.target.value)}
+                        className="h-8 text-xs font-mono font-medium"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="movFees" className="text-xs font-semibold">
+                        Taxas / Corret. (R$)
+                      </Label>
+                      <Input
+                        id="movFees"
+                        placeholder="0,00"
+                        value={feesInput}
+                        onChange={(e) => setFeesInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="movTaxes" className="text-xs font-semibold">
+                        Impostos / IR (R$)
+                      </Label>
+                      <Input
+                        id="movTaxes"
+                        placeholder="0,00"
+                        value={taxesInput}
+                        onChange={(e) => setTaxesInput(e.target.value)}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Linha de Resumo Dinâmica */}
                 <div className="flex items-center justify-between pt-1 border-t border-border text-xs">
-                  <span className="text-muted-foreground font-medium">
-                    Valor Líquido Calculado:
-                  </span>
-                  <span className="font-mono font-bold text-foreground">
-                    {formatCurrencyBRL(calculatedNetCents / 100)}
-                  </span>
+                  {isBuy ? (
+                    <>
+                      <span className="text-muted-foreground font-medium">
+                        Custo total da aquisição:
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatCurrencyBRL(totalAcquisitionCostCents / 100)}
+                      </span>
+                    </>
+                  ) : isSell ? (
+                    <>
+                      <span className="text-muted-foreground font-medium">
+                        Valor líquido da venda:
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-muted-foreground font-medium">
+                        Valor Líquido Calculado:
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 

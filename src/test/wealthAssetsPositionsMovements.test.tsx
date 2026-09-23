@@ -290,6 +290,95 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       )
     })
   })
+
+  it('4. Compra exibe Emolumentos e Custos de liquidação (sem IR), resume Custo total e envia fees_cents somados e taxes_cents = 0', async () => {
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Conta XP',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_1',
+        user_id: 'usr_1',
+        ticker: 'VALE3',
+        name: 'Vale ON',
+        asset_class: 'equities',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(movService.createMovement).mockResolvedValue({
+      id: 'mov_buy_test',
+      user_id: 'usr_1',
+      account_id: 'acc_1',
+      asset_id: 'ast_1',
+      movement_type: 'buy',
+      date: '2026-03-24',
+      gross_amount_cents: 1000000,
+      fees_cents: 4000,
+      taxes_cents: 0,
+      net_amount_cents: 996000,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <MovementsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
+      ).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
+
+    // O modal abre com padrão 'buy'
+    // Verifica que existem os campos "Emolumentos" e "Custos de liquidação"
+    expect(screen.getByLabelText(/Emolumentos/i)).not.toBeNull()
+    expect(screen.getByLabelText(/Custos de liquidação/i)).not.toBeNull()
+    // E NÃO deve existir o campo de IR na compra
+    expect(screen.queryByLabelText(/IR \(R\$\)/i)).toBeNull()
+    // Resumo deve ser "Custo total da aquisição"
+    expect(screen.getByText(/Custo total da aquisição/i)).not.toBeNull()
+
+    // Preenche valor bruto (10000), emolumentos (15) e custos de liquidação (25)
+    fireEvent.change(screen.getByLabelText(/Valor Bruto/i), { target: { value: '10000' } })
+    fireEvent.change(screen.getByLabelText(/Emolumentos/i), { target: { value: '15' } })
+    fireEvent.change(screen.getByLabelText(/Custos de liquidação/i), { target: { value: '25' } })
+
+    const submitBtn = screen.getByRole('button', { name: /Confirmar Lançamento/i })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(movService.createMovement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          account_id: 'acc_1',
+          asset_id: 'ast_1',
+          movement_type: 'buy',
+          gross_amount_cents: 1000000,
+          fees_cents: 4000, // 1500 + 2500
+          taxes_cents: 0, // Compra não tem IR
+          net_amount_cents: 996000, // 1000000 - 4000 - 0
+        }),
+      )
+    })
+  })
 })
 
 describe('Posições em Custódia (/wealth/positions)', () => {
