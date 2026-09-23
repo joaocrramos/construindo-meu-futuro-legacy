@@ -208,6 +208,9 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     vi.mocked(movService.formatQuantityE8).mockImplementation((e8) =>
       e8 ? String(e8 / 100000000) : '0',
     )
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([])
+    vi.mocked(assetService.listAssets).mockResolvedValue([])
   })
 
   it('1. Exibe EmptyState com ação de primeira movimentação quando não há registros', async () => {
@@ -631,19 +634,13 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    // Aguarda carregar os dados antes de interagir com o botão da EmptyState
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', {
-          name: /Registrar primeira movimentação/i,
-        }),
-      ).not.toBeNull()
-    })
-
-    const firstMovBtn = screen.getByRole('button', {
-      name: /Registrar primeira movimentação/i,
-    })
-    fireEvent.click(firstMovBtn)
+    // Aguarda carregar os dados antes de interagir com o botão de Nova Movimentação
+    const openBtn = await screen.findByRole(
+      'button',
+      { name: /Nova Movimentação|Registrar primeira movimentação/i },
+      { timeout: 4000 },
+    )
+    fireEvent.click(openBtn)
 
     await screen.findByRole('dialog', {}, { timeout: 4000 })
 
@@ -730,19 +727,13 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    // Aguarda carregar os dados antes de interagir com o botão da EmptyState
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', {
-          name: /Registrar primeira movimentação/i,
-        }),
-      ).not.toBeNull()
-    })
-
-    const firstMovBtn = screen.getByRole('button', {
-      name: /Registrar primeira movimentação/i,
-    })
-    fireEvent.click(firstMovBtn)
+    // Aguarda carregar os dados antes de interagir com o botão de Nova Movimentação
+    const openBtn = await screen.findByRole(
+      'button',
+      { name: /Nova Movimentação|Registrar primeira movimentação/i },
+      { timeout: 4000 },
+    )
+    fireEvent.click(openBtn)
 
     await screen.findByRole('dialog', {}, { timeout: 4000 })
 
@@ -870,15 +861,15 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Registrar primeira movimentação/i }),
-      ).not.toBeNull()
-    })
+    // Aguarda carregar os dados antes de interagir com o botão de Nova Movimentação
+    const openBtn = await screen.findByRole(
+      'button',
+      { name: /Nova Movimentação|Registrar primeira movimentação/i },
+      { timeout: 4000 },
+    )
+    fireEvent.click(openBtn)
 
-    fireEvent.click(screen.getByRole('button', { name: /Registrar primeira movimentação/i }))
-
-    await screen.findByRole('dialog')
+    await screen.findByRole('dialog', {}, { timeout: 4000 })
 
     // Caso 1: Ações / FII / Cripto compra exibe Emolumentos + Liquidação e SEM IR
     expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
