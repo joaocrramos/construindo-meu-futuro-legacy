@@ -1,35 +1,592 @@
 import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
-import { ArrowUpDown, Plus } from 'lucide-react'
+import { DatePicker } from '@/components/DatePicker'
+import {
+  ArrowUpDown,
+  Plus,
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Building2,
+  Coins,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { toast } from 'sonner'
+import { formatCurrencyBRL, formatDateBRL } from '@/lib/formatters'
+import {
+  listMovements,
+  createMovement,
+  MOVEMENT_TYPE_LABELS,
+  ASSET_REQUIRED_MOVEMENTS,
+  decimalToE8,
+  formatQuantityE8,
+  brlToCents,
+  type MovementRecord,
+  type MovementType,
+} from '@/services/movements'
+import { listAccounts, type AccountRecord } from '@/services/accounts'
+import { listAssets, type AssetRecord } from '@/services/assets'
 
 export default function MovementsPage() {
+  const [movements, setMovements] = React.useState<MovementRecord[]>([])
+  const [accounts, setAccounts] = React.useState<AccountRecord[]>([])
+  const [assets, setAssets] = React.useState<AssetRecord[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  // Modal Create
+  const [openModal, setOpenModal] = React.useState(false)
+  const [submitting, setSubmitting] = React.useState(false)
+
+  // Formulário
+  const [accountId, setAccountId] = React.useState('')
+  const [assetId, setAssetId] = React.useState<string>('none')
+  const [movementType, setMovementType] = React.useState<MovementType>('deposit')
+  const [movementDate, setMovementDate] = React.useState<Date | undefined>(new Date())
+  const [quantityInput, setQuantityInput] = React.useState('')
+  const [unitPriceInput, setUnitPriceInput] = React.useState('')
+  const [grossInput, setGrossInput] = React.useState('')
+  const [feesInput, setFeesInput] = React.useState('0')
+  const [taxesInput, setTaxesInput] = React.useState('0')
+  const [idempotencyKey, setIdempotencyKey] = React.useState('')
+  const [notes, setNotes] = React.useState('')
+
+  const isAssetRequired = ASSET_REQUIRED_MOVEMENTS.includes(movementType)
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const [movData, accData, assetData] = await Promise.all([
+        listMovements(),
+        listAccounts(),
+        listAssets(),
+      ])
+      setMovements(movData)
+      setAccounts(accData)
+      setAssets(assetData)
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Falha ao buscar movimentações financeiras.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const handleOpenCreate = () => {
+    const activeAcc = accounts.find((a) => a.is_active) || accounts[0]
+    setAccountId(activeAcc?.id || '')
+    const activeAsset = assets.find((a) => a.is_active) || assets[0]
+    setAssetId(activeAsset?.id || 'none')
+    setMovementType('buy')
+    setMovementDate(new Date())
+    setQuantityInput('')
+    setUnitPriceInput('')
+    setGrossInput('')
+    setFeesInput('0')
+    setTaxesInput('0')
+    setIdempotencyKey('')
+    setNotes('')
+    setOpenModal(true)
+  }
+
+  // Auto-cálculo de valor bruto ao alterar quantidade ou preço unitário em operações com ativo
+  const handleQuantityOrPriceChange = (newQty: string, newPrice: string) => {
+    setQuantityInput(newQty)
+    setUnitPriceInput(newPrice)
+
+    const q = Number.parseFloat(newQty.replace(',', '.'))
+    const p = Number.parseFloat(newPrice.replace(',', '.'))
+    if (!Number.isNaN(q) && !Number.isNaN(p) && q > 0 && p > 0) {
+      const gross = (q * p).toFixed(2).replace('.', ',')
+      setGrossInput(gross)
+    }
+  }
+
+  // Cálculo reativo do valor líquido
+  const calculatedNetCents = React.useMemo(() => {
+    const gross = brlToCents(grossInput)
+    const fees = brlToCents(feesInput)
+    const taxes = brlToCents(taxesInput)
+    return gross - fees - taxes
+  }, [grossInput, feesInput, taxesInput])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!accountId) {
+      toast.error('Selecione a conta bancária ou de custódia.')
+      return
+    }
+    if (isAssetRequired && (!assetId || assetId === 'none')) {
+      toast.error('Esta operação exige que um ativo do catálogo seja selecionado.')
+      return
+    }
+    if (!movementDate) {
+      toast.error('Informe a data da movimentação.')
+      return
+    }
+
+    const grossCents = brlToCents(grossInput)
+    if (grossCents <= 0) {
+      toast.error('O valor bruto da operação deve ser maior que zero.')
+      return
+    }
+
+    const feesCents = brlToCents(feesInput)
+    const taxesCents = brlToCents(taxesInput)
+    const qtyE8 = isAssetRequired || quantityInput.trim() ? decimalToE8(quantityInput) : undefined
+    const unitCents = unitPriceInput.trim() ? brlToCents(unitPriceInput) : undefined
+
+    setSubmitting(true)
+    try {
+      await createMovement({
+        account_id: accountId,
+        asset_id: assetId && assetId !== 'none' ? assetId : undefined,
+        movement_type: movementType,
+        date: movementDate.toISOString().split('T')[0],
+        quantity_e8: qtyE8,
+        unit_price_cents: unitCents,
+        gross_amount_cents: grossCents,
+        fees_cents: feesCents,
+        taxes_cents: taxesCents,
+        net_amount_cents: calculatedNetCents,
+        idempotency_key: idempotencyKey.trim() || undefined,
+        notes: notes.trim() || undefined,
+      })
+      toast.success('Movimentação registrada com sucesso!')
+      setOpenModal(false)
+      loadData()
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Não foi possível registrar a movimentação.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Movimentações Financeiras"
-        description="Histórico de aportes, resgates, compras de ativos, vendas, amortizações e proventos (dividendos, JCP, rendimentos)."
+        description="Histórico de aportes, resgates, compras, vendas e proventos no livro-razão contábil."
         icon={ArrowUpDown}
         breadcrumbs={[
           { label: 'Patrimônio', href: '/wealth/portfolios' },
           { label: 'Movimentações' },
         ]}
         actions={
-          <Button size="sm" className="h-9 text-xs">
+          <Button size="sm" className="h-9 text-xs" onClick={handleOpenCreate}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             Nova Movimentação
           </Button>
         }
       />
 
-      <EmptyState
-        icon={ArrowUpDown}
-        title="Nenhuma movimentação lançada"
-        description="O registro minucioso de transações permite recalcular o preço médio, alimentar o histórico de proventos recebidos e apurar o resultado de vendas."
-        nextStepGuide="Clique em 'Nova Movimentação' para cadastrar aportes de capital ou compras de ativos realizadas."
-        actionLabel="Registrar Movimentação"
-      />
+      {/* Modal de Criação */}
+      <Dialog open={openModal} onOpenChange={setOpenModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nova Movimentação</DialogTitle>
+            <DialogDescription className="text-xs">
+              Lance compras, vendas, aportes ou proventos com cálculo contábil imediato de taxas e
+              líquido.
+            </DialogDescription>
+          </DialogHeader>
+
+          {accounts.length === 0 ? (
+            <div className="space-y-3 py-4 text-center">
+              <Building2 className="w-8 h-8 text-muted-foreground mx-auto" />
+              <p className="text-xs text-muted-foreground">
+                É necessário cadastrar ao menos uma conta antes de lançar movimentações.
+              </p>
+              <Button asChild size="sm">
+                <a href="/wealth/accounts">Cadastrar Conta</a>
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="movType" className="text-xs font-semibold">
+                    Tipo de Operação *
+                  </Label>
+                  <Select
+                    value={movementType}
+                    onValueChange={(val: MovementType) => setMovementType(val)}
+                  >
+                    <SelectTrigger
+                      id="movType"
+                      aria-label="Tipo de Operação"
+                      className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                    >
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border max-h-56">
+                      <SelectItem value="buy" className="text-xs">
+                        Compra de Ativo
+                      </SelectItem>
+                      <SelectItem value="sell" className="text-xs">
+                        Venda de Ativo
+                      </SelectItem>
+                      <SelectItem value="dividend" className="text-xs">
+                        Dividendo
+                      </SelectItem>
+                      <SelectItem value="interest_on_capital" className="text-xs">
+                        Juros s/ Capital Próprio (JCP)
+                      </SelectItem>
+                      <SelectItem value="amortization" className="text-xs">
+                        Amortização
+                      </SelectItem>
+                      <SelectItem value="deposit" className="text-xs">
+                        Aporte / Depósito
+                      </SelectItem>
+                      <SelectItem value="withdrawal" className="text-xs">
+                        Resgate / Saque
+                      </SelectItem>
+                      <SelectItem value="fee" className="text-xs">
+                        Taxa / Corretagem
+                      </SelectItem>
+                      <SelectItem value="tax" className="text-xs">
+                        Imposto
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="movDate" className="text-xs font-semibold">
+                    Data da Operação *
+                  </Label>
+                  <DatePicker
+                    id="movDate"
+                    value={movementDate}
+                    onChange={setMovementDate}
+                    placeholder="dd/mm/aaaa"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="movAccount" className="text-xs font-semibold">
+                    Conta Vinculada *
+                  </Label>
+                  <Select value={accountId} onValueChange={(val) => setAccountId(val)}>
+                    <SelectTrigger
+                      id="movAccount"
+                      aria-label="Conta Vinculada"
+                      className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                    >
+                      <SelectValue placeholder="Selecione uma conta" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id} className="text-xs">
+                          {acc.name} {!acc.is_active ? '(Inativa)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="movAsset" className="text-xs font-semibold">
+                    Ativo {isAssetRequired ? '*' : '(Opcional)'}
+                  </Label>
+                  <Select value={assetId} onValueChange={(val) => setAssetId(val)}>
+                    <SelectTrigger
+                      id="movAsset"
+                      aria-label="Ativo"
+                      className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring"
+                    >
+                      <SelectValue placeholder="Selecione o ativo" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      {!isAssetRequired && (
+                        <SelectItem value="none" className="text-xs text-muted-foreground">
+                          Nenhum (Lançamento em Dinheiro)
+                        </SelectItem>
+                      )}
+                      {assets.map((ast) => (
+                        <SelectItem key={ast.id} value={ast.id} className="text-xs font-mono">
+                          {ast.ticker} — {ast.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Quantidade e Preço Unitário quando tipo envolve ativo */}
+              {isAssetRequired && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="movQty" className="text-xs font-semibold">
+                      Quantidade (cotas/títulos)
+                    </Label>
+                    <Input
+                      id="movQty"
+                      placeholder="Ex.: 100 ou 0,05"
+                      value={quantityInput}
+                      onChange={(e) => handleQuantityOrPriceChange(e.target.value, unitPriceInput)}
+                      className="h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
+                      Preço Unitário (R$)
+                    </Label>
+                    <Input
+                      id="movUnitPrice"
+                      placeholder="Ex.: 35,50"
+                      value={unitPriceInput}
+                      onChange={(e) => handleQuantityOrPriceChange(quantityInput, e.target.value)}
+                      className="h-9 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Valores Financeiros: Bruto, Taxas, Impostos e Líquido Calculado */}
+              <div className="p-3 bg-muted/40 rounded-lg border border-border space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="movGross" className="text-xs font-semibold">
+                      Valor Bruto (R$) *
+                    </Label>
+                    <Input
+                      id="movGross"
+                      placeholder="0,00"
+                      value={grossInput}
+                      onChange={(e) => setGrossInput(e.target.value)}
+                      className="h-8 text-xs font-mono font-medium"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="movFees" className="text-xs font-semibold">
+                      Taxas / Corret. (R$)
+                    </Label>
+                    <Input
+                      id="movFees"
+                      placeholder="0,00"
+                      value={feesInput}
+                      onChange={(e) => setFeesInput(e.target.value)}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="movTaxes" className="text-xs font-semibold">
+                      Impostos / IR (R$)
+                    </Label>
+                    <Input
+                      id="movTaxes"
+                      placeholder="0,00"
+                      value={taxesInput}
+                      onChange={(e) => setTaxesInput(e.target.value)}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-border text-xs">
+                  <span className="text-muted-foreground font-medium">
+                    Valor Líquido Calculado:
+                  </span>
+                  <span className="font-mono font-bold text-foreground">
+                    {formatCurrencyBRL(calculatedNetCents / 100)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="movIdempotency" className="text-xs font-semibold">
+                    Chave de Idempotência
+                  </Label>
+                  <Input
+                    id="movIdempotency"
+                    placeholder="Ex.: ORD-2026-0001 (opcional)"
+                    value={idempotencyKey}
+                    onChange={(e) => setIdempotencyKey(e.target.value)}
+                    className="h-9 text-xs font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="movNotes" className="text-xs font-semibold">
+                    Observações / Nota de Corretagem
+                  </Label>
+                  <Input
+                    id="movNotes"
+                    placeholder="Ex.: Ordem B3 #9872"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpenModal(false)}
+                  disabled={submitting}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      Registrando...
+                    </>
+                  ) : (
+                    'Confirmar Lançamento'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {loading ? (
+        <div className="flex items-center justify-center p-12 text-sm text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Carregando movimentações...</span>
+        </div>
+      ) : movements.length === 0 ? (
+        <EmptyState
+          icon={ArrowUpDown}
+          title="Nenhuma movimentação lançada"
+          description="O livro-razão registra cada aporte, retirada, provento ou negociação de ativo para composição de saldos e cálculo de rentabilidade."
+          nextStepGuide="Lance sua primeira compra de ativo ou depósito na conta de custódia."
+          actionLabel="Registrar primeira movimentação"
+          onAction={handleOpenCreate}
+        />
+      ) : (
+        <div className="rounded-lg border border-border bg-card overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border">
+                <tr>
+                  <th className="px-4 py-3">Data</th>
+                  <th className="px-4 py-3">Tipo</th>
+                  <th className="px-4 py-3">Ativo</th>
+                  <th className="px-4 py-3">Conta</th>
+                  <th className="px-4 py-3 text-right">Qtd (e8)</th>
+                  <th className="px-4 py-3 text-right">Preço Unit.</th>
+                  <th className="px-4 py-3 text-right">Valor Bruto</th>
+                  <th className="px-4 py-3 text-right">Líquido</th>
+                  <th className="px-4 py-3">Chave / Nota</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y border-border">
+                {movements.map((mov) => {
+                  const isPositive =
+                    mov.movement_type === 'deposit' ||
+                    mov.movement_type === 'dividend' ||
+                    mov.movement_type === 'interest_on_capital' ||
+                    mov.movement_type === 'sell'
+                  const isNegative =
+                    mov.movement_type === 'withdrawal' ||
+                    mov.movement_type === 'buy' ||
+                    mov.movement_type === 'fee' ||
+                    mov.movement_type === 'tax'
+
+                  return (
+                    <tr key={mov.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 font-mono text-muted-foreground">
+                        {formatDateBRL(mov.date)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant="outline"
+                          className={`gap-1 font-medium ${
+                            isPositive
+                              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                              : isNegative
+                                ? 'border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/10'
+                                : 'border-border text-foreground'
+                          }`}
+                        >
+                          {isPositive ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : isNegative ? (
+                            <TrendingDown className="h-3 w-3" />
+                          ) : (
+                            <DollarSign className="h-3 w-3" />
+                          )}
+                          {MOVEMENT_TYPE_LABELS[mov.movement_type] || mov.movement_type}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 font-mono font-semibold text-foreground">
+                        {mov.expand?.asset_id ? (
+                          <div className="flex items-center gap-1.5">
+                            <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>{mov.expand.asset_id.ticker}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground font-normal">Conta / Caixa</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {mov.expand?.account_id?.name || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-foreground">
+                        {mov.quantity_e8 ? formatQuantityE8(mov.quantity_e8) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                        {mov.unit_price_cents ? formatCurrencyBRL(mov.unit_price_cents / 100) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                        {formatCurrencyBRL(mov.gross_amount_cents / 100)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono font-bold text-foreground">
+                        {formatCurrencyBRL(mov.net_amount_cents / 100)}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
+                        {mov.idempotency_key ? (
+                          <span title={mov.notes}>{mov.idempotency_key}</span>
+                        ) : mov.notes ? (
+                          <span>{mov.notes}</span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
