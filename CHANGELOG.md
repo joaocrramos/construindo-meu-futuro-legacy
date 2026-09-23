@@ -4,6 +4,19 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.94] - 2026-09-23 (Alinhamento dos mocks dos testes 6, 7 e 8 de Movimentações Patrimoniais)
+
+### Corrigido (Fixed)
+
+- **Alinhamento dos Mocks com `AssetRecord` (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Ajustados os mocks dos testes 6, 7 e 8 para fornecer os objetos completos no formato real retornado por `listAssets()` (`asset_class`, `sub_type`, `due_date`, `indexer_rate`, `currency`, `is_active`).
+  - Corrigida a renderização condicional do diálogo de lançamento de movimentações para Renda Fixa ("Renda Fixa — Detalhes do Título", "Valor Aplicado (R$)"), ativos internacionais em dólar ("Preço (USD)", "Outros Custos (USD)") e campo "Quantidade" para todas as classes e tipos de ativos avaliados no teste 8 (Ações, FII, BDR, Cripto, USD, Fundos e Outros).
+  - Todas as asserções de negócio e regras patrimoniais rigorosamente preservadas.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.94` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.37] - 2026-09-23 (Tipologia de ativos fixada no cadastro e herdada nos lançamentos)
 
 ### Modificado (Changed)

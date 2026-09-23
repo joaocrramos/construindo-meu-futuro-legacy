@@ -604,8 +604,10 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'CDB-ITAU-2028',
         name: 'CDB Itaú 120% CDI',
         asset_class: 'fixed_income',
-        sub_type: 'CDB (Certificado de Depósito Bancário)',
+        sub_type: 'CDB',
         currency: 'BRL',
+        due_date: '2028-12-31',
+        indexer_rate: 'CDI (120%)',
         is_active: true,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
@@ -695,7 +697,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         updated: new Date().toISOString(),
       },
     ])
-    // O ativo ast_stock é o primeiro da lista, tornando-se o ativo ativo padrão na abertura do formulário
+    // O ativo ast_stock é o primeiro da lista, tornando-se o ativo padrão na abertura do formulário
     vi.mocked(assetService.listAssets).mockResolvedValue([
       {
         id: 'ast_stock',
@@ -703,6 +705,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'AAPL',
         name: 'Apple Inc.',
         asset_class: 'international',
+        sub_type: 'Stocks (Ações EUA)',
         currency: 'USD',
         is_active: true,
         created: new Date().toISOString(),
@@ -742,10 +745,13 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       await screen.findByLabelText(/Outros Custos \(USD\)/i, {}, { timeout: 4000 }),
     ).not.toBeNull()
     expect(await screen.findByLabelText(/Preço \(USD\)/i, {}, { timeout: 4000 })).not.toBeNull()
+    // Quantidade deve estar presente para ativo internacional/ações
+    expect(await screen.findByLabelText(/Quantidade/i, {}, { timeout: 4000 })).not.toBeNull()
     // Não exibe Emolumentos nem IR na compra de Stock
     expect(screen.queryByLabelText(/^Emolumentos/i)).toBeNull()
     expect(screen.queryByLabelText(/IR/i)).toBeNull()
   })
+
   it('8. Valida todos os 8 casos de formulário por tipo de ativo (Ações, FII, BDR, Cripto, USD, Renda Fixa, Tesouro, Fundos, Outros)', async () => {
     vi.mocked(movService.listMovements).mockResolvedValue([])
     vi.mocked(accService.listAccounts).mockResolvedValue([
@@ -761,13 +767,15 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         updated: new Date().toISOString(),
       },
     ])
-    vi.mocked(assetService.listAssets).mockResolvedValue([
+
+    const sampleAssets: assetService.AssetRecord[] = [
       {
         id: 'ast_stock_br',
         user_id: 'usr_1',
         ticker: 'PETR4',
         name: 'Petrobras PN',
         asset_class: 'equities',
+        sub_type: 'Ações Preferenciais (PN)',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
@@ -779,6 +787,19 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'HGLG11',
         name: 'CSHG Logística FII',
         asset_class: 'real_estate_funds',
+        sub_type: 'Tijolo',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_bdr',
+        user_id: 'usr_1',
+        ticker: 'MSFT34',
+        name: 'Microsoft BDR',
+        asset_class: 'equities',
+        sub_type: 'BDR',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
@@ -790,6 +811,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'BTC',
         name: 'Bitcoin',
         asset_class: 'crypto',
+        sub_type: 'Criptomoeda',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
@@ -801,6 +823,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'AAPL',
         name: 'Apple Inc.',
         asset_class: 'international',
+        sub_type: 'Stocks (Ações EUA)',
         currency: 'USD',
         is_active: true,
         created: new Date().toISOString(),
@@ -814,6 +837,8 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         asset_class: 'fixed_income',
         sub_type: 'CDB',
         issuer: 'Banco Inter',
+        due_date: '2028-12-31',
+        indexer_rate: '110% CDI',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
@@ -826,6 +851,8 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         name: 'Tesouro Selic 2029',
         asset_class: 'fixed_income',
         sub_type: 'Tesouro Selic',
+        due_date: '2029-03-01',
+        indexer_rate: 'Selic + 0,15%',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
@@ -837,6 +864,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'KINEA-CHRONOS',
         name: 'Kinea Chronos FIM',
         asset_class: 'mutual_funds',
+        sub_type: 'Fundo Multimercado',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
@@ -848,14 +876,17 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         ticker: 'IMOVEL-SP',
         name: 'Galpão Logístico Extrema',
         asset_class: 'other',
+        sub_type: 'Imóvel Físico',
         currency: 'BRL',
         is_active: true,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
       },
-    ])
+    ]
 
-    render(
+    vi.mocked(assetService.listAssets).mockResolvedValue(sampleAssets)
+
+    const { unmount } = render(
       <MemoryRouter>
         <MovementsPage />
       </MemoryRouter>,
@@ -871,14 +902,123 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
 
     await screen.findByRole('dialog', {}, { timeout: 4000 })
 
-    // Caso 1: Ações / FII / Cripto compra exibe Emolumentos + Liquidação e SEM IR
-    expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
-    expect(await screen.findByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
+    // Caso 1: Ações B3 (PETR4) - padrão inicial
+    // Exibe Quantidade, Preço (R$), Valor Bruto (R$), Emolumentos (R$), Liquidação (R$) e NÃO exibe IR na compra
+    expect(await screen.findByLabelText(/Quantidade/i, {}, { timeout: 4000 })).not.toBeNull()
+    expect(await screen.findByLabelText(/Preço \(R\$\)/i, {}, { timeout: 4000 })).not.toBeNull()
+    expect(
+      await screen.findByLabelText(/Emolumentos \(R\$\)/i, {}, { timeout: 4000 }),
+    ).not.toBeNull()
+    expect(
+      await screen.findByLabelText(/Liquidação \(R\$\)/i, {}, { timeout: 4000 }),
+    ).not.toBeNull()
     expect(screen.queryByLabelText(/IR/i)).toBeNull()
 
-    // O ativo selecionado inicialmente é o primeiro (PETR4, equities)
-    expect(screen.getByLabelText(/Quantidade/i)).not.toBeNull()
-    expect(screen.getByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
+    unmount()
+
+    // Validação dos demais tipos testando com cada ativo como primeiro da lista (ativo ativo padrão):
+    const testCases: Array<{
+      assetId: string
+      expectFields: (dialog: HTMLElement) => Promise<void>
+    }> = [
+      {
+        // Caso 2: FII (HGLG11)
+        assetId: 'ast_fii',
+        expectFields: async () => {
+          expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
+        },
+      },
+      {
+        // Caso 3: BDR (MSFT34)
+        assetId: 'ast_bdr',
+        expectFields: async () => {
+          expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
+        },
+      },
+      {
+        // Caso 4: Cripto (BTC)
+        assetId: 'ast_crypto',
+        expectFields: async () => {
+          expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
+        },
+      },
+      {
+        // Caso 5: Internacional / USD (AAPL)
+        assetId: 'ast_usd',
+        expectFields: async () => {
+          expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Preço \(USD\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Outros Custos \(USD\)/i)).not.toBeNull()
+          expect(screen.queryByLabelText(/^Emolumentos/i)).toBeNull()
+        },
+      },
+      {
+        // Caso 6: Renda Fixa CDB (CDB-INTER)
+        assetId: 'ast_rf',
+        expectFields: async () => {
+          expect(await screen.findByText(/Renda Fixa — Detalhes do Título/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Valor Aplicado \(R\$\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Data Vencimento/i)).not.toBeNull()
+        },
+      },
+      {
+        // Caso 7: Renda Fixa Tesouro Direto (TESOURO-SELIC-2029)
+        assetId: 'ast_tesouro',
+        expectFields: async () => {
+          expect(await screen.findByText(/Renda Fixa — Detalhes do Título/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Valor Aplicado \(R\$\)/i)).not.toBeNull()
+        },
+      },
+      {
+        // Caso 8: Fundos de Investimento (KINEA-CHRONOS)
+        assetId: 'ast_fund',
+        expectFields: async () => {
+          expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Outros Custos \(R\$\)/i)).not.toBeNull()
+        },
+      },
+      {
+        // Caso 9: Outros Ativos (IMOVEL-SP)
+        assetId: 'ast_other',
+        expectFields: async () => {
+          expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/^Preço$/i)).not.toBeNull()
+          expect(await screen.findByLabelText(/Outros Custos \(R\$\)/i)).not.toBeNull()
+        },
+      },
+    ]
+
+    for (const tc of testCases) {
+      const targetAsset = sampleAssets.find((a) => a.id === tc.assetId)!
+      const remainingAssets = sampleAssets.filter((a) => a.id !== tc.assetId)
+      vi.mocked(assetService.listAssets).mockResolvedValue([targetAsset, ...remainingAssets])
+
+      const { unmount: unmountCase } = render(
+        <MemoryRouter>
+          <MovementsPage />
+        </MemoryRouter>,
+      )
+
+      const btn = await screen.findByRole(
+        'button',
+        { name: /Nova Movimentação|Registrar primeira movimentação/i },
+        { timeout: 4000 },
+      )
+      fireEvent.click(btn)
+
+      const dialogEl = await screen.findByRole('dialog', {}, { timeout: 4000 })
+      await tc.expectFields(dialogEl)
+
+      unmountCase()
+    }
   })
 })
 
