@@ -191,6 +191,184 @@ routerAdd('GET', '/backend/v1/admin/email-status', (e) => {
   })
 })
 
+routerAdd('POST', '/backend/v1/email/test', (e) => {
+  const authRecord = e.auth
+  if (!authRecord || authRecord.getString('role') !== 'admin') {
+    return e.json(403, {
+      code: 'UNAUTHORIZED',
+      message: 'Apenas administradores podem enviar e-mails de teste.',
+    })
+  }
+
+  const data = e.requestInfo().body || {}
+  const toEmail = (data.email || data.to || '').trim().toLowerCase()
+
+  if (!toEmail || !toEmail.includes('@') || !toEmail.includes('.')) {
+    return e.json(400, {
+      code: 'INVALID_EMAIL',
+      message: 'Por favor, informe um endereço de e-mail de destino válido.',
+    })
+  }
+
+  const resendApiKey = ($os.getenv('RESEND_API_KEY') || '').trim()
+  const resendFromEmail = (
+    $os.getenv('RESEND_FROM_EMAIL') || 'contato@construindomeufuturo.com'
+  ).trim()
+  const resendFromName = ($os.getenv('RESEND_FROM_NAME') || 'Construindo Meu Futuro').trim()
+  const siteUrl = ($os.getenv('SITE_URL') || 'https://construindomeufuturo.com').replace(/\/+$/, '')
+
+  if (!resendApiKey) {
+    try {
+      const auditCol = $app.findCollectionByNameOrId('audit_logs')
+      const log = new Record(auditCol)
+      log.set('user_id', authRecord.id)
+      log.set('event_type', 'EMAIL_TEST_FAILED')
+      log.set('severity', 'warn')
+      log.set('entity', 'system')
+      log.set('summary', `Tentativa de e-mail de teste falhou: RESEND_API_KEY ausente (${toEmail})`)
+      log.set('details', {
+        to: toEmail,
+        reason: 'RESEND_API_KEY_MISSING',
+        from: `${resendFromName} <${resendFromEmail}>`,
+      })
+      $app.save(log)
+    } catch (_) {}
+
+    return e.json(400, {
+      code: 'RESEND_NOT_CONFIGURED',
+      message:
+        'A variável RESEND_API_KEY não está configurada no ambiente. Configure-a no painel Skip Cloud para habilitar o envio.',
+    })
+  }
+
+  const fromHeader = `${resendFromName} <${resendFromEmail}>`
+  const subject = 'E-mail de Teste — Construindo Meu Futuro'
+  const htmlBody = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <h2 style="color: #0f172a; margin-top: 0; margin-bottom: 12px; font-size: 20px;">Teste de Conectividade Resend</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 16px;">
+        Este é um e-mail de teste disparado a partir do painel de administração da plataforma <strong>Construindo Meu Futuro</strong> para verificar a integração com a API do Resend.
+      </p>
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; margin-bottom: 20px; font-size: 13px;">
+        <p style="margin: 4px 0;"><strong>Remetente configurado:</strong> ${fromHeader}</p>
+        <p style="margin: 4px 0;"><strong>Destinatário:</strong> ${toEmail}</p>
+        <p style="margin: 4px 0;"><strong>Ambiente / URL base:</strong> <a href="${siteUrl}" style="color: #2563eb; text-decoration: none;">${siteUrl}</a></p>
+        <p style="margin: 4px 0;"><strong>Disparado por:</strong> ${authRecord.getString('name') || authRecord.getString('email')} (${authRecord.id})</p>
+      </div>
+      <p style="font-size: 13px; line-height: 1.5; color: #16a34a; font-weight: 600; margin-bottom: 8px;">
+        ✓ Se você recebeu esta mensagem, sua integração transacional está funcionando perfeitamente!
+      </p>
+      <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        Construindo Meu Futuro &bull; Mensagem automática gerada pelo sistema de verificação de e-mail.
+      </p>
+    </div>
+  `
+
+  try {
+    const res = $http.send({
+      url: 'https://api.resend.com/emails',
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: fromHeader,
+        to: [toEmail],
+        subject: subject,
+        html: htmlBody,
+      }),
+      timeout: 15,
+    })
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      const resJson = res.json || {}
+      const resendId = resJson.id || ''
+
+      try {
+        const auditCol = $app.findCollectionByNameOrId('audit_logs')
+        const log = new Record(auditCol)
+        log.set('user_id', authRecord.id)
+        log.set('event_type', 'EMAIL_TEST_SENT')
+        log.set('severity', 'info')
+        log.set('entity', 'system')
+        log.set('summary', `E-mail de teste enviado com sucesso para ${toEmail}`)
+        log.set('details', {
+          to: toEmail,
+          from: fromHeader,
+          resend_id: resendId,
+          status_code: res.statusCode,
+        })
+        $app.save(log)
+      } catch (logErr) {
+        console.log('[WARN][EMAIL_TEST] Falha ao registrar audit log: ' + logErr.message)
+      }
+
+      return e.json(200, {
+        success: true,
+        message: `E-mail de teste enviado para ${toEmail}`,
+        resend_id: resendId,
+      })
+    }
+
+    // Falha da API do Resend (ex.: domínio não verificado, chave inválida, etc.)
+    const rawBody = res.raw || ''
+    let errorDetail = 'Erro retornado pela API do Resend.'
+    try {
+      const errJson = res.json || {}
+      if (errJson.message) {
+        errorDetail = errJson.message
+      }
+    } catch (_) {}
+
+    try {
+      const auditCol = $app.findCollectionByNameOrId('audit_logs')
+      const log = new Record(auditCol)
+      log.set('user_id', authRecord.id)
+      log.set('event_type', 'EMAIL_TEST_FAILED')
+      log.set('severity', 'warn')
+      log.set('entity', 'system')
+      log.set('summary', `Falha ao enviar e-mail de teste para ${toEmail}: ${errorDetail}`)
+      log.set('details', {
+        to: toEmail,
+        from: fromHeader,
+        status_code: res.statusCode,
+        raw_error: rawBody,
+      })
+      $app.save(log)
+    } catch (_) {}
+
+    return e.json(400, {
+      code: 'RESEND_API_ERROR',
+      message: `Falha ao enviar via Resend (HTTP ${res.statusCode}): ${errorDetail}`,
+      details: rawBody,
+    })
+  } catch (sendErr) {
+    const errorMsg = sendErr && sendErr.message ? sendErr.message : String(sendErr)
+
+    try {
+      const auditCol = $app.findCollectionByNameOrId('audit_logs')
+      const log = new Record(auditCol)
+      log.set('user_id', authRecord.id)
+      log.set('event_type', 'EMAIL_TEST_FAILED')
+      log.set('severity', 'warn')
+      log.set('entity', 'system')
+      log.set('summary', `Exceção ao disparar e-mail de teste para ${toEmail}: ${errorMsg}`)
+      log.set('details', {
+        to: toEmail,
+        from: fromHeader,
+        error: errorMsg,
+      })
+      $app.save(log)
+    } catch (_) {}
+
+    return e.json(400, {
+      code: 'SEND_EXCEPTION',
+      message: `Erro na comunicação com o servidor de e-mail: ${errorMsg}`,
+    })
+  }
+})
+
 routerAdd('POST', '/backend/v1/invitations/revoke', (e) => {
   const authRecord = e.auth
   if (!authRecord || authRecord.getString('role') !== 'admin') {

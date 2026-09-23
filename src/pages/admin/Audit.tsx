@@ -253,6 +253,12 @@ export default function AdminAuditPage() {
                 <SelectItem value="MOVEMENT_UPDATED" className="text-xs">
                   Movimentação Editada
                 </SelectItem>
+                <SelectItem value="EMAIL_TEST_SENT" className="text-xs">
+                  E-mail de Teste Enviado
+                </SelectItem>
+                <SelectItem value="EMAIL_TEST_FAILED" className="text-xs">
+                  Falha em E-mail de Teste
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
