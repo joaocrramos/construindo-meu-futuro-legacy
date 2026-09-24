@@ -4,6 +4,41 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.110] - 2026-09-24 (Limpeza total da base para início de produção com confirmação de alto atrito e registro em auditoria)
+
+### Removido (Removed)
+
+- **Limpeza Total de Dados de Negócio para Início de Produção (`pocketbase/migrations/0024_production_total_reset.js`)**:
+  - Operação destrutiva e definitiva aprovada e confirmada expressamente pelo usuário dono do produto em chat com confirmação de alto atrito.
+  - Expurgados integralmente todos os registros de teste das 10 collections de negócio da aplicação, respeitando a ordem topológica de dependências de foreign keys:
+    1. `alerts` (alertas do sistema e vencimentos)
+    2. `account_balances` (saldos projetados de caixa)
+    3. `movements` (lançamentos de aporte, resgate, compra, venda, dividendos e estornos)
+    4. `positions` (custódia contábil de ativos)
+    5. `accounts` (contas bancárias e corretoras)
+    6. `assets` (catálogo privado de ativos e títulos)
+    7. `institutions` (instituições financeiras)
+    8. `portfolios` (carteiras patrimoniais)
+    9. `invitations` (convites pendentes e aceitos)
+    10. `audit_logs` (expurgo de logs de teste legados)
+  - **Preservação Absoluta Garantida**: A collection nativa de autenticação (`users` / `_pb_users_auth_`) foi integralmente preservada, mantendo o usuário proprietário (`joao.carlos@jcrtecnologia.com`) e o administrador de bootstrap ativos com suas senhas e credenciais inalteradas.
+
+### Adicionado (Added)
+
+- **Trilha de Auditoria Indelével do Reset (`audit_logs`)**:
+  - Logo após o expurgo das tabelas dependentes, a rotina recriou imediatamente o registro de auditoria canônico com o evento `SYSTEM_RESET`, severidade `critical`, entidade `system`, summary `"Limpeza total da base executada com sucesso para início de produção."` e vinculação direta ao usuário administrador proprietário `joao.carlos@jcrtecnologia.com`.
+- **Interface de Governança e Alto Atrito (`src/pages/admin/ResetDev.tsx`)**:
+  - Página `/admin/reset-dev` reformulada para exibir o status em tempo real da higienização:
+    - Banner de confirmação de base limpa com data/hora da execução e responsável.
+    - Grid de conferência das 9 entidades de negócio exibindo a contagem zerada em tempo real.
+    - Mecanismo de alto atrito padrão ADR-022 para salvaguarda: botão destrutivo nunca executa em 1 clique, exigindo abertura de modal e digitação da frase de segurança exata `LIMPAR AMBIENTE DESENVOLVIMENTO`.
+- **Validação de Integridade de Migrations (`src/test/checkMigrations.test.ts`)**:
+  - Adicionado caso de teste validando que a migration `0024_production_total_reset.js` cumpre integralmente os requisitos de integridade, sequência cronológica e integridade referencial.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.110` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.109] - 2026-09-24 (Correção da rota /admin/reset-dev e tratamento amigável de 404)
 
 ### Corrigido (Fixed)
