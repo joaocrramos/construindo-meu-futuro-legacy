@@ -4,6 +4,25 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.116] - 2026-09-24 (Correção do SelectContent em modais: elevação de z-index e relaxamento da altura da viewport)
+
+### Corrigido (Fixed)
+
+- **Correção do Dropdown de Select em Modais e Diálogos (`src/components/ui/select.tsx`)**:
+  - Elevado o z-index do `SelectContent` de `z-50` para `z-[60]`, garantindo que o portal do Radix Select renderize estritamente acima do `DialogOverlay` e `DialogContent` (`z-50`).
+  - Relaxada a restrição de altura `h-[var(--radix-select-trigger-height)]` na `SelectPrimitive.Viewport` quando `position="popper"`, mantendo `w-full min-w-[var(--radix-select-trigger-width)]`. Previne colapso de altura para 0 caso as variáveis de medição do Radix sofram atraso de montagem ou animações dentro de modais.
+  - Corrige o problema reportado na tela de Contas (`/wealth/accounts`) na criação e edição ("o select box nao aparece nem na criacao de uma nova conta nem na edicao da existente") e beneficia todos os selects baseados no componente shadcn/ui do app.
+
+### Testes e Governança (ADR-006)
+
+- **Suíte de Testes Automatizados (`src/test/wealthInstitutionsAccounts.test.tsx`)**:
+  - Adicionado caso de teste reproduzindo o cenário real na modal de edição de conta: abertura da modal, clique no trigger de Moeda, verificação de que as opções `BRL`, `USD` e `EUR` ficam visíveis no DOM do portal e que a seleção de `EUR` atualiza o trigger e persiste no payload de atualização.
+  - Teste de criação pré-existente reforçado e validado.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.116` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.115] - 2026-09-24 (Mock parcial de accounts em wealthInstitutionsAccounts.test e fixação de runner ubuntu-24.04 no CI)
 
 ### Corrigido (Fixed)

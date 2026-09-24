@@ -487,4 +487,96 @@ describe('CRUD de Contas & Custódias', () => {
       )
     })
   })
+
+  it('6. Modal de edição de conta abre dropdown de moeda, opções BRL/USD/EUR ficam visíveis e selecionar EUR reflete no trigger e payload', async () => {
+    vi.mocked(instService.listInstitutions).mockResolvedValue([
+      {
+        id: 'inst_1',
+        user_id: 'usr_1',
+        name: 'Banco Itaú',
+        institution_type: 'bank',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_edit_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Conta Corrente Euro',
+        account_type: 'international_checking',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
+    vi.mocked(accService.updateAccount).mockResolvedValue({
+      id: 'acc_edit_1',
+      user_id: 'usr_1',
+      institution_id: 'inst_1',
+      name: 'Conta Corrente Euro',
+      account_type: 'international_checking',
+      currency: 'EUR',
+      is_active: true,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    )
+
+    // Aguarda a lista de contas carregar
+    await waitFor(() => {
+      expect(screen.getByText('Conta Corrente Euro')).not.toBeNull()
+    })
+
+    // Clica no botão de edição da conta
+    const editBtn = screen.getByRole('button', { name: /Editar/i })
+    fireEvent.click(editBtn)
+
+    // Modal de edição abre
+    await waitFor(() => {
+      expect(screen.getByText('Editar Conta')).not.toBeNull()
+    })
+
+    // Localiza o trigger de moeda dentro da modal de edição
+    const currencyTrigger = screen.getByRole('combobox', { name: /Moeda/i })
+    expect(currencyTrigger).not.toBeNull()
+    expect(currencyTrigger.textContent).toContain('BRL')
+
+    // Abre o dropdown do Select de moeda
+    fireEvent.click(currencyTrigger)
+
+    // Assegura que as opções BRL, USD e EUR ficam VISÍVEIS no DOM do portal
+    const eurOption = await screen.findByRole('option', { name: /^EUR$/i })
+    expect(eurOption).not.toBeNull()
+    expect(screen.getByRole('option', { name: /^BRL$/i })).not.toBeNull()
+    expect(screen.getByRole('option', { name: /^USD$/i })).not.toBeNull()
+
+    // Seleciona EUR
+    fireEvent.click(eurOption)
+
+    // Verifica que o trigger reflete EUR
+    expect(currencyTrigger.textContent).toContain('EUR')
+
+    // Salva as alterações
+    const saveBtn = screen.getByRole('button', { name: /Salvar Alterações/i })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(accService.updateAccount).toHaveBeenCalledWith(
+        'acc_edit_1',
+        expect.objectContaining({
+          currency: 'EUR',
+        }),
+      )
+    })
+  })
 })
