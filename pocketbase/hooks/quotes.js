@@ -443,7 +443,9 @@ routerAdd('POST', '/backend/v1/quotes/refresh', (e) => {
     if (body && Array.isArray(body.tickers) && body.tickers.length > 0) {
       customTickersProvided = true
       for (let t = 0; t < body.tickers.length; t++) {
-        const rawTicker = String(body.tickers[t] || '').trim().toUpperCase()
+        const rawTicker = String(body.tickers[t] || '')
+          .trim()
+          .toUpperCase()
         if (rawTicker && rawTicker.length >= 2 && !rawTicker.includes(' ')) {
           tickersSet[rawTicker] = true
         }
@@ -455,13 +457,7 @@ routerAdd('POST', '/backend/v1/quotes/refresh', (e) => {
   if (!customTickersProvided) {
     try {
       const userFilter = `user_id = "${authRecord.id}" && is_active = true && ticker != ""`
-      const assetsList = $app.findRecordsByFilter(
-        'assets',
-        userFilter,
-        'ticker',
-        1000,
-        0,
-      )
+      const assetsList = $app.findRecordsByFilter('assets', userFilter, 'ticker', 1000, 0)
       for (let i = 0; i < assetsList.length; i++) {
         const rawTicker = (assetsList[i].getString('ticker') || '').trim().toUpperCase()
         const assetClass = assetsList[i].getString('asset_class')
@@ -624,7 +620,8 @@ routerAdd('POST', '/backend/v1/quotes/refresh', (e) => {
             }
           }
           updatedCount++
-        }      }
+        }
+      }
     }
   } catch (currErr) {
     errors.push(`Erro ao buscar moedas: ${currErr.message}`)
