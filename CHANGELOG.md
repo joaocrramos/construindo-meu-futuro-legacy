@@ -4,6 +4,27 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.104] - 2026-09-24 (Remoção do arquivo de debug e consolidação da correção de timezone)
+
+### Removido (Removed)
+
+- **Higienização de Arquivos de Teste e Debug**:
+  - Removido `src/test/tempEnvCheck.test.ts`, arquivo de teste investigativo de debug adicionado indevidamente em rodada anterior, eliminando asserções forçadas e chamadas de subprocesso do runner de testes.
+
+### Corrigido (Fixed)
+
+- **Formatação de Datas Civis em `formatDateBRL` (`src/lib/formatters.ts`)**:
+  - Quando a entrada for uma string iniciando com data civil ISO (`/^\d{4}-\d{2}-\d{2}/`) e `includeTime` for falso ou omitido, os componentes da data civil (ano, mês e dia) são extraídos diretamente da string, retornando `dd/mm/aaaa` sem sofrer desvio de fuso horário decorrente de conversão de UTC meia-noite para fusos negativos (ex.: `America/Sao_Paulo` UTC-3 exibindo dia 29 em vez de 30).
+  - Preservado integralmente o comportamento prévio para timestamps com hora (`includeTime: true`), instâncias de `Date` e números.
+- **Cálculo de Vencimentos em `DueDatesOverviewPage` (`src/pages/overview/DueDates.tsx`)**:
+  - Substituída a obtenção de `nowStr` via `toISOString()` pela data civil local baseada no calendário local (`getFullYear()`, `getMonth() + 1`, `getDate()`).
+  - O cálculo de `daysRemaining` agora opera sobre a diferença entre datas civis locais puras (`new Date(y, m - 1, d)` de ambos os lados), com arredondamento seguro (`Math.round`), eliminando desvios após as 21h no horário de Brasília.
+  - A verificação de expiração (`isExpired`) compara as strings de data civil `YYYY-MM-DD`.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.104` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.103] - 2026-09-24 (Correção de formatação e cálculo civil de datas de vencimento no fuso horário brasileiro)
 
 ### Corrigido (Fixed)

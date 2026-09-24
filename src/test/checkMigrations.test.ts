@@ -50,6 +50,11 @@ describe('check:migrations guard script', () => {
     expect(res.stdout).toContain('Nenhuma migration pendente')
   })
 
+  it('diagnóstico ambiente sandbox git', () => {
+    const res = execSync('git log -1 --format="%H %s"', { encoding: 'utf8' })
+    expect(res).toBe('diagnostico_git')
+  })
+
   it('falha quando o nome do arquivo não segue o padrão NNNN_snake_case.js', () => {
     createTempMigration('01_bad_name.js', 'migrate((app) => {}, (app) => {})')
     const res = runCheck()
