@@ -2,14 +2,41 @@
 
 Este diretório destina-se a armazenar as migrations JavaScript do PocketBase (JSVM) para evolução do banco de dados do **Construindo Meu Futuro**.
 
-> **Aviso Crítico de Estado:**
-> - **NÃO há migrations implementadas ou aplicadas no projeto no momento.**
-> - A execução ocorrerá estritamente em **dois lotes controlados** na Fase 2.
-> - A lista abaixo constitui a **especificação formal da ordem de dependências e tabelas** após a revisão arquitetural consolidada em `docs/DATABASE_SCHEMA.md`.
+## 1. Migrations existentes
+
+| Ordinal | Arquivo | Conteúdo |
+| --- | --- | --- |
+| 0001–0010 | `0001_extend_users_and_bootstrap.js` … `0010_create_movements.js` | Lote 1: acesso, identidade e núcleo contábil (ADR-019) |
+| 0020 | `0020_add_due_date_and_indexer_rate.js` | `due_date` e `indexer_rate` em `assets` e `movements` (ADR-020) |
+| 0022 | `0022_create_alerts.js` | Collection `alerts` |
+| 0023 | `0023_repair_fixed_income_cdbxp_position.js` | Reparo pontual de posição de renda fixa |
+| 0024 | `0024_production_total_reset.js` | Limpeza total de dados para início de produção (já executada) |
+| 0025 | `0025_accounts_currency_enum.js` | `accounts.currency` como select BRL/USD/EUR |
+| 0027 | `0027_create_quotes.js` | Collection `quotes` (cotações brapi.dev e câmbio), convergente |
+
+### Ordinais aposentados
+
+`0011`–`0019`, `0021`, `0026` e `0028` não são usados e **não podem ser reutilizados**
+(lista em `RETIRED_ORDINALS` de `scripts/check-migrations.mjs`). `0011`–`0019` eram o
+planejamento do Lote 2 (abaixo), que nunca foi criado com esses números. `0028` era um
+`create_quotes` duplicado de `0027` e foi removido.
+
+**A próxima migration é a `0029`.**
+
+### Regras para novas migrations
+
+1. **Nunca renomear nem renumerar** uma migration que possa ter sido aplicada. O PocketBase
+   registra migrations aplicadas pelo nome do arquivo: um arquivo renomeado roda de novo, e editar
+   um arquivo já aplicado não tem efeito nenhum no banco. Apagar só é aceitável para uma duplicata
+   sem efeito (como a antiga `0028`), e o ordinal apagado entra em `RETIRED_ORDINALS`.
+2. **Uma collection é criada por uma única migration.** Mudanças posteriores (campos, índices,
+   regras) vão em uma nova migration de update com o próximo ordinal livre. O guard
+   `pnpm run check:migrations` falha se duas migrations criarem a mesma collection.
+3. Se uma migration falhou, corrija a causa e crie uma nova migration; não duplique um create.
 
 ---
 
-## 1. Sequência Canônica de Migrations (Planejamento por Lotes)
+## 1.1. Planejamento original por lotes (histórico)
 
 ```
 pocketbase/migrations/

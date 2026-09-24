@@ -5,8 +5,10 @@
  * Validações obrigatórias:
  *  1. Nomenclatura estrita dos arquivos: NNNN_snake_case.js (4 dígitos + snake_case + extensão .js).
  *  2. Ausência de ordinais duplicados (dois arquivos com o mesmo prefixo numérico).
- *  3. Ausência de buracos na sequência de ordinais (deve começar em 0001 e ser contínua se houver arquivos).
+ *  3. Ausência de buracos na sequência de ordinais (deve começar em 0001 e ser contínua), exceto pelos
+ *     ordinais aposentados listados em RETIRED_ORDINALS, que também não podem ser reutilizados.
  *  4. Consistência de drop/delete: nenhum drop/delete pode referenciar uma collection que nenhum create anterior cria.
+ *  5. Unicidade de criação: duas migrations não podem criar a mesma collection.
  *
  * Uso: pnpm run check:migrations
  */
@@ -20,6 +22,15 @@ const migrationsDir = process.env.MIGRATIONS_DIR || join(repoRoot, 'pocketbase',
 
 const FILE_PATTERN = /^(\d{4})_([a-z0-9]+(?:_[a-z0-9]+)*)\.js$/
 
+// Ordinais que nunca existiram no repositório ou que foram removidos depois de possivelmente
+// aplicados em algum ambiente. O PocketBase registra migrations aplicadas pelo nome do arquivo,
+// então renumerar arquivos existentes para "fechar" buracos faria migrations já aplicadas rodarem
+// de novo. Por isso os buracos históricos ficam registrados aqui e esses números não são reutilizados.
+//   0011–0019: reservados no planejamento do Lote 2 e nunca criados
+//   0021, 0026: nunca existiram no repositório
+//   0028: create_quotes duplicado de 0027, removido
+const RETIRED_ORDINALS = new Set([11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 26, 28])
+
 function fail(errors) {
   console.error('\n✖ Validação de migrations falhou:\n')
   for (const err of errors) {
@@ -29,8 +40,9 @@ function fail(errors) {
     '\n  Regras de governança de migrations:\n' +
       '    1. O nome do arquivo deve seguir estritamente NNNN_snake_case.js (ex: 0001_create_users.js).\n' +
       '    2. Os ordinais devem ser únicos (sem duplicatas numéricas).\n' +
-      '    3. A sequência de ordinais deve ser contínua a partir de 0001 (sem buracos).\n' +
-      '    4. Operações de drop (app.delete, dropCollection) só podem referenciar collections criadas em migrations anteriores ou nativas (_pb_users_auth_ / users).\n',
+      '    3. A sequência de ordinais deve ser contínua a partir de 0001 (sem buracos), salvo ordinais aposentados, que não podem ser reutilizados.\n' +
+      '    4. Operações de drop (app.delete, dropCollection) só podem referenciar collections criadas em migrations anteriores ou nativas (_pb_users_auth_ / users).\n' +
+      '    5. Cada collection deve ser criada por uma única migration; alterações posteriores usam uma nova migration de update.\n',
   )
   process.exit(1)
 }
@@ -109,20 +121,21 @@ if (parsedMigrations.length > 0) {
     )
   }
 
-  for (let i = 0; i < uniqueOrdinals.length; i++) {
-    if (i > 0) {
-      const prev = uniqueOrdinals[i - 1]
-      const curr = uniqueOrdinals[i]
-      // Tratar caso de ordinais do repositório (0001..0010) seguidos de novas migrations da plataforma
-      // (0020 conforme ADR-020 e sequenciais 0021, 0022... ou saltos entre versões aplicadas no backend,
-      // ex: 0025 -> 0027 ou 0025 -> 0028)
-      if (
-        curr !== prev + 1 &&
-        !(prev === 10 && curr >= 20) &&
-        !(prev === 20 && curr === 22) &&
-        !(prev === 25 && (curr === 27 || curr === 28))
-      ) {
-        const expPad = String(prev + 1).padStart(4, '0')
+  for (const ordinal of uniqueOrdinals) {
+    if (RETIRED_ORDINALS.has(ordinal)) {
+      const pad = String(ordinal).padStart(4, '0')
+      errors.push(
+        `Ordinal aposentado "${pad}" reutilizado por ${ordinalMap.get(ordinal).join(', ')}. Use o próximo ordinal livre.`,
+      )
+    }
+  }
+
+  for (let i = 1; i < uniqueOrdinals.length; i++) {
+    const prev = uniqueOrdinals[i - 1]
+    const curr = uniqueOrdinals[i]
+    for (let expected = prev + 1; expected < curr; expected++) {
+      if (!RETIRED_ORDINALS.has(expected)) {
+        const expPad = String(expected).padStart(4, '0')
         const actPad = String(curr).padStart(4, '0')
         errors.push(
           `Buraco na sequência de ordinais: esperado "${expPad}", encontrado "${actPad}".`,
@@ -135,6 +148,7 @@ if (parsedMigrations.length > 0) {
 // 4. Validar consistência de drops vs creates anteriores
 // Collections pré-existentes / nativas conhecidas
 const createdCollections = new Set(['users', '_pb_users_auth_'])
+const creatorByCollection = new Map()
 
 // Ordena por ordinal numérico para validar a linha do tempo cronológica
 const sortedMigrations = [...parsedMigrations].sort((a, b) => a.ordinalNum - b.ordinalNum)
@@ -156,7 +170,16 @@ for (const mig of sortedMigrations) {
     const blockBody = blockMatch[1]
     const nameMatch = blockBody.match(/\bname\s*:\s*["']([^"']+)["']/)
     if (nameMatch) {
-      createdCollections.add(nameMatch[1])
+      const collectionName = nameMatch[1]
+      const previousCreator = creatorByCollection.get(collectionName)
+      if (previousCreator && previousCreator !== mig.file) {
+        errors.push(
+          `Collection "${collectionName}" criada em mais de uma migration: ${previousCreator} e ${mig.file}. Alterações devem ir em uma migration de update, não em um novo create.`,
+        )
+      } else {
+        creatorByCollection.set(collectionName, mig.file)
+      }
+      createdCollections.add(collectionName)
     }
   }
 

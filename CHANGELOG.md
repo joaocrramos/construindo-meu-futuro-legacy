@@ -4,6 +4,28 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.122] - 2026-09-24 (Limpeza de migrations duplicadas, guard de migrations e CI verde)
+
+### Corrigido (Fixed)
+
+- **Migration duplicada de `quotes` (`pocketbase/migrations/`)**:
+  - Removida `0028_create_quotes.js`, que recriava a mesma collection de `0027_create_quotes.js` com schema diferente. As duas tinham guarda `hasTable('quotes')`, então só a primeira executada tinha efeito.
+  - `0027_create_quotes.js` passa a ser a versão canônica e convergente: cria `quotes` se não existir; se já existir, garante o índice único `idx_quotes_ticker`. Removido o campo `user_id`, que não é gravado nem lido por `pocketbase/hooks/quotes.js` (cotação é dado de mercado global por ticker).
+- **Guard de migrations (`scripts/check-migrations.mjs`)**:
+  - Removidas as exceções fixas de buraco de sequência (`10→20`, `20→22`, `25→27/28`), que tinham sido adicionadas para deixar a duplicata passar.
+  - Buracos históricos agora ficam em uma lista explícita `RETIRED_ORDINALS` (`0011`–`0019`, `0021`, `0026`, `0028`), e reutilizar um ordinal aposentado falha.
+  - Nova regra: duas migrations não podem criar a mesma collection.
+- **README de migrations**: substituído o aviso desatualizado ("não há migrations implementadas") pela lista real, pelos ordinais aposentados, pela próxima migration (`0029`) e pelas regras para novas migrations.
+- **Testes**:
+  - Teste 8 de Movimentações: o caso USD usa uma conta em USD, já que a moeda dos campos segue a conta desde a v0.0.117.
+  - Teste 4 de Posições: o cabeçalho do grupo "Renda Fixa" é buscado pelo botão do grupo, já que o texto também aparece na coluna de cotação.
+  - Removida a diretiva `/// <reference>` de `quotesIntegration.test.tsx`, que quebrava o `lint:ci`.
+- **Formatação**: `pocketbase/hooks/quotes.js` e `src/pages/wealth/Consolidation.tsx` formatados com `oxfmt`.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.122` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.121] - 2026-09-24 (Integração brapi.dev completa: rota POST /backend/v1/quotes/refresh, câmbio USDBRL/EURBRL, valor de mercado e consolidação patrimonial)
 
 ### Modificado (Changed)

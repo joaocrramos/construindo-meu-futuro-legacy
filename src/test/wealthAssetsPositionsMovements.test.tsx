@@ -996,6 +996,7 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
     // Validação dos demais tipos testando com cada ativo como primeiro da lista (ativo ativo padrão):
     const testCases: Array<{
       assetId: string
+      accountCurrency?: 'BRL' | 'USD'
       expectFields: (dialog: HTMLElement) => Promise<void>
     }> = [
       {
@@ -1027,8 +1028,9 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
         },
       },
       {
-        // Caso 5: Internacional / USD (AAPL)
+        // Caso 5: Internacional / USD (AAPL) em conta USD; a moeda dos campos segue a conta (v0.0.117)
         assetId: 'ast_usd',
+        accountCurrency: 'USD',
         expectFields: async () => {
           expect(await screen.findByLabelText(/Quantidade/i)).not.toBeNull()
           expect(await screen.findByLabelText(/Preço \(USD\)/i)).not.toBeNull()
@@ -1077,6 +1079,19 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
       const targetAsset = sampleAssets.find((a) => a.id === tc.assetId)!
       const remainingAssets = sampleAssets.filter((a) => a.id !== tc.assetId)
       vi.mocked(assetService.listAssets).mockResolvedValue([targetAsset, ...remainingAssets])
+      vi.mocked(accService.listAccounts).mockResolvedValue([
+        {
+          id: 'acc_case',
+          user_id: 'usr_1',
+          institution_id: 'inst_1',
+          name: tc.accountCurrency === 'USD' ? 'Avenue Securities' : 'BTG Pactual',
+          account_type: 'investment',
+          currency: tc.accountCurrency ?? 'BRL',
+          is_active: true,
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+        },
+      ])
 
       const { unmount: unmountCase } = render(
         <MemoryRouter>
@@ -1442,7 +1457,8 @@ describe('Posições em Custódia (/wealth/positions)', () => {
     await waitFor(() => {
       // Devem aparecer os cabeçalhos das classes agrupadas
       expect(screen.getByText('Ações / Ações Globais')).not.toBeNull()
-      expect(screen.getByText('Renda Fixa')).not.toBeNull()
+      // "Renda Fixa" também aparece na coluna de cotação das linhas de renda fixa; busca o cabeçalho do grupo
+      expect(screen.getByRole('button', { name: /^Renda Fixa/ })).not.toBeNull()
     })
 
     // Retrai e expande grupos
