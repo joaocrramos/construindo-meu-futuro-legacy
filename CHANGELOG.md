@@ -4,6 +4,25 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.103] - 2026-09-24 (Correção de formatação e cálculo civil de datas de vencimento no fuso horário brasileiro)
+
+### Corrigido (Fixed)
+
+- **Formatação de Datas Civis em `formatDateBRL` (`src/lib/formatters.ts`)**:
+  - Quando a entrada for uma string iniciando com data civil ISO (`/^\d{4}-\d{2}-\d{2}/`) e `includeTime` for falso ou omitido, os componentes da data civil (ano, mês e dia) são extraídos diretamente da string, retornando `dd/mm/aaaa` sem sofrer desvio de fuso horário decorrente de conversão de UTC meia-noite para fusos negativos (ex.: `America/Sao_Paulo` UTC-3 exibindo dia 29 em vez de 30).
+  - Preservado integralmente o comportamento prévio para timestamps com hora (`includeTime: true`), instâncias de `Date` e números.
+- **Cálculo de Vencimentos em `DueDatesOverviewPage` (`src/pages/overview/DueDates.tsx`)**:
+  - Substituída a obtenção de `nowStr` via `toISOString()` pela data civil local baseada no calendário local (`getFullYear()`, `getMonth() + 1`, `getDate()`).
+  - O cálculo de `daysRemaining` agora opera sobre a diferença entre datas civis locais puras (`new Date(y, m - 1, d)` de ambos os lados), com arredondamento seguro (`Math.round`), eliminando desvios após as 21h no horário de Brasília.
+  - A verificação de expiração (`isExpired`) compara as strings de data civil `YYYY-MM-DD`.
+- **Suíte de Testes Automatizados**:
+  - Adicionado teste de regressão em `src/test/formatters.test.ts` validando a formatação de `"2026-09-30 00:00:00.000Z"` como `"30/09/2026"` e a preservação de `includeTime: true`.
+  - Adicionado teste de regressão em `src/test/overviewPages.test.tsx` cobrindo o cálculo de `daysRemaining` e a exibição de vencimento para `2026-09-30` sob horário noturno simulado.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.103` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.102] - 2026-09-24 (Cálculo de posições de Renda Fixa por valor e reparo do CDB XP)
 
 ### Corrigido (Fixed)

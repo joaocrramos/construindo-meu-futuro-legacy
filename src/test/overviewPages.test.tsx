@@ -586,6 +586,61 @@ describe('Telas de Overview conectadas a dados reais', () => {
         expect(screen.getAllByText('R$ 1.000,00').length).toBeGreaterThan(0)
       })
     })
+
+    it('calcula daysRemaining e data de vencimento civil 2026-09-30 sem deslocamento de fuso', async () => {
+      // Mock do relógio para data fixa conhecida: 2026-09-20T22:30:00 (noite em UTC-3)
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 8, 20, 22, 30, 0)) // 20 de setembro de 2026, 22h30
+
+      vi.mocked(posService.listPositions).mockResolvedValue([
+        {
+          id: 'pos_cdb_xp',
+          user_id: 'usr_1',
+          account_id: 'acc_1',
+          asset_id: 'ast_cdb_xp',
+          quantity_e8: 300000000000,
+          average_price_cents: 100,
+          total_cost_cents: 300000,
+          maturity_date: '2026-09-30 00:00:00.000Z',
+          indexer: 'CDI (100%)',
+          last_recalculated_at: new Date().toISOString(),
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+        },
+      ])
+      vi.mocked(accService.listAccounts).mockResolvedValue([])
+      vi.mocked(assetService.listAssets).mockResolvedValue([
+        {
+          id: 'ast_cdb_xp',
+          user_id: 'usr_1',
+          ticker: 'CDB-XP-2026',
+          name: 'CDB Banco XP 2026',
+          asset_class: 'fixed_income',
+          due_date: '2026-09-30 00:00:00.000Z',
+          currency: 'BRL',
+          is_active: true,
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+        },
+      ])
+
+      render(
+        <MemoryRouter>
+          <DueDatesOverviewPage />
+        </MemoryRouter>,
+      )
+
+      await waitFor(() => {
+        // Exibição da data deve ser 30/09/2026 e nunca 29/09/2026
+        expect(screen.getAllByText('30/09/2026').length).toBeGreaterThan(0)
+        expect(screen.queryByText('29/09/2026')).toBeNull()
+        // Dias restantes entre 20/09/2026 e 30/09/2026 = 10 dias
+        expect(screen.getByText(/10 dias restantes/i)).not.toBeNull()
+        expect(screen.getByText('Em 10 dias')).not.toBeNull()
+      })
+
+      vi.useRealTimers()
+    })
   })
 
   describe('7. Progresso das Metas (/overview/goals)', () => {

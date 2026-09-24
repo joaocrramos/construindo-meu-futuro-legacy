@@ -71,5 +71,23 @@ describe('Formatadores Financeiros (pt-BR)', () => {
       expect(formatDateBRL(null)).toBe('—')
       expect(formatDateBRL('invalid-date')).toBe('—')
     })
+
+    it('deve formatar "2026-09-30 00:00:00.000Z" como "30/09/2026" independentemente de fuso horário', () => {
+      // Regressão do bug de exibição de vencimento no fuso America/Sao_Paulo (UTC-3)
+      expect(formatDateBRL('2026-09-30 00:00:00.000Z')).toBe('30/09/2026')
+      expect(formatDateBRL('2026-09-30T00:00:00.000Z')).toBe('30/09/2026')
+      expect(formatDateBRL('2026-09-30')).toBe('30/09/2026')
+    })
+
+    it('deve preservar formatação com includeTime: true para timestamps e objetos Date', () => {
+      const isoTimestamp = '2026-09-30T15:45:00.000Z'
+      const formatted = formatDateBRL(isoTimestamp, { includeTime: true })
+      // Deve conter dia/mês/ano e hora:minuto
+      expect(formatted).toMatch(/\d{2}\/\d{2}\/\d{4}/)
+      expect(formatted).toMatch(/\d{2}:\d{2}/)
+
+      const dateObj = new Date(2026, 8, 30, 14, 30)
+      expect(formatDateBRL(dateObj, { includeTime: true })).toMatch(/30\/09\/2026.*14:30/)
+    })
   })
 })

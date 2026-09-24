@@ -202,6 +202,31 @@ export function formatDateBRL(
   if (!dateValue) return fallback
 
   try {
+    // Quando a entrada for string iniciando com data civil (YYYY-MM-DD) e includeTime não for solicitado,
+    // extrair os componentes civis diretamente da string para evitar conversão de fuso (ex: UTC midnight -> dia anterior em UTC-3).
+    if (typeof dateValue === 'string' && !includeTime) {
+      const civilMatch = dateValue.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (civilMatch) {
+        const [, year, month, day] = civilMatch
+        const y = Number.parseInt(year, 10)
+        const m = Number.parseInt(month, 10)
+        const d = Number.parseInt(day, 10)
+
+        // Validação básica de limites do calendário civil
+        if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+          const testDate = new Date(Date.UTC(y, m - 1, d))
+          if (
+            testDate.getUTCFullYear() === y &&
+            testDate.getUTCMonth() === m - 1 &&
+            testDate.getUTCDate() === d
+          ) {
+            return `${day}/${month}/${year}`
+          }
+        }
+        return fallback
+      }
+    }
+
     const date =
       typeof dateValue === 'string' || typeof dateValue === 'number'
         ? new Date(dateValue)

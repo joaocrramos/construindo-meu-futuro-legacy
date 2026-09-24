@@ -46,7 +46,13 @@ export default function DueDatesOverviewPage() {
 
   // Filtra e classifica posições que possuem data de vencimento registrada (diretamente na posição ou pelo ativo cadastrado)
   const maturitiesList = React.useMemo(() => {
-    const nowStr = new Date().toISOString().slice(0, 10)
+    const today = new Date()
+    const nowYear = today.getFullYear()
+    const nowMonth = today.getMonth() + 1
+    const nowDay = today.getDate()
+    const nowPad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+    const nowStr = `${nowYear}-${nowPad(nowMonth)}-${nowPad(nowDay)}`
+    const nowDate = new Date(nowYear, nowMonth - 1, nowDay)
 
     const list = positions
       .filter((p) => {
@@ -57,11 +63,23 @@ export default function DueDatesOverviewPage() {
       .map((p) => {
         const acc = p.expand?.account_id || accountMap.get(p.account_id)
         const ast = p.expand?.asset_id || assetMap.get(p.asset_id)
-        const matDate = (p.maturity_date || ast?.due_date || '').slice(0, 10)
+        const rawMatDate = (p.maturity_date || ast?.due_date || '').trim()
+        const matMatch = rawMatDate.match(/^(\d{4})-(\d{2})-(\d{2})/)
+        const matDate = matMatch
+          ? `${matMatch[1]}-${matMatch[2]}-${matMatch[3]}`
+          : rawMatDate.slice(0, 10)
         const isExpired = matDate < nowStr
-        const daysRemaining = Math.ceil(
-          (new Date(matDate).getTime() - new Date(nowStr).getTime()) / (1000 * 60 * 60 * 24),
-        )
+
+        let daysRemaining = 0
+        if (matMatch) {
+          const mYear = Number.parseInt(matMatch[1], 10)
+          const mMonth = Number.parseInt(matMatch[2], 10)
+          const mDay = Number.parseInt(matMatch[3], 10)
+          const targetDate = new Date(mYear, mMonth - 1, mDay)
+          const deltaMs = targetDate.getTime() - nowDate.getTime()
+          daysRemaining = Math.round(deltaMs / (1000 * 60 * 60 * 24))
+        }
+
         const effectiveIndexer = p.indexer || ast?.indexer_rate || '—'
 
         return {
