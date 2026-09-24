@@ -4,6 +4,21 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.111] - 2026-09-24 (Preenchimento automático de last_login via hook onRecordAuthRequest)
+
+### Corrigido (Fixed)
+
+- **Preenchimento de `last_login` do Usuário na Autenticação (`pocketbase/hooks/auth.js`)**:
+  - Implementado hook de backend no PocketBase utilizando o evento nativo `onRecordAuthRequest(..., 'users')`.
+  - A cada autenticação bem-sucedida (login por senha, refresh de sessão ou conclusão de registro/aceite de convite), após a resolução do `e.next()`, o hook atualiza o campo `users.last_login` com o timestamp ISO UTC atual (`new Date().toISOString()`) e persiste via `$app.save(record)`.
+  - Resiliência total: qualquer eventual falha na gravação do `last_login` é capturada em bloco `try/catch` e registrada em log de erro sem jamais interromper ou bloquear a resposta de autenticação do usuário.
+- **Suíte de Testes Automatizados (`src/test/authLastLoginHook.test.ts`)**:
+  - Adicionado teste automatizado validando a estrutura e os padrões exigidos no arquivo `pocketbase/hooks/auth.js`, além de testes comportamentais da lógica de atualização do campo `last_login`, isolamento por collection e tolerância a falhas na camada de dados.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.111` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.110] - 2026-09-24 (Limpeza total da base para início de produção com confirmação de alto atrito e registro em auditoria)
 
 ### Removido (Removed)
