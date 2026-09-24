@@ -4,6 +4,28 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.126] - 2026-09-24 (Baseline única de migrations e limpeza da base como rota de backend)
+
+### Alterado (Changed)
+
+- **Baseline de migrations (`pocketbase/migrations/0001_baseline_schema.js`)**: uma única migration cria todo o schema no estado final (extensão de `users`, `invitations`, `audit_logs`, `portfolios`, `institutions`, `accounts`, `account_balances`, `assets`, `positions`, `movements`, `alerts`). Reproduz o espelho do banco vivo (`src/lib/pocketbase/schema.json`), com uma diferença intencional: `international` em `assets.asset_class`, valor que a tela de Ativos já oferecia e o banco recusava.
+- **Migrations antigas arquivadas** em `docs/migrations-history/` (fora de execução), com a explicação de cada uma e do porquê da consolidação. `quotes` fica fora da baseline até a integração brapi.dev ser retomada.
+- **Guard de migrations**: volta a exigir sequência contínua a partir da `0001`, sem ordinais aposentados, e passa a reconhecer collections definidas como `name` + `type: 'base'` (estilo da baseline) na regra "uma collection, uma migration".
+- **README de migrations** reescrito: estado atual, próxima migration (`0002`), regras e dependências.
+
+### Adicionado (Added)
+
+- **Rota `POST /backend/v1/admin/reset-data` (`pocketbase/hooks/admin_reset.js`)**: limpeza total dos dados de negócio sob demanda, substituindo a antiga migration `0024_production_total_reset.js`. Exige administrador ativo, `ALLOW_DATA_RESET=true` no servidor e a frase de confirmação; executa em transação e registra `SYSTEM_RESET` em `audit_logs` com a contagem apagada por collection. Preserva `users`.
+- **Tela `/admin/reset-dev` ligada à rota**: o botão de confirmação antes só gravava um registro de auditoria e informava que a base já estava limpa; agora executa a limpeza de fato (`src/services/adminReset.ts`).
+- **Testes**: `baselineMigration.test.ts` executa a baseline contra uma simulação da API do PocketBase e compara com o espelho do banco vivo; `adminResetHook.test.ts` executa o hook real (permissões, trava de ambiente, frase, transação e auditoria); `adminResetDev.test.tsx` cobre a tela.
+- **ADR-023** em `docs/DECISIONS.md` e seção 4 de `docs/RESET_DEVELOPMENT.md` atualizada.
+
+### Governança de Versionamento (ADR-006)
+
+- `VERSION`, `package.json` e `CHANGELOG.md` alinhados em `0.0.126`.
+
+---
+
 ## [0.0.125] - 2026-09-24 (Remoção de endpoint de debug público e de relatório de auditoria desatualizado)
 
 ### Segurança (Security)

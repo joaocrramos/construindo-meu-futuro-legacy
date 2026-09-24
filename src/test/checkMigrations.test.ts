@@ -147,65 +147,36 @@ describe('check:migrations guard script', () => {
     expect(res.stdout).toContain('Todas as 2 migrations')
   })
 
-  it('permite a transição entre 0010 e ordinais >= 0020 e entre 0020 e 0022', () => {
-    createTempMigration(
-      '0001_create_users.js',
-      'migrate((app) => { app.save(new Collection({ name: "users" })) }, (app) => {})',
-    )
-    createTempMigration('0020_add_due_date.js', 'migrate((app) => {}, (app) => {})')
-    createTempMigration(
-      '0022_create_alerts.js',
-      'migrate((app) => { app.save(new Collection({ name: "alerts" })) }, (app) => {})',
-    )
-    // Inicializa a cadeia para 0001..0010
-    for (let i = 2; i <= 10; i++) {
-      const pad = String(i).padStart(4, '0')
-      createTempMigration(`${pad}_mig.js`, 'migrate((app) => {}, (app) => {})')
-    }
-    const res = runCheck()
-    expect(res.status).toBe(0)
-    expect(res.stdout).toContain('Todas as 12 migrations')
-  })
-
-  it('passa com as migrations reais do projeto incluindo a migration 0024 e 0025', () => {
+  it('passa com as migrations reais do projeto (baseline 0001)', () => {
     const res = runCheck(join(repoRoot, 'pocketbase', 'migrations'))
     expect(res.status).toBe(0)
     expect(res.stdout).toContain('atendem aos critérios de governança')
   })
 
-  const createBaseSequenceUpTo25 = () => {
-    createTempMigration(
-      '0001_create_users.js',
-      'migrate((app) => { app.save(new Collection({ name: "users" })) }, (app) => {})',
-    )
-    for (let i = 2; i <= 10; i++) {
-      const pad = String(i).padStart(4, '0')
-      createTempMigration(`${pad}_mig.js`, 'migrate((app) => {}, (app) => {})')
-    }
-    createTempMigration('0020_add_due_date.js', 'migrate((app) => {}, (app) => {})')
-    for (const n of [22, 23, 24, 25]) {
-      createTempMigration(`00${n}_mig.js`, 'migrate((app) => {}, (app) => {})')
-    }
-  }
-
-  it('permite o salto de 0025 para 0027 (0026 aposentado)', () => {
-    createBaseSequenceUpTo25()
-    createTempMigration(
-      '0027_create_quotes.js',
-      'migrate((app) => { app.save(new Collection({ name: "quotes" })) }, (app) => {})',
-    )
-    const res = runCheck()
-    expect(res.status).toBe(0)
-    expect(res.stdout).toContain('Todas as 16 migrations')
-  })
-
-  it('falha quando um ordinal aposentado é reutilizado', () => {
-    createBaseSequenceUpTo25()
-    createTempMigration('0027_mig.js', 'migrate((app) => {}, (app) => {})')
-    createTempMigration('0028_update_quotes.js', 'migrate((app) => {}, (app) => {})')
+  it('falha quando há buraco entre ordinais distantes (sem exceções históricas)', () => {
+    createTempMigration('0001_baseline.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration('0020_late.js', 'migrate((app) => {}, (app) => {})')
     const res = runCheck()
     expect(res.status).not.toBe(0)
-    expect(res.stderr).toContain('Ordinal aposentado "0028"')
+    expect(res.stderr).toContain(
+      'Buraco na sequência de ordinais: esperado "0002", encontrado "0020"',
+    )
+  })
+
+  it('reconhece collections definidas como name + type base (estilo baseline)', () => {
+    createTempMigration(
+      '0001_baseline_schema.js',
+      "migrate((app) => { const def = { name: 'alerts', type: 'base', fields: [] }; app.save(new Collection(def)) }, (app) => {})",
+    )
+    createTempMigration(
+      '0002_create_alerts_again.js',
+      'migrate((app) => { app.save(new Collection({ name: "alerts", type: "base" })) }, (app) => {})',
+    )
+    const res = runCheck()
+    expect(res.status).not.toBe(0)
+    expect(res.stderr).toContain(
+      'Collection "alerts" criada em mais de uma migration: 0001_baseline_schema.js e 0002_create_alerts_again.js',
+    )
   })
 
   it('falha quando duas migrations criam a mesma collection', () => {

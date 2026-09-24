@@ -247,3 +247,16 @@
   - **Mecanismo de Proteção (Protocolo de Drafts):** Migrations passam a ser escritas e revisadas em `pocketbase/drafts/` e só são movidas para `pocketbase/migrations/` após aprovação explícita. A movimentação é o ato de aplicar.
   - **Atualização da ADR-019:** A regra "uma por vez, confirmar no schema antes da próxima" não é executável, porque não há passo de decisão entre commit e aplicação. Substitui-se pela regra de revisão obrigatória em `pocketbase/drafts/`.
 - **Consequências:** Elimina-se o risco de aplicação prematura ou acidental de migrations irreversíveis no banco live. Nenhuma alteração de schema chega ao diretório monitorado sem validação prévia em draft e aprovação formal.
+
+---
+
+## ADR-023: Baseline de Migrations e Limpeza da Base como Rota de Backend
+
+- **Status:** Aprovado (v0.0.126). Substitui a alocação de ordinais da ADR-019 e a nota histórica da ADR-020 para o projeto recriado.
+- **Contexto:** No projeto Skip original, o registro de migrations da plataforma divergiu do repositório: numeração própria (a `0001` do repositório constava como `0008`–`0010`), migrations aplicadas mais de uma vez, uma `updated_users.js` gerada pelo painel e duas pendências de `create_quotes` (`0027` e `0036`, esta sem arquivo) que travaram a fila de deploy sem ferramenta para descartá-las. Não havia dados de produção a preservar.
+- **Decisão:**
+  1. **Baseline única:** o schema passa a ser definido por `pocketbase/migrations/0001_baseline_schema.js`, que cria todas as collections no estado final. Ela reproduz o espelho do banco vivo (`src/lib/pocketbase/schema.json`), verificado pelo teste `src/test/baselineMigration.test.ts`, com uma diferença intencional: `international` em `assets.asset_class`, valor que o frontend já oferecia. As migrations antigas ficam em `docs/migrations-history/`, fora de execução.
+  2. **Projeto recriado:** o backend é recriado em um projeto Skip novo, conectado a este repositório, para que o registro de migrations comece vazio e corresponda exatamente aos arquivos. O projeto antigo é desconectado antes, para que só um projeto sincronize o repositório.
+  3. **Limpeza da base como rota:** a limpeza total da antiga `0024_production_total_reset.js` é premissa do sistema e precisa poder ser repetida. Como uma migration roda uma única vez por banco, ela passa a ser a rota `POST /backend/v1/admin/reset-data` (`pocketbase/hooks/admin_reset.js`), acionada pela tela `/admin/reset-dev`. A rota exige administrador ativo, `ALLOW_DATA_RESET=true` no servidor e a frase de confirmação, executa em transação e registra `SYSTEM_RESET` em `audit_logs`.
+  4. **Migrations só descrevem schema.** Operações sobre dados vão para rotas de backend.
+- **Consequências:** Ambientes novos saem idênticos entre si a partir de um único arquivo; o guard volta à sequência contínua a partir da `0001`; a próxima migration é a `0002`. A ADR-020 (vedação de editar `_migrations`) continua valendo.

@@ -27,6 +27,7 @@ import {
 import pb from '@/lib/pocketbase/client'
 import { formatDateBRL } from '@/lib/formatters'
 import { toast } from 'sonner'
+import { resetBusinessData } from '@/services/adminReset'
 
 const CONFIRMATION_PHRASE = 'LIMPAR AMBIENTE DESENVOLVIMENTO'
 
@@ -138,37 +139,26 @@ export default function AdminResetDevPage() {
 
     setExecuting(true)
     try {
-      // Como a limpeza total para início de produção foi executada de forma definitiva via migration de produção (0024),
-      // qualquer acionamento subsequente é protegido por alto atrito e auditado.
       const currentAuth = pb.authStore.record
       if (!currentAuth || currentAuth.role !== 'admin') {
-        throw new Error('Apenas administradores ativos podem solicitar higienização da base.')
+        throw new Error('Apenas administradores ativos podem executar a limpeza da base.')
       }
 
-      // Registrar auditoria adicional de solicitação de reset
-      await pb.collection('audit_logs').create({
-        user_id: currentAuth.id,
-        event_type: 'SYSTEM_RESET_REQUESTED',
-        severity: 'critical',
-        entity: 'system',
-        entity_id: 'admin_panel',
-        summary:
-          'Tentativa de acionamento manual de limpeza registrada pelo painel administrativo.',
-        details: {
-          requested_by: currentAuth.email,
-          total_business_records: totalBusinessRecords,
-          counts: recordsCount,
-          timestamp: new Date().toISOString(),
-        },
-      })
+      const result = await resetBusinessData(phraseInput.trim())
+      const totalDeleted = Object.values(result.deleted_counts || {}).reduce(
+        (acc, curr) => acc + curr,
+        0,
+      )
 
-      toast.success('Ambiente validado', {
-        description: 'A base já se encontra higienizada e pronta para início de produção.',
+      toast.success('Limpeza concluída', {
+        description: `${totalDeleted} registros removidos. Evento SYSTEM_RESET registrado na auditoria.`,
       })
       setModalOpen(false)
       loadStatus()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Falha ao processar solicitação'
+      const msg =
+        (err as { response?: { message?: string } })?.response?.message ||
+        (err instanceof Error ? err.message : 'Falha ao processar solicitação')
       toast.error('Erro na operação', { description: msg })
     } finally {
       setExecuting(false)
@@ -322,6 +312,10 @@ export default function AdminResetDevPage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>
                 Exige papel de <strong>Administrador Ativo</strong> devidamente autenticado.
+              </li>
+              <li>
+                Só funciona no ambiente em que o servidor tiver{' '}
+                <code className="font-mono">ALLOW_DATA_RESET=true</code>.
               </li>
               <li>
                 Exige digitação estrita da frase de confirmação de segurança:{' '}

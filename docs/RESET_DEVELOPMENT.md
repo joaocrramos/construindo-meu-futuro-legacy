@@ -55,31 +55,30 @@ Em caso de necessidade de reversão antes ou durante a aplicação de migrations
 
 ---
 
-## 4. Protocolo de Limpeza Controlada do Ambiente de Desenvolvimento (`/admin/reset-dev`)
+## 4. Limpeza Total da Base (`/admin/reset-dev`)
 
-> **AVISO DE GOVERNANÇA:** Esta operação está **PERMANENTEMENTE BLOQUEADA** em produção (`NODE_ENV === 'production'`) e só pode ser executada em ambiente de desenvolvimento devidamente autenticado como administrador.
+A limpeza é executada pela rota `POST /backend/v1/admin/reset-data` (`pocketbase/hooks/admin_reset.js`),
+acionada pela tela `/admin/reset-dev`. Ela substitui a antiga migration `0024_production_total_reset.js`
+e pode ser repetida sempre que necessário (ADR-023).
 
-### 4.1 Regras de Bloqueio Estrito
+### 4.1 Proteções
 
-1. **Gate de Ambiente:** Bloqueio imediato se `import.meta.env.PROD` ou `NODE_ENV === 'production'`.
-2. **Reautenticação do Administrador:** Confirmação de credenciais ativas.
-3. **Frase de Confirmação Obrigatória:** O administrador deve digitar exatamente a frase `LIMPAR AMBIENTE DESENVOLVIMENTO`.
-4. **Relatório Prévio (Dry-Run):** Apresentação da contagem de registros a serem eliminados antes da confirmação.
+1. **Administrador ativo:** a rota recusa qualquer usuário sem `role = admin` e `status = active`.
+2. **Habilitação por ambiente:** só funciona se o servidor tiver a variável `ALLOW_DATA_RESET=true`. Sem ela, responde `RESET_DISABLED`. Defina a variável apenas nos ambientes em que a limpeza deve ser possível.
+3. **Frase de confirmação:** o corpo da requisição deve conter exatamente `LIMPAR AMBIENTE DESENVOLVIMENTO`.
+4. **Transação:** ou todas as collections são limpas, ou nenhuma alteração é aplicada.
+5. **Contagem prévia:** a tela mostra quantos registros existem em cada collection antes da confirmação.
 
-### 4.2 O Que É Preservado Obrigatoriamente (Nunca Apagar)
+### 4.2 O que é apagado
 
-- O schema do banco de dados e todas as collections criadas.
-- Todas as migrations registradas na tabela do sistema.
-- Todos os arquivos de pb_hooks, rotas e regras de RLS.
-- Os registros de usuários e contas de Administrador.
-- A trilha de auditoria essencial de governança.
+Todos os registros de `alerts`, `account_balances`, `movements`, `positions`, `accounts`, `assets`,
+`institutions`, `portfolios`, `invitations` e `audit_logs`, nessa ordem, como na antiga 0024.
 
-### 4.3 O Que É Higienizado em Ambiente Autorizado
+A trilha de auditoria anterior (`audit_logs`) também é apagada. Logo após a limpeza, dentro da mesma
+transação, é gravado um novo registro `SYSTEM_RESET` (severidade `critical`) com o administrador
+responsável, o horário e a contagem apagada por collection.
 
-- Registros nas collections de domínio: `portfolios`, `institutions`, `accounts`, `account_balances`, `assets`, `positions`, `movements`, `transfers`, `quotes`, `wealth_goals`, `consolidations`.
-- Convites pendentes ou expirados na collection `invitations`.
-- Arquivos e avatares de teste temporários.
+### 4.3 O que é preservado
 
-### 4.4 Auditoria Mandatória
-
-Ao concluir a limpeza (ou em caso de falha), um registro de severidade `CRITICAL` é gravado na collection `audit_logs` com timestamp UTC, ID do administrador solicitante e contagem de registros expurgados.
+- A collection `users` (usuários e administradores).
+- O schema, as migrations aplicadas, os hooks e as regras de acesso.
