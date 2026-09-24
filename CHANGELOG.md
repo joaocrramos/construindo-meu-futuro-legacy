@@ -4,6 +4,21 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.107] - 2026-09-24 (Correção definitiva de timeout e isolamento de fake timers em overviewPages)
+
+### Corrigido (Fixed)
+
+- **Fake Timers e Prevenção de Cascata de Timeouts (`src/test/overviewPages.test.tsx` e `src/test/setup.ts`)**:
+  - Configurado `vi.useFakeTimers({ shouldAdvanceTime: true })` no teste de fuso de `DueDatesOverviewPage`, permitindo que os intervalos e timers internos do `waitFor` avancem em tempo real sem travar a resolução assíncrona.
+  - Adicionado `afterEach(() => { vi.useRealTimers() })` na suíte de testes de `overviewPages.test.tsx` e no setup global (`src/test/setup.ts`), garantindo restauração imediata dos timers reais mesmo em caso de falha de asserção, eliminando vazamento de estado e efeito dominó/cascata em testes subsequentes.
+  - Preservadas integralmente todas as asserções de fuso e vencimento ("30/09/2026", ausência de "29/09/2026", "10 dias restantes", "Em 10 dias").
+- **Mock Parcial dos Serviços `portfolios` e `alerts` (`src/test/overviewPages.test.tsx`)**:
+  - Aplicado mock parcial com factory assíncrona e `importOriginal` para `@/services/portfolios` e `@/services/alerts`, preservando constantes exportadas (`ALERT_TYPE_LABELS`, `ALERT_SEVERITY_LABELS`) e impedindo que o automock do Vitest esvazie arrays e mapeamentos.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.107` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.106] - 2026-09-24 (Remoção de artefatos de debug commitados por engano)
 
 ### Removido (Removed)

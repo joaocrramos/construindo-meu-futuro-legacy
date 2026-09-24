@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -24,8 +24,23 @@ vi.mock('@/services/positions')
 vi.mock('@/services/movements')
 vi.mock('@/services/accounts')
 vi.mock('@/services/assets')
-vi.mock('@/services/portfolios')
-vi.mock('@/services/alerts')
+vi.mock('@/services/portfolios', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/portfolios')>()
+  return {
+    ...actual,
+    listPortfolios: vi.fn(),
+  }
+})
+vi.mock('@/services/alerts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/alerts')>()
+  return {
+    ...actual,
+    listAlerts: vi.fn(),
+    markAlertRead: vi.fn(),
+    markAllAlertsRead: vi.fn(),
+    triggerAlertsCheck: vi.fn(),
+  }
+})
 
 // Mock do ResizeObserver e componentes de chart para ambiente JSDOM
 global.ResizeObserver = class ResizeObserver {
@@ -40,6 +55,10 @@ describe('Telas de Overview conectadas a dados reais', () => {
     vi.mocked(movService.formatQuantityE8).mockImplementation((e8) =>
       e8 ? String(e8 / 100000000) : '0',
     )
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('1. Dashboard (/dashboard)', () => {
@@ -589,7 +608,8 @@ describe('Telas de Overview conectadas a dados reais', () => {
 
     it('calcula daysRemaining e data de vencimento civil 2026-09-30 sem deslocamento de fuso', async () => {
       // Mock do relógio para data fixa conhecida: 2026-09-20T22:30:00 (noite em UTC-3)
-      vi.useFakeTimers()
+      // shouldAdvanceTime: true permite que timers de microtasks/macrotasks (incluindo waitFor) avancem normalmente
+      vi.useFakeTimers({ shouldAdvanceTime: true })
       vi.setSystemTime(new Date(2026, 8, 20, 22, 30, 0)) // 20 de setembro de 2026, 22h30
 
       vi.mocked(posService.listPositions).mockResolvedValue([

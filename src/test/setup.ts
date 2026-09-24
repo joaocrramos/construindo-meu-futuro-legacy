@@ -1,4 +1,4 @@
-import { afterEach, beforeAll } from 'vitest'
+import { afterEach, beforeAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 beforeAll(() => {
@@ -49,4 +49,5 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
 })
