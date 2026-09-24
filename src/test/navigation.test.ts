@@ -21,21 +21,47 @@ describe('Configuração da Navegação Estrutural', () => {
     expect(titles).toContain('Atividades Recentes')
   })
 
-  it('deve conter todos os 11 subitens de Patrimônio', () => {
+  it('deve conter os itens de Patrimônio na ordem exata especificada com submenu Cadastros', () => {
     const wealth = navigationConfig.find((s) => s.id === 'wealth')
     expect(wealth).toBeDefined()
     const titles = wealth?.items.map((i) => i.title)
-    expect(titles).toContain('Carteiras')
-    expect(titles).toContain('Instituições')
-    expect(titles).toContain('Contas')
-    expect(titles).toContain('Ativos')
-    expect(titles).toContain('Posições')
-    expect(titles).toContain('Movimentações')
-    expect(titles).toContain('Transferências')
-    expect(titles).toContain('Cotações')
-    expect(titles).toContain('Vencimentos')
-    expect(titles).toContain('Metas')
-    expect(titles).toContain('Consolidação Patrimonial')
+    expect(titles).toEqual([
+      'Posições',
+      'Movimentações',
+      'Transferências',
+      'Vencimentos',
+      'Cadastros',
+      'Consolidação Patrimonial',
+    ])
+
+    // Valida rotas dos itens raiz de Patrimônio
+    const positions = wealth?.items.find((i) => i.title === 'Posições')
+    expect(positions?.href).toBe('/wealth/positions')
+    const movements = wealth?.items.find((i) => i.title === 'Movimentações')
+    expect(movements?.href).toBe('/wealth/movements')
+    const transfers = wealth?.items.find((i) => i.title === 'Transferências')
+    expect(transfers?.href).toBe('/wealth/transfers')
+    const maturities = wealth?.items.find((i) => i.title === 'Vencimentos')
+    expect(maturities?.href).toBe('/wealth/maturities')
+    const consolidation = wealth?.items.find((i) => i.title === 'Consolidação Patrimonial')
+    expect(consolidation?.href).toBe('/wealth/consolidation')
+
+    // Valida submenu Cadastros (sem href direto e com os 4 filhos)
+    const cadastros = wealth?.items.find((i) => i.title === 'Cadastros')
+    expect(cadastros).toBeDefined()
+    expect(cadastros?.href).toBeUndefined()
+    expect(cadastros?.children).toBeDefined()
+
+    const childTitles = cadastros?.children?.map((c) => c.title)
+    expect(childTitles).toEqual(['Instituições', 'Contas', 'Carteiras', 'Metas'])
+
+    const childHrefs = cadastros?.children?.map((c) => c.href)
+    expect(childHrefs).toEqual([
+      '/wealth/institutions',
+      '/wealth/accounts',
+      '/wealth/portfolios',
+      '/wealth/goals',
+    ])
   })
 
   it('deve conter a área de Administração protegida por requireAdmin', () => {
@@ -78,5 +104,15 @@ describe('Configuração da Navegação Estrutural', () => {
     expect(titles).not.toContain('Alteração de Senha')
     expect(titles).not.toContain('Preferências de Aparência')
     expect(titles).not.toContain('Aparência')
+  })
+
+  it('deve permitir expansão e colapso de submenu nos metadados de navegação', () => {
+    const wealth = navigationConfig.find((s) => s.id === 'wealth')
+    const cadastros = wealth?.items.find((i) => i.title === 'Cadastros')
+    expect(cadastros).toBeDefined()
+    expect(cadastros?.children).toHaveLength(4)
+    expect(
+      cadastros?.children?.every((child) => Boolean(child.href && child.title && child.icon)),
+    ).toBe(true)
   })
 })

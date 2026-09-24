@@ -4,6 +4,40 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.112] - 2026-09-24 (Organização do menu Patrimônio com submenu expansível Cadastros e ícone de lixeira para Desativar)
+
+### Modificado (Changed)
+
+- **Reorganização do Menu Lateral de Patrimônio (`src/config/navigation.ts`)**:
+  - Reordenada a seção Patrimônio para a estrutura solicitada:
+    1. Posições (`/wealth/positions`)
+    2. Movimentações (`/wealth/movements`)
+    3. Transferências (`/wealth/transfers`)
+    4. Vencimentos (`/wealth/maturities`)
+    5. Submenu Cadastros (sem `href`, com 4 filhos: Instituições `/wealth/institutions`, Contas `/wealth/accounts`, Carteiras `/wealth/portfolios`, Metas `/wealth/goals`)
+    6. Consolidação Patrimonial (`/wealth/consolidation`)
+  - Atualizada a interface `NavItem` com suporte a `children?: NavItem[]` e `href` opcional.
+  - Rotas de Ativos (`/wealth/assets`) e Cotações (`/wealth/quotes`) permanecem ativas na aplicação (`App.tsx`).
+- **Submenu Expansível e Contraível (`src/components/AppLayout.tsx`)**:
+  - Implementado gatilho com chevron animado para o submenu "Cadastros" tanto na sidebar desktop quanto no menu mobile (drawer).
+  - Estado aberto/fechado com persistência em `sessionStorage` (`cmf_nav_cadastros_open`).
+  - Abertura automática quando a rota corrente for uma das páginas filhas de Cadastros.
+  - Subitens renderizados com recuo visual (`pl-6`, tipografia compacta `text-[11px]`).
+- **Substituição do Botão "Desativar" por Ícone de Lixeira (`Trash2`)**:
+  - Aplicado nas tabelas de listagem de 3 telas patrimoniais:
+    - `src/pages/wealth/Institutions.tsx`: botão icon-only `h-7 w-7 p-0` com `<Trash2 className="h-3.5 w-3.5" />`, `title="Desativar"` e `aria-label="Desativar instituição"`.
+    - `src/pages/wealth/Accounts.tsx`: botão icon-only `h-7 w-7 p-0` com `<Trash2 className="h-3.5 w-3.5" />`, `title="Desativar"` e `aria-label="Desativar conta"`.
+    - `src/pages/wealth/Assets.tsx`: botão icon-only `h-7 w-7 p-0` com `<Trash2 className="h-3.5 w-3.5" />`, `title="Desativar"` e `aria-label="Desativar ativo"`.
+  - Preservados os botões texto "Ativar" para registros inativos, o acionamento de `toggleTarget` e o modal `ConfirmDialog` de confirmação de segurança.
+- **Suíte de Testes Automatizados**:
+  - `src/test/navigation.test.ts`: testes atualizados para validar a nova sequência exata de itens e subitens do menu Patrimônio.
+  - `src/test/appLayoutSubmenu.test.tsx`: novo teste de componente validando expandir/contrair, persistência em `sessionStorage` e auto-abertura por rota filha.
+  - `src/test/wealthInstitutionsAccounts.test.tsx` e `src/test/wealthAssetsPositionsMovements.test.tsx`: testes adicionados para validar botões de lixeira (`Trash2`) com `title="Desativar"` e seus respectivos `aria-label`.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.112` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.111] - 2026-09-24 (Preenchimento automático de last_login via hook onRecordAuthRequest)
 
 ### Corrigido (Fixed)

@@ -73,7 +73,47 @@ describe('CRUD de Instituições Financeiras', () => {
     })
   })
 
-  it('3. Criação de instituição com tratamento de duplicidade amigável em português', async () => {
+  it('3. Exibe botão ícone Trash2 para desativar instituição ativa e botão Ativar para inativa', async () => {
+    vi.mocked(instService.listInstitutions).mockResolvedValue([
+      {
+        id: 'inst_1',
+        user_id: 'usr_1',
+        name: 'Banco Itaú',
+        institution_type: 'bank',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'inst_2',
+        user_id: 'usr_1',
+        name: 'XP Investimentos',
+        institution_type: 'broker',
+        is_active: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <InstitutionsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      // Instituição ativa tem botão icon-only com aria-label "Desativar instituição" e title "Desativar"
+      const deactivateBtn = screen.getByRole('button', { name: /Desativar instituição/i })
+      expect(deactivateBtn).not.toBeNull()
+      expect(deactivateBtn.getAttribute('title')).toBe('Desativar')
+
+      // Instituição inativa mantém botão texto "Ativar"
+      const activateBtn = screen.getByRole('button', { name: /^Ativar$/i })
+      expect(activateBtn).not.toBeNull()
+    })
+  })
+
+  it('4. Criação de instituição com tratamento de duplicidade amigável em português', async () => {
     vi.mocked(instService.listInstitutions).mockResolvedValue([])
     vi.mocked(instService.createInstitution).mockRejectedValue(
       new Error('Você já possui uma instituição com este nome.'),
@@ -102,7 +142,7 @@ describe('CRUD de Instituições Financeiras', () => {
     })
   })
 
-  it('4. Modal de instituição renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
+  it('5. Modal de instituição renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
     vi.mocked(instService.listInstitutions).mockResolvedValue([])
     vi.mocked(instService.createInstitution).mockResolvedValue({
       id: 'inst_new',
@@ -244,7 +284,62 @@ describe('CRUD de Contas & Custódias', () => {
     })
   })
 
-  it('3. Modal de conta renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
+  it('3. Exibe botão ícone Trash2 para desativar conta ativa e botão Ativar para conta inativa', async () => {
+    vi.mocked(instService.listInstitutions).mockResolvedValue([
+      {
+        id: 'inst_1',
+        user_id: 'usr_1',
+        name: 'Banco Itaú',
+        institution_type: 'bank',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_1',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Conta Ativa',
+        account_type: 'checking',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'acc_2',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Conta Inativa',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
+
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      const deactivateBtn = screen.getByRole('button', { name: /Desativar conta/i })
+      expect(deactivateBtn).not.toBeNull()
+      expect(deactivateBtn.getAttribute('title')).toBe('Desativar')
+
+      const activateBtn = screen.getByRole('button', { name: /^Ativar$/i })
+      expect(activateBtn).not.toBeNull()
+    })
+  })
+
+  it('4. Modal de conta renderiza Checkbox do design system com label associado e permite alternar estado', async () => {
     vi.mocked(accService.listAccounts).mockResolvedValue([])
     vi.mocked(balService.listAccountBalances).mockResolvedValue([])
     vi.mocked(instService.listInstitutions).mockResolvedValue([

@@ -107,7 +107,49 @@ describe('CRUD de Ativos (/wealth/assets)', () => {
     })
   })
 
-  it('3. Criação de ativo trata duplicidade de ticker com mensagem amigável', async () => {
+  it('3. Exibe botão ícone Trash2 para desativar ativo ativo e botão Ativar para ativo inativo', async () => {
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_1',
+        user_id: 'usr_1',
+        ticker: 'PETR4',
+        name: 'Petróleo Brasileiro S.A.',
+        asset_class: 'equities',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'ast_2',
+        user_id: 'usr_1',
+        ticker: 'HGLG11',
+        name: 'CSHG Logística FII',
+        asset_class: 'real_estate_funds',
+        currency: 'BRL',
+        is_active: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    render(
+      <MemoryRouter>
+        <AssetsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      const deactivateBtn = screen.getByRole('button', { name: /Desativar ativo/i })
+      expect(deactivateBtn).not.toBeNull()
+      expect(deactivateBtn.getAttribute('title')).toBe('Desativar')
+
+      const activateBtn = screen.getByRole('button', { name: /^Ativar$/i })
+      expect(activateBtn).not.toBeNull()
+    })
+  })
+
+  it('4. Criação de ativo trata duplicidade de ticker com mensagem amigável', async () => {
     vi.mocked(assetService.listAssets).mockResolvedValue([])
     vi.mocked(assetService.createAsset).mockRejectedValue(
       new Error('Você já possui um ativo com este ticker.'),
@@ -149,7 +191,7 @@ describe('CRUD de Ativos (/wealth/assets)', () => {
     })
   })
 
-  it('4. Cadastro de ativo de Renda Fixa define Tipo/Subtipo e rentabilidade na criação', async () => {
+  it('5. Cadastro de ativo de Renda Fixa define Tipo/Subtipo e rentabilidade na criação', async () => {
     vi.mocked(assetService.listAssets).mockResolvedValue([])
     vi.mocked(assetService.createAsset).mockResolvedValue({
       id: 'ast_cdb_new',

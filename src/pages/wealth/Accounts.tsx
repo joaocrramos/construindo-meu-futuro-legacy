@@ -2,7 +2,16 @@ import * as React from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/EmptyState'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { CreditCard, Plus, Edit2, Building2, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import {
+  CreditCard,
+  Plus,
+  Edit2,
+  Trash2,
+  Building2,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -477,18 +486,27 @@ export default function AccountsPage() {
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-7 px-2 text-xs ${
-                              acc.is_active
-                                ? 'text-destructive hover:text-destructive hover:bg-destructive/10'
-                                : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10'
-                            }`}
-                            onClick={() => setToggleTarget(acc)}
-                          >
-                            {acc.is_active ? 'Desativar' : 'Ativar'}
-                          </Button>
+                          {acc.is_active ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setToggleTarget(acc)}
+                              title="Desativar"
+                              aria-label="Desativar conta"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                              onClick={() => setToggleTarget(acc)}
+                            >
+                              Ativar
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

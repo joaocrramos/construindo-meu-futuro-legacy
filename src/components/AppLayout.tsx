@@ -22,6 +22,7 @@ import {
   Laptop,
   Menu,
   ChevronRight,
+  ChevronDown,
   User,
   Palette,
   Sparkles,
@@ -35,6 +36,57 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const mainRef = React.useRef<HTMLElement>(null)
+
+  // Submenu "Cadastros" expansível/contraível
+  const isCadastrosChildActive = React.useMemo(() => {
+    return [
+      '/wealth/institutions',
+      '/wealth/accounts',
+      '/wealth/portfolios',
+      '/wealth/goals',
+    ].includes(location.pathname)
+  }, [location.pathname])
+
+  const [cadastrosOpen, setCadastrosOpen] = React.useState<boolean>(() => {
+    try {
+      const saved = sessionStorage.getItem('cmf_nav_cadastros_open')
+      if (saved !== null) {
+        return saved === 'true'
+      }
+    } catch {
+      // sessionStorage pode não estar disponível em ambientes isolados
+    }
+    return [
+      '/wealth/institutions',
+      '/wealth/accounts',
+      '/wealth/portfolios',
+      '/wealth/goals',
+    ].includes(location.pathname)
+  })
+
+  // Se navegar para uma das rotas filhas, garante que o submenu esteja aberto
+  React.useEffect(() => {
+    if (isCadastrosChildActive) {
+      setCadastrosOpen(true)
+      try {
+        sessionStorage.setItem('cmf_nav_cadastros_open', 'true')
+      } catch {
+        // no-op
+      }
+    }
+  }, [isCadastrosChildActive])
+
+  const toggleCadastros = () => {
+    setCadastrosOpen((prev) => {
+      const next = !prev
+      try {
+        sessionStorage.setItem('cmf_nav_cadastros_open', String(next))
+      } catch {
+        // no-op
+      }
+      return next
+    })
+  }
 
   // Gestão de foco acessível na troca de rotas
   React.useEffect(() => {
@@ -111,12 +163,74 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 {section.items
                   .filter((item) => !item.requireAdmin || (item.requireAdmin && isAdmin))
                   .map((item) => {
+                    // Item com submenu (ex.: Cadastros)
+                    if (item.children && item.children.length > 0) {
+                      const Icon = item.icon
+                      const isOpen = cadastrosOpen
+                      return (
+                        <div key={item.title} className="space-y-0.5">
+                          <button
+                            type="button"
+                            onClick={toggleCadastros}
+                            aria-expanded={isOpen}
+                            aria-label={`${item.title} submenu`}
+                            className={`w-full group flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-all text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer ${
+                              isCadastrosChildActive ? 'text-foreground font-semibold' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+                              <span className="truncate">{item.title}</span>
+                            </div>
+                            <ChevronDown
+                              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${
+                                isOpen ? 'rotate-180 text-foreground' : 'text-muted-foreground'
+                              }`}
+                            />
+                          </button>
+                          {isOpen && (
+                            <div className="space-y-0.5 pl-6 pt-0.5">
+                              {item.children
+                                .filter(
+                                  (child) => !child.requireAdmin || (child.requireAdmin && isAdmin),
+                                )
+                                .map((child) => {
+                                  const isChildActive = location.pathname === child.href
+                                  const ChildIcon = child.icon
+                                  return (
+                                    <Link
+                                      key={child.href || child.title}
+                                      to={child.href || '#'}
+                                      aria-current={isChildActive ? 'page' : undefined}
+                                      className={`group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all ${
+                                        isChildActive
+                                          ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
+                                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                      }`}
+                                    >
+                                      <ChildIcon
+                                        className={`h-3.5 w-3.5 shrink-0 ${
+                                          isChildActive
+                                            ? 'text-primary-foreground'
+                                            : 'text-muted-foreground group-hover:text-foreground'
+                                        }`}
+                                      />
+                                      <span className="truncate">{child.title}</span>
+                                    </Link>
+                                  )
+                                })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+
                     const isActive = location.pathname === item.href
                     const Icon = item.icon
                     return (
                       <Link
-                        key={item.href}
-                        to={item.href}
+                        key={item.href || item.title}
+                        to={item.href || '#'}
                         aria-current={isActive ? 'page' : undefined}
                         className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
                           isActive
@@ -241,12 +355,71 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         {section.items
                           .filter((item) => !item.requireAdmin || (item.requireAdmin && isAdmin))
                           .map((item) => {
+                            if (item.children && item.children.length > 0) {
+                              const Icon = item.icon
+                              const isOpen = cadastrosOpen
+                              return (
+                                <div key={item.title} className="space-y-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={toggleCadastros}
+                                    aria-expanded={isOpen}
+                                    aria-label={`${item.title} submenu`}
+                                    className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground ${
+                                      isCadastrosChildActive ? 'text-foreground font-semibold' : ''
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <Icon className="h-4 w-4" />
+                                      <span>{item.title}</span>
+                                    </div>
+                                    <ChevronDown
+                                      className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                                        isOpen
+                                          ? 'rotate-180 text-foreground'
+                                          : 'text-muted-foreground'
+                                      }`}
+                                    />
+                                  </button>
+                                  {isOpen && (
+                                    <div className="space-y-0.5 pl-6 pt-0.5">
+                                      {item.children
+                                        .filter(
+                                          (child) =>
+                                            !child.requireAdmin || (child.requireAdmin && isAdmin),
+                                        )
+                                        .map((child) => {
+                                          const isChildActive = location.pathname === child.href
+                                          const ChildIcon = child.icon
+                                          return (
+                                            <Link
+                                              key={child.href || child.title}
+                                              to={child.href || '#'}
+                                              aria-current={isChildActive ? 'page' : undefined}
+                                              onClick={() => setMobileOpen(false)}
+                                              className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                                                isChildActive
+                                                  ? 'bg-primary text-primary-foreground font-semibold'
+                                                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                              }`}
+                                            >
+                                              <ChildIcon className="h-3.5 w-3.5" />
+                                              <span>{child.title}</span>
+                                            </Link>
+                                          )
+                                        })}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
+
                             const isActive = location.pathname === item.href
                             const Icon = item.icon
                             return (
                               <Link
-                                key={item.href}
-                                to={item.href}
+                                key={item.href || item.title}
+                                to={item.href || '#'}
                                 aria-current={isActive ? 'page' : undefined}
                                 onClick={() => setMobileOpen(false)}
                                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${

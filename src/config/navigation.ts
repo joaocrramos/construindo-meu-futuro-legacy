@@ -9,11 +9,9 @@ import {
   Wallet,
   Building2,
   CreditCard,
-  Coins,
   Layers,
   ArrowLeftRight,
   ArrowUpDown,
-  LineChart,
   FolderTree,
   Users,
   Mail,
@@ -33,11 +31,12 @@ import {
 
 export interface NavItem {
   title: string
-  href: string
+  href?: string
   icon: LucideIcon
   badge?: string
   description?: string
   requireAdmin?: boolean
+  children?: NavItem[]
 }
 
 export interface NavSection {
@@ -107,30 +106,6 @@ export const navigationConfig: NavSection[] = [
     title: 'Patrimônio',
     items: [
       {
-        title: 'Carteiras',
-        href: '/wealth/portfolios',
-        icon: FolderTree,
-        description: 'Agrupamentos estratégicos de ativos',
-      },
-      {
-        title: 'Instituições',
-        href: '/wealth/institutions',
-        icon: Building2,
-        description: 'Bancos, corretoras e custodiantes parceiros',
-      },
-      {
-        title: 'Contas',
-        href: '/wealth/accounts',
-        icon: CreditCard,
-        description: 'Contas bancárias, corretagem e contas globais',
-      },
-      {
-        title: 'Ativos',
-        href: '/wealth/assets',
-        icon: Coins,
-        description: 'Catálogo de instrumentos financeiros cadastrados',
-      },
-      {
         title: 'Posições',
         href: '/wealth/positions',
         icon: Layers,
@@ -149,22 +124,41 @@ export const navigationConfig: NavSection[] = [
         description: 'Remessas entre contas e instituições próprias',
       },
       {
-        title: 'Cotações',
-        href: '/wealth/quotes',
-        icon: LineChart,
-        description: 'Preços de fechamento e atualizações de mercado',
-      },
-      {
         title: 'Vencimentos',
         href: '/wealth/maturities',
         icon: Calendar,
         description: 'Controle de liquidez por data de vencimento',
       },
       {
-        title: 'Metas',
-        href: '/wealth/goals',
-        icon: Target,
-        description: 'Planejamento de independência e patrimônio alvo',
+        title: 'Cadastros',
+        icon: FolderTree,
+        description: 'Cadastros básicos: instituições, contas, carteiras e metas',
+        children: [
+          {
+            title: 'Instituições',
+            href: '/wealth/institutions',
+            icon: Building2,
+            description: 'Bancos, corretoras e custodiantes parceiros',
+          },
+          {
+            title: 'Contas',
+            href: '/wealth/accounts',
+            icon: CreditCard,
+            description: 'Contas bancárias, corretagem e contas globais',
+          },
+          {
+            title: 'Carteiras',
+            href: '/wealth/portfolios',
+            icon: FolderTree,
+            description: 'Agrupamentos estratégicos de ativos',
+          },
+          {
+            title: 'Metas',
+            href: '/wealth/goals',
+            icon: Target,
+            description: 'Planejamento de independência e patrimônio alvo',
+          },
+        ],
       },
       {
         title: 'Consolidação Patrimonial',
