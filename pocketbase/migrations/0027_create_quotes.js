@@ -1,6 +1,5 @@
 migrate(
   (app) => {
-    // Idempotência: não recriar se a collection quotes já existir
     if (app.hasTable('quotes')) {
       return
     }
@@ -14,42 +13,15 @@ migrate(
       updateRule: null,
       deleteRule: null,
       fields: [
-        {
-          name: 'ticker',
-          type: 'text',
-          required: true,
-        },
-        {
-          name: 'price_cents',
-          type: 'number',
-          required: true,
-          onlyInt: true,
-        },
-        {
-          name: 'currency',
-          type: 'text',
-          required: true,
-        },
-        {
-          name: 'quoted_at',
-          type: 'date',
-          required: false,
-        },
-        {
-          name: 'change_percent',
-          type: 'number',
-          required: false,
-        },
-        {
-          name: 'source',
-          type: 'text',
-          required: false,
-        },
-        {
-          name: 'raw_data',
-          type: 'json',
-          required: false,
-        },
+        { name: 'ticker', type: 'text', required: true, min: 1, max: 30 },
+        { name: 'price_cents', type: 'number', required: true, onlyInt: true },
+        { name: 'currency', type: 'text', required: true, min: 3, max: 3 },
+        { name: 'quoted_at', type: 'date', required: false },
+        { name: 'change_percent', type: 'number', required: false },
+        { name: 'source', type: 'text', required: false },
+        { name: 'raw_data', type: 'json', required: false },
+        { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
+        { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
       ],
       indexes: ['CREATE UNIQUE INDEX idx_quotes_ticker ON quotes (ticker)'],
     })
