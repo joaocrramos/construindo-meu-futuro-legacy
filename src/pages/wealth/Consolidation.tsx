@@ -94,8 +94,14 @@ export default function ConsolidationPage() {
   }
 
   // Câmbio atual obtido da brapi.dev
-  const usdRate = React.useMemo(() => getFxRate('USD', 'BRL', quotes) ?? getExchangeRateToBRL(quotes, 'USD'), [quotes])
-  const eurRate = React.useMemo(() => getFxRate('EUR', 'BRL', quotes) ?? getExchangeRateToBRL(quotes, 'EUR'), [quotes])
+  const usdRate = React.useMemo(
+    () => getFxRate('USD', 'BRL', quotes) ?? getExchangeRateToBRL(quotes, 'USD'),
+    [quotes],
+  )
+  const eurRate = React.useMemo(
+    () => getFxRate('EUR', 'BRL', quotes) ?? getExchangeRateToBRL(quotes, 'EUR'),
+    [quotes],
+  )
 
   // Data da cotação de câmbio
   const exchangeDate = React.useMemo(() => {
