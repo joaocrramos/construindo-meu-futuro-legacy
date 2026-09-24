@@ -4,6 +4,31 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.108] - 2026-09-24 (Envio de e-mail transacional via Resend para novos alertas de vencimento crítico)
+
+### Adicionado (Added)
+
+- **Envio de E-mail via Resend para Alertas de Vencimento Crítico (`pocketbase/hooks/alerts.js`)**:
+  - Implementado disparo automático de e-mail transacional via API do Resend no cron diário (`daily_alerts_check`) e no endpoint de acionamento manual (`POST /backend/v1/alerts/run-check`) quando nasce um alerta NOVO com severidade `critical`.
+  - Escala de severidade de vencimentos parametrizada e documentada:
+    - Vencimento hoje (`diffDays === 0`, tipo `maturity_today`): severidade `critical` (dispara e-mail imediato).
+    - Vencimento em 7 dias (`diffDays === 7`, tipo `maturity_upcoming`): severidade `critical` (dispara e-mail imediato).
+    - Vencimento em 15 dias (`diffDays === 15`, tipo `maturity_upcoming`): severidade `warn`.
+    - Vencimento em 30 dias (`diffDays === 30`, tipo `maturity_upcoming`): severidade `info`.
+  - Consistência total com o padrão de integração HTTP do Resend já adotado no hook `invitations.js` utilizando variáveis `$os.getenv` (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME`, `SITE_URL`).
+  - Respeito à anti-duplicidade do motor: alertas pré-existentes nunca disparam novos e-mails.
+  - Template de e-mail focado e elegante em pt-BR com assunto `⚠️ Vencimento crítico: [nome do ativo] [em X dias | hoje]`, valor financeiro aplicado em R$, data civil formatada sem deslocamento de fuso e link para `/overview/alerts`.
+  - Resiliência: falha no envio de e-mail nunca interrompe a verificação nem a criação dos registros em banco, logando os sucessos e eventuais falhas com identificação do usuário e alerta.
+- **Suíte de Testes Automatizados (`src/test/alertsPage.test.tsx`)**:
+  - Adicionados testes conceituais e integrados para o disparo do e-mail de alerta crítico via Resend:
+    - 1. Alerta crítico novo dispara e-mail com parâmetros e formatação corretos.
+    - 2. Alerta repetido é ignorado pela anti-duplicidade sem reenvio de e-mail.
+    - 3. Falha ou exceção no Resend não quebra o fluxo de verificação e registra log de advertência.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.108` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.107] - 2026-09-24 (Correção definitiva de timeout e isolamento de fake timers em overviewPages)
 
 ### Corrigido (Fixed)

@@ -80,16 +80,34 @@ cronAdd('daily_alerts_check', '0 6 * * *', () => {
       // Formatação simples da data para dd/mm/aaaa
       const dateFormatted = `${posDateParts[2]}/${posDateParts[1]}/${posDateParts[0]}`
 
+      // Escala de severidade de vencimento do motor de alertas:
+      // - diffDays === 0: 'maturity_today', severidade 'critical' (vence hoje: ação imediata requerida)
+      // - diffDays === 7: 'maturity_upcoming', severidade 'critical' (última semana: vencimento iminente)
+      // - diffDays === 15: 'maturity_upcoming', severidade 'warn'
+      // - diffDays === 30: 'maturity_upcoming', severidade 'info'
+      //
+      // Regra de disparo de e-mail transacional imediato via Resend:
+      // Disparado exclusivamente quando um alerta NOVO nasce com severidade 'critical' (diffDays === 0 ou diffDays === 7).
       if (diffDays === 0) {
         alertType = 'maturity_today'
-        alertSeverity = 'warn'
+        alertSeverity = 'critical'
         alertTitle = `Vencimento Hoje: ${assetTicker}`
         alertMessage = `O título ${assetTicker} vence hoje (${dateFormatted}). Lembre-se de verificar o resgate ou reinvestimento.`
-      } else if (diffDays === 30 || diffDays === 15 || diffDays === 7) {
+      } else if (diffDays === 7) {
         alertType = 'maturity_upcoming'
-        alertSeverity = diffDays === 7 ? 'warn' : 'info'
-        alertTitle = `Vencimento em ${diffDays} dias: ${assetTicker}`
-        alertMessage = `O título ${assetTicker} vencerá em ${diffDays} dias (${dateFormatted}). Planeje a alocação dos recursos.`
+        alertSeverity = 'critical'
+        alertTitle = `Vencimento em 7 dias: ${assetTicker}`
+        alertMessage = `O título ${assetTicker} vencerá em 7 dias (${dateFormatted}). Planeje a alocação dos recursos.`
+      } else if (diffDays === 15) {
+        alertType = 'maturity_upcoming'
+        alertSeverity = 'warn'
+        alertTitle = `Vencimento em 15 dias: ${assetTicker}`
+        alertMessage = `O título ${assetTicker} vencerá em 15 dias (${dateFormatted}). Planeje a alocação dos recursos.`
+      } else if (diffDays === 30) {
+        alertType = 'maturity_upcoming'
+        alertSeverity = 'info'
+        alertTitle = `Vencimento em 30 dias: ${assetTicker}`
+        alertMessage = `O título ${assetTicker} vencerá em 30 dias (${dateFormatted}). Planeje a alocação dos recursos.`
       }
 
       if (alertType) {
@@ -128,6 +146,138 @@ cronAdd('daily_alerts_check', '0 6 * * *', () => {
               message: alertMessage,
               severity: alertSeverity,
             })
+
+            // Disparo imediato de e-mail via Resend para novos alertas CRÍTICOS
+            if (alertSeverity === 'critical') {
+              try {
+                const resendApiKey = ($os.getenv('RESEND_API_KEY') || '').trim()
+                const resendFromEmail = (
+                  $os.getenv('RESEND_FROM_EMAIL') || 'contato@construindomeufuturo.com'
+                ).trim()
+                const resendFromName = (
+                  $os.getenv('RESEND_FROM_NAME') || 'Construindo Meu Futuro'
+                ).trim()
+                const siteUrl = (
+                  $os.getenv('SITE_URL') || 'https://construindomeufuturo.com'
+                ).replace(/\/+$/, '')
+
+                if (!resendApiKey) {
+                  console.log(
+                    '[WARN][ALERTS_CRON] RESEND_API_KEY ausente. E-mail de alerta crítico ignorado para user ' +
+                      userId +
+                      ' (alerta: ' +
+                      newAlert.id +
+                      ').',
+                  )
+                } else {
+                  let userEmail = ''
+                  let userName = 'Investidor(a)'
+                  try {
+                    const userRec = $app.findRecordById('users', userId)
+                    userEmail = (userRec.getString('email') || '').trim()
+                    userName = userRec.getString('name') || 'Investidor(a)'
+                  } catch (uErr) {
+                    console.log(
+                      '[WARN][ALERTS_CRON] Falha ao obter usuário ' +
+                        userId +
+                        ' para envio de e-mail: ' +
+                        uErr.message,
+                    )
+                  }
+
+                  if (userEmail && userEmail.includes('@')) {
+                    // Formatar valor da posição em R$
+                    const costCents = pos.getInt('total_cost_cents') || 0
+                    const costFormatted = (costCents / 100).toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                    const posValueDisplay = `R$ ${costFormatted}`
+
+                    const diasTexto = diffDays === 0 ? 'hoje' : `em ${diffDays} dias`
+                    const subject = `⚠️ Vencimento crítico: ${assetTicker} ${diasTexto}`
+
+                    const htmlBody = `
+                      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="border-left: 4px solid #dc2626; padding-left: 12px; margin-bottom: 20px;">
+                          <h2 style="color: #dc2626; margin: 0 0 4px 0; font-size: 18px;">⚠️ Alerta de Vencimento Crítico</h2>
+                          <p style="margin: 0; color: #64748b; font-size: 13px;">Construindo Meu Futuro — Gestão Patrimonial</p>
+                        </div>
+                        <p style="font-size: 14px; line-height: 1.5; color: #334155; margin-bottom: 16px;">
+                          Olá, <strong>${userName}</strong>! Identificamos um vencimento iminente em sua carteira que requer atenção imediata para planejamento de resgate ou reinvestimento:
+                        </p>
+                        <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Ativo:</strong> ${assetTicker}</p>
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Valor Aplicado:</strong> ${posValueDisplay}</p>
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Data de Vencimento:</strong> ${dateFormatted}</p>
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Prazo Restante:</strong> <span style="color: #dc2626; font-weight: bold;">${diffDays === 0 ? 'Vence Hoje' : `${diffDays} dias restantes`}</span></p>
+                        </div>
+                        <div style="margin: 24px 0;">
+                          <a href="${siteUrl}/overview/alerts" style="background-color: #dc2626; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 13px;">
+                            Acessar Central de Alertas
+                          </a>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
+                          Ou acesse diretamente pelo link: <a href="${siteUrl}/overview/alerts" style="color: #2563eb;">${siteUrl}/overview/alerts</a>
+                        </p>
+                        <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                          Mensagem automática disparada pelo monitor patrimonial Construindo Meu Futuro.
+                        </p>
+                      </div>
+                    `
+
+                    const res = $http.send({
+                      url: 'https://api.resend.com/emails',
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${resendApiKey}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        from: `${resendFromName} <${resendFromEmail}>`,
+                        to: [userEmail],
+                        subject: subject,
+                        html: htmlBody,
+                      }),
+                      timeout: 15,
+                    })
+
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                      console.log(
+                        '[INFO][ALERTS_CRON] E-mail de alerta crítico enviado com sucesso para ' +
+                          userEmail +
+                          ' (alerta: ' +
+                          newAlert.id +
+                          ', ativo: ' +
+                          assetTicker +
+                          ')',
+                      )
+                    } else {
+                      console.log(
+                        '[WARN][ALERTS_CRON] Falha no envio do e-mail de alerta crítico via Resend (status ' +
+                          res.statusCode +
+                          ') para ' +
+                          userEmail +
+                          ' (alerta: ' +
+                          newAlert.id +
+                          '): ' +
+                          (res.raw || ''),
+                      )
+                    }
+                  }
+                }
+              } catch (mailErr) {
+                // Falha no e-mail nunca quebra a verificação de alertas
+                console.log(
+                  '[WARN][ALERTS_CRON] Erro ao enviar e-mail de alerta crítico para ' +
+                    userId +
+                    ' (alerta: ' +
+                    newAlert.id +
+                    '): ' +
+                    mailErr.message,
+                )
+              }
+            }
           } catch (createErr) {
             console.log(
               '[WARN][ALERTS_CRON] Erro ao criar alerta de vencimento: ' + createErr.message,
@@ -403,16 +553,34 @@ routerAdd('POST', '/backend/v1/alerts/run-check', (e) => {
 
       const dateFormatted = `${posDateParts[2]}/${posDateParts[1]}/${posDateParts[0]}`
 
+      // Escala de severidade de vencimento do motor de alertas:
+      // - diffDays === 0: 'maturity_today', severidade 'critical' (vence hoje: ação imediata requerida)
+      // - diffDays === 7: 'maturity_upcoming', severidade 'critical' (última semana: vencimento iminente)
+      // - diffDays === 15: 'maturity_upcoming', severidade 'warn'
+      // - diffDays === 30: 'maturity_upcoming', severidade 'info'
+      //
+      // Regra de disparo de e-mail transacional imediato via Resend:
+      // Disparado exclusivamente quando um alerta NOVO nasce com severidade 'critical' (diffDays === 0 ou diffDays === 7).
       if (diffDays === 0) {
         alertType = 'maturity_today'
-        alertSeverity = 'warn'
+        alertSeverity = 'critical'
         alertTitle = `Vencimento Hoje: ${assetTicker}`
         alertMessage = `O título ${assetTicker} vence hoje (${dateFormatted}). Lembre-se de verificar o resgate ou reinvestimento.`
-      } else if (diffDays === 30 || diffDays === 15 || diffDays === 7) {
+      } else if (diffDays === 7) {
         alertType = 'maturity_upcoming'
-        alertSeverity = diffDays === 7 ? 'warn' : 'info'
-        alertTitle = `Vencimento em ${diffDays} dias: ${assetTicker}`
-        alertMessage = `O título ${assetTicker} vencerá em ${diffDays} dias (${dateFormatted}). Planeje a alocação dos recursos.`
+        alertSeverity = 'critical'
+        alertTitle = `Vencimento em 7 dias: ${assetTicker}`
+        alertMessage = `O título ${assetTicker} vencerá em 7 dias (${dateFormatted}). Planeje a alocação dos recursos.`
+      } else if (diffDays === 15) {
+        alertType = 'maturity_upcoming'
+        alertSeverity = 'warn'
+        alertTitle = `Vencimento em 15 dias: ${assetTicker}`
+        alertMessage = `O título ${assetTicker} vencerá em 15 dias (${dateFormatted}). Planeje a alocação dos recursos.`
+      } else if (diffDays === 30) {
+        alertType = 'maturity_upcoming'
+        alertSeverity = 'info'
+        alertTitle = `Vencimento em 30 dias: ${assetTicker}`
+        alertMessage = `O título ${assetTicker} vencerá em 30 dias (${dateFormatted}). Planeje a alocação dos recursos.`
       }
 
       if (alertType) {
@@ -450,6 +618,137 @@ routerAdd('POST', '/backend/v1/alerts/run-check', (e) => {
               message: alertMessage,
               severity: alertSeverity,
             })
+
+            // Disparo imediato de e-mail via Resend para novos alertas CRÍTICOS
+            if (alertSeverity === 'critical') {
+              try {
+                const resendApiKey = ($os.getenv('RESEND_API_KEY') || '').trim()
+                const resendFromEmail = (
+                  $os.getenv('RESEND_FROM_EMAIL') || 'contato@construindomeufuturo.com'
+                ).trim()
+                const resendFromName = (
+                  $os.getenv('RESEND_FROM_NAME') || 'Construindo Meu Futuro'
+                ).trim()
+                const siteUrl = (
+                  $os.getenv('SITE_URL') || 'https://construindomeufuturo.com'
+                ).replace(/\/+$/, '')
+
+                if (!resendApiKey) {
+                  console.log(
+                    '[WARN][ALERTS_CHECK] RESEND_API_KEY ausente. E-mail de alerta crítico ignorado para user ' +
+                      userId +
+                      ' (alerta: ' +
+                      newAlert.id +
+                      ').',
+                  )
+                } else {
+                  let userEmail = ''
+                  let userName = 'Investidor(a)'
+                  try {
+                    const userRec = $app.findRecordById('users', userId)
+                    userEmail = (userRec.getString('email') || '').trim()
+                    userName = userRec.getString('name') || 'Investidor(a)'
+                  } catch (uErr) {
+                    console.log(
+                      '[WARN][ALERTS_CHECK] Falha ao obter usuário ' +
+                        userId +
+                        ' para envio de e-mail: ' +
+                        uErr.message,
+                    )
+                  }
+
+                  if (userEmail && userEmail.includes('@')) {
+                    // Formatar valor da posição em R$
+                    const costCents = pos.getInt('total_cost_cents') || 0
+                    const costFormatted = (costCents / 100).toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                    const posValueDisplay = `R$ ${costFormatted}`
+
+                    const diasTexto = diffDays === 0 ? 'hoje' : `em ${diffDays} dias`
+                    const subject = `⚠️ Vencimento crítico: ${assetTicker} ${diasTexto}`
+
+                    const htmlBody = `
+                      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div style="border-left: 4px solid #dc2626; padding-left: 12px; margin-bottom: 20px;">
+                          <h2 style="color: #dc2626; margin: 0 0 4px 0; font-size: 18px;">⚠️ Alerta de Vencimento Crítico</h2>
+                          <p style="margin: 0; color: #64748b; font-size: 13px;">Construindo Meu Futuro — Gestão Patrimonial</p>
+                        </div>
+                        <p style="font-size: 14px; line-height: 1.5; color: #334155; margin-bottom: 16px;">
+                          Olá, <strong>${userName}</strong>! Identificamos um vencimento iminente em sua carteira que requer atenção imediata para planejamento de resgate ou reinvestimento:
+                        </p>
+                        <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Ativo:</strong> ${assetTicker}</p>
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Valor Aplicado:</strong> ${posValueDisplay}</p>
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Data de Vencimento:</strong> ${dateFormatted}</p>
+                          <p style="margin: 4px 0; font-size: 14px;"><strong>Prazo Restante:</strong> <span style="color: #dc2626; font-weight: bold;">${diffDays === 0 ? 'Vence Hoje' : `${diffDays} dias restantes`}</span></p>
+                        </div>
+                        <div style="margin: 24px 0;">
+                          <a href="${siteUrl}/overview/alerts" style="background-color: #dc2626; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 13px;">
+                            Acessar Central de Alertas
+                          </a>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
+                          Ou acesse diretamente pelo link: <a href="${siteUrl}/overview/alerts" style="color: #2563eb;">${siteUrl}/overview/alerts</a>
+                        </p>
+                        <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                          Mensagem automática disparada pelo monitor patrimonial Construindo Meu Futuro.
+                        </p>
+                      </div>
+                    `
+
+                    const res = $http.send({
+                      url: 'https://api.resend.com/emails',
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${resendApiKey}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        from: `${resendFromName} <${resendFromEmail}>`,
+                        to: [userEmail],
+                        subject: subject,
+                        html: htmlBody,
+                      }),
+                      timeout: 15,
+                    })
+
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                      console.log(
+                        '[INFO][ALERTS_CHECK] E-mail de alerta crítico enviado com sucesso para ' +
+                          userEmail +
+                          ' (alerta: ' +
+                          newAlert.id +
+                          ', ativo: ' +
+                          assetTicker +
+                          ')',
+                      )
+                    } else {
+                      console.log(
+                        '[WARN][ALERTS_CHECK] Falha no envio do e-mail de alerta crítico via Resend (status ' +
+                          res.statusCode +
+                          ') para ' +
+                          userEmail +
+                          ' (alerta: ' +
+                          newAlert.id +
+                          '): ' +
+                          (res.raw || ''),
+                      )
+                    }
+                  }
+                }
+              } catch (mailErr) {
+                console.log(
+                  '[WARN][ALERTS_CHECK] Erro ao enviar e-mail de alerta crítico para ' +
+                    userId +
+                    ' (alerta: ' +
+                    newAlert.id +
+                    '): ' +
+                    mailErr.message,
+                )
+              }
+            }
           } catch (createErr) {
             console.log(
               '[WARN][ALERTS_CHECK] Erro ao criar alerta de vencimento: ' + createErr.message,
