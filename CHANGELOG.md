@@ -4,6 +4,26 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.117] - 2026-09-24 (Moeda responsiva no modal de movimentação conforme conta selecionada)
+
+### Corrigido (Fixed)
+
+- **Moeda Responsiva no Modal de Movimentações (`src/pages/wealth/Movements.tsx`)**:
+  - Derivação reativa da conta ativa (`selectedAccount`) e sua respectiva moeda (`selectedAccount?.currency || selectedAsset?.currency || 'BRL'`).
+  - Substituição de sufixos estáticos `(R$)` nos rótulos de campos financeiros ("Preço", "Valor Aplicado", "Valor do Resgate", "Valor Bruto", "Emolumentos", "Liquidação", "Outros Custos", "IR / Impostos", "Taxas / Corret.") pelo sufixo dinâmico `(USD)`, `(EUR)` ou `(R$)` conforme a moeda da conta selecionada.
+  - Atualização do resumo financeiro no rodapé do modal (custo de aquisição, valor líquido da venda, impacto em caixa) com formatação monetária condicional via `formatMovementCurrency`: Dólar com `$`, Euro com `€` e Real com `formatCurrencyBRL`.
+  - Preservada compatibilidade total com contas padrão `BRL` e seletores de teste regex pré-existentes.
+
+### Testes e Governança (ADR-006)
+
+- **Suíte de Testes Automatizados (`src/test/wealthAssetsPositionsMovements.test.tsx`)**:
+  - Mock parcial de `@/services/accounts` com `importOriginal` para assegurar preservação de constantes exportadas.
+  - Adicionado caso de teste validando a reatividade do modal ao alternar entre contas BRL, USD e EUR, verificando rótulos dos campos e símbolos no resumo financeiro.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.117` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.116] - 2026-09-24 (Correção do SelectContent em modais: elevação de z-index e relaxamento da altura da viewport)
 
 ### Corrigido (Fixed)

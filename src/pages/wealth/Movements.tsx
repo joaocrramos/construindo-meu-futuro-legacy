@@ -85,14 +85,44 @@ export default function MovementsPage() {
 
   const isAssetRequired = ASSET_REQUIRED_MOVEMENTS.includes(movementType)
 
-  // Ativo atualmente selecionado (se houver)
+  // Conta e Ativo atualmente selecionados
+  const selectedAccount = React.useMemo(() => {
+    if (!accountId) return null
+    return accounts.find((a) => a.id === accountId) || null
+  }, [accountId, accounts])
+
   const selectedAsset = React.useMemo(() => {
     if (!assetId || assetId === 'none') return null
     return assets.find((a) => a.id === assetId) || null
   }, [assetId, assets])
 
+  // Moeda ativa: prioridade conta > ativo > BRL
+  const activeCurrency = React.useMemo(() => {
+    return selectedAccount?.currency || selectedAsset?.currency || 'BRL'
+  }, [selectedAccount, selectedAsset])
+
+  const currencySuffix = React.useMemo(() => {
+    if (activeCurrency === 'USD') return '(USD)'
+    if (activeCurrency === 'EUR') return '(EUR)'
+    return '(R$)'
+  }, [activeCurrency])
+
+  const formatMovementCurrency = React.useCallback(
+    (value: number) => {
+      if (activeCurrency === 'USD') {
+        return `$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      }
+      if (activeCurrency === 'EUR') {
+        return `€ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      }
+      return formatCurrencyBRL(value)
+    },
+    [activeCurrency],
+  )
+
   // Verificações de classe de ativo para adequação dos formulários
   const isUsdAsset =
+    activeCurrency === 'USD' ||
     selectedAsset?.currency === 'USD' ||
     (selectedAsset as { asset_class?: string })?.asset_class === 'international'
 
@@ -578,7 +608,9 @@ export default function MovementsPage() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label htmlFor="movGross" className="text-xs font-semibold">
-                            {isBuy ? 'Valor Aplicado (R$) *' : 'Valor do Resgate (R$) *'}
+                            {isBuy
+                              ? `Valor Aplicado ${currencySuffix} *`
+                              : `Valor do Resgate ${currencySuffix} *`}
                           </Label>
                           <Input
                             id="movGross"
@@ -659,7 +691,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1.5">
                         <Label htmlFor="movUnitPrice" className="text-xs font-semibold">
-                          Preço {isUsdAsset ? '(USD)' : '(R$)'}
+                          Preço {currencySuffix}
                         </Label>
                         <Input
                           id="movUnitPrice"
@@ -685,7 +717,7 @@ export default function MovementsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label htmlFor="movGross" className="text-xs font-semibold">
-                          Valor Bruto {isUsdAsset ? '(USD)' : '(R$)'} *
+                          Valor Bruto {currencySuffix} *
                         </Label>
                         <Input
                           id="movGross"
@@ -699,7 +731,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                          Outros Custos {isUsdAsset ? '(USD)' : '(R$)'}
+                          Outros Custos {currencySuffix}
                         </Label>
                         <Input
                           id="movEmoluments"
@@ -715,7 +747,7 @@ export default function MovementsPage() {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
                         <Label htmlFor="movGross" className="text-xs font-semibold">
-                          Valor Bruto (R$) *
+                          Valor Bruto {currencySuffix} *
                         </Label>
                         <Input
                           id="movGross"
@@ -729,7 +761,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                          Emolumentos (R$)
+                          Emolumentos {currencySuffix}
                         </Label>
                         <Input
                           id="movEmoluments"
@@ -742,7 +774,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movSettlement" className="text-xs font-semibold">
-                          Liquidação (R$)
+                          Liquidação {currencySuffix}
                         </Label>
                         <Input
                           id="movSettlement"
@@ -761,7 +793,7 @@ export default function MovementsPage() {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
                         <Label htmlFor="movGross" className="text-xs font-semibold">
-                          Valor Bruto {isUsdAsset ? '(USD)' : '(R$)'} *
+                          Valor Bruto {currencySuffix} *
                         </Label>
                         <Input
                           id="movGross"
@@ -775,7 +807,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                          Outros Custos {isUsdAsset ? '(USD)' : '(R$)'}
+                          Outros Custos {currencySuffix}
                         </Label>
                         <Input
                           id="movEmoluments"
@@ -788,7 +820,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movTaxes" className="text-xs font-semibold">
-                          IR {isUsdAsset ? '(USD)' : '(R$)'}
+                          IR {currencySuffix}
                         </Label>
                         <Input
                           id="movTaxes"
@@ -804,7 +836,7 @@ export default function MovementsPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="space-y-1">
                         <Label htmlFor="movGross" className="text-xs font-semibold">
-                          Valor Bruto (R$) *
+                          Valor Bruto {currencySuffix} *
                         </Label>
                         <Input
                           id="movGross"
@@ -818,7 +850,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movEmoluments" className="text-xs font-semibold">
-                          Emolumentos (R$)
+                          Emolumentos {currencySuffix}
                         </Label>
                         <Input
                           id="movEmoluments"
@@ -831,7 +863,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movSettlement" className="text-xs font-semibold">
-                          Liquidação (R$)
+                          Liquidação {currencySuffix}
                         </Label>
                         <Input
                           id="movSettlement"
@@ -844,7 +876,7 @@ export default function MovementsPage() {
 
                       <div className="space-y-1">
                         <Label htmlFor="movTaxes" className="text-xs font-semibold">
-                          IR (R$)
+                          IR {currencySuffix}
                         </Label>
                         <Input
                           id="movTaxes"
@@ -860,7 +892,8 @@ export default function MovementsPage() {
                   // Depósito ou Saque (Apenas valor em dinheiro em caixa)
                   <div className="space-y-1">
                     <Label htmlFor="movGross" className="text-xs font-semibold">
-                      Valor {movementType === 'deposit' ? 'do Aporte' : 'do Resgate'} (R$) *
+                      Valor {movementType === 'deposit' ? 'do Aporte' : 'do Resgate'}{' '}
+                      {currencySuffix} *
                     </Label>
                     <Input
                       id="movGross"
@@ -876,7 +909,7 @@ export default function MovementsPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="movGross" className="text-xs font-semibold">
-                        Valor Bruto (R$) *
+                        Valor Bruto {currencySuffix} *
                       </Label>
                       <Input
                         id="movGross"
@@ -890,7 +923,7 @@ export default function MovementsPage() {
 
                     <div className="space-y-1">
                       <Label htmlFor="movFees" className="text-xs font-semibold">
-                        Taxas / Corret. (R$)
+                        Taxas / Corret. {currencySuffix}
                       </Label>
                       <Input
                         id="movFees"
@@ -903,7 +936,7 @@ export default function MovementsPage() {
 
                     <div className="space-y-1">
                       <Label htmlFor="movTaxes" className="text-xs font-semibold">
-                        Impostos / IR (R$)
+                        Impostos / IR {currencySuffix}
                       </Label>
                       <Input
                         id="movTaxes"
@@ -924,7 +957,7 @@ export default function MovementsPage() {
                         Custo total da aquisição:
                       </span>
                       <span className="font-mono font-bold text-foreground">
-                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                        {formatMovementCurrency(calculatedNetCents / 100)}
                       </span>
                     </>
                   ) : isSell ? (
@@ -933,7 +966,7 @@ export default function MovementsPage() {
                         Valor líquido da venda:
                       </span>
                       <span className="font-mono font-bold text-foreground">
-                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                        {formatMovementCurrency(calculatedNetCents / 100)}
                       </span>
                     </>
                   ) : isDepositOrWithdrawal ? (
@@ -949,7 +982,7 @@ export default function MovementsPage() {
                         }`}
                       >
                         {movementType === 'deposit' ? '+' : '-'}
-                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                        {formatMovementCurrency(calculatedNetCents / 100)}
                       </span>
                     </>
                   ) : (
@@ -958,7 +991,7 @@ export default function MovementsPage() {
                         Valor Líquido Calculado:
                       </span>
                       <span className="font-mono font-bold text-foreground">
-                        {formatCurrencyBRL(calculatedNetCents / 100)}
+                        {formatMovementCurrency(calculatedNetCents / 100)}
                       </span>
                     </>
                   )}

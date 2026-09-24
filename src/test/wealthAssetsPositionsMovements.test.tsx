@@ -38,7 +38,17 @@ vi.mock('@/services/movements', async (importOriginal) => {
   }
 })
 vi.mock('@/services/positions')
-vi.mock('@/services/accounts')
+vi.mock('@/services/accounts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/accounts')>()
+  return {
+    ...actual,
+    listAccounts: vi.fn(),
+    createAccount: vi.fn(),
+    updateAccount: vi.fn(),
+    toggleAccountActive: vi.fn(),
+    translateAccountError: vi.fn(actual.translateAccountError),
+  }
+})
 vi.mock('@/services/accountBalances')
 
 describe('CRUD de Ativos (/wealth/assets)', () => {
@@ -1086,6 +1096,107 @@ describe('CRUD de Movimentações (/wealth/movements)', () => {
 
       unmountCase()
     }
+  })
+
+  it('9. Modal de movimentação atualiza moeda responsivamente conforme conta selecionada (USD -> $ e EUR -> €)', async () => {
+    vi.mocked(movService.listMovements).mockResolvedValue([])
+    vi.mocked(accService.listAccounts).mockResolvedValue([
+      {
+        id: 'acc_brl',
+        user_id: 'usr_1',
+        institution_id: 'inst_1',
+        name: 'Conta BRL Inter',
+        account_type: 'investment',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'acc_usd',
+        user_id: 'usr_1',
+        institution_id: 'inst_2',
+        name: 'Conta USD Avenue',
+        account_type: 'investment',
+        currency: 'USD',
+        is_active: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+      {
+        id: 'acc_eur',
+        user_id: 'usr_1',
+        institution_id: 'inst_3',
+        name: 'Conta EUR Wise',
+        account_type: 'checking',
+        currency: 'EUR',
+        is_active: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    vi.mocked(assetService.listAssets).mockResolvedValue([
+      {
+        id: 'ast_stock_br',
+        user_id: 'usr_1',
+        ticker: 'PETR4',
+        name: 'Petrobras PN',
+        asset_class: 'equities',
+        sub_type: 'Ações Preferenciais (PN)',
+        currency: 'BRL',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <MovementsPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findByText(/Nenhuma movimentação lançada/i, {}, { timeout: 10000 })
+    const openBtn = screen.getByRole('button', {
+      name: /Registrar primeira movimentação/i,
+    })
+    fireEvent.click(openBtn)
+
+    await screen.findByLabelText(/Tipo de Operação/i, {}, { timeout: 10000 })
+
+    // Inicialmente conta BRL: deve exibir "(R$)" nos rótulos e "R$" no resumo
+    expect(await screen.findByLabelText(/Preço \(R\$\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Valor Bruto \(R\$\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Emolumentos \(R\$\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Liquidação \(R\$\)/i)).not.toBeNull()
+
+    // Troca para conta USD
+    const accountTrigger = screen.getByLabelText(/Conta Vinculada/i)
+    fireEvent.click(accountTrigger)
+    const usdOption = await screen.findByRole('option', { name: /Conta USD Avenue/i })
+    fireEvent.click(usdOption)
+
+    // Agora deve exibir "(USD)" nos rótulos e "$" no resumo
+    expect(await screen.findByLabelText(/Preço \(USD\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Valor Bruto \(USD\)/i)).not.toBeNull()
+
+    // Preenche valor bruto para verificar o resumo formatado em $
+    const grossInputUsd = await screen.findByLabelText(/Valor Bruto \(USD\)/i)
+    fireEvent.change(grossInputUsd, { target: { value: '150' } })
+    expect(screen.getByText(/\$ 150,00/)).not.toBeNull()
+
+    // Troca para conta EUR
+    fireEvent.click(accountTrigger)
+    const eurOption = await screen.findByRole('option', { name: /Conta EUR Wise/i })
+    fireEvent.click(eurOption)
+
+    // Agora deve exibir "(EUR)" nos rótulos e "€" no resumo
+    expect(await screen.findByLabelText(/Preço \(EUR\)/i)).not.toBeNull()
+    expect(await screen.findByLabelText(/Valor Bruto \(EUR\)/i)).not.toBeNull()
+    expect(screen.getByText(/€ 150,00/)).not.toBeNull()
+
+    unmount()
   })
 })
 
