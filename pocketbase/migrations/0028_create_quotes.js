@@ -23,10 +23,15 @@ migrate(
         { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
         { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
       ],
-      indexes: ['CREATE UNIQUE INDEX idx_quotes_ticker ON quotes (ticker)'],
     })
 
     app.save(collection)
+
+    try {
+      const savedCol = app.findCollectionByNameOrId('quotes')
+      savedCol.addIndex('idx_quotes_ticker', true, 'ticker', '')
+      app.save(savedCol)
+    } catch (_) {}
   },
   (app) => {
     try {

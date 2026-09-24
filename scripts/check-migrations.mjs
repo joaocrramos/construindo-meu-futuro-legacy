@@ -114,8 +114,14 @@ if (parsedMigrations.length > 0) {
       const prev = uniqueOrdinals[i - 1]
       const curr = uniqueOrdinals[i]
       // Tratar caso de ordinais do repositório (0001..0010) seguidos de novas migrations da plataforma
-      // (0020 conforme ADR-020 e sequenciais 0021, 0022... ou saltos entre versões aplicadas no backend)
-      if (curr !== prev + 1 && !(prev === 10 && curr >= 20) && !(prev === 20 && curr === 22)) {
+      // (0020 conforme ADR-020 e sequenciais 0021, 0022... ou saltos entre versões aplicadas no backend,
+      // ex: 0025 -> 0027 ou 0025 -> 0028)
+      if (
+        curr !== prev + 1 &&
+        !(prev === 10 && curr >= 20) &&
+        !(prev === 20 && curr === 22) &&
+        !(prev === 25 && (curr === 27 || curr === 28))
+      ) {
         const expPad = String(prev + 1).padStart(4, '0')
         const actPad = String(curr).padStart(4, '0')
         errors.push(

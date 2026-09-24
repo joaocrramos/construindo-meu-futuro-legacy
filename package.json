@@ -2,7 +2,7 @@
   "name": "construindo-meu-futuro",
   "description": "Sistema de organização patrimonial e acompanhamento de investimentos pessoais",
   "private": true,
-  "version": "0.0.118",
+  "version": "0.0.119",
   "type": "module",
   "scripts": {
     "start": "vite dev",
@@ -51,6 +51,7 @@
     "@radix-ui/react-toggle-group": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.10",
     "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@testing-library/user-event": "14.6.7",
     "caniuse-lite": "^1.0.30001799",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

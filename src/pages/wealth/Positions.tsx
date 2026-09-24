@@ -34,6 +34,10 @@ import {
   type AssetClass,
 } from '@/services/assets'
 import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
+import { listQuotes, refreshQuotes, getQuoteForTicker, type QuoteRecord } from '@/services/quotes'
+import { formatDateBRL } from '@/lib/formatters'
+import { RefreshCw, Info } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface NormalizedPositionItem {
   id: string
@@ -49,6 +53,12 @@ interface NormalizedPositionItem {
   totalCostCents: number
   maturityDate?: string
   indexer?: string
+  // Dados de cotação / valor de mercado
+  currentPriceCents?: number
+  marketValueCents: number
+  hasQuote: boolean
+  quoteDate?: string
+  currency: string
 }
 
 export default function PositionsPage() {
@@ -58,7 +68,9 @@ export default function PositionsPage() {
   const [assets, setAssets] = React.useState<AssetRecord[]>([])
   const [, setMovements] = React.useState<MovementRecord[]>([])
   const [accountBalances, setAccountBalances] = React.useState<AccountBalanceRecord[]>([])
+  const [quotes, setQuotes] = React.useState<QuoteRecord[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [refreshingQuotes, setRefreshingQuotes] = React.useState(false)
 
   // Modos de visualização: 'flat' (tabela única) ou 'grouped' (agrupado por classe de ativo)
   const [viewMode, setViewMode] = React.useState<'flat' | 'grouped'>('flat')
@@ -74,12 +86,13 @@ export default function PositionsPage() {
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true)
-      const [posData, movData, accData, assetData, balData] = await Promise.all([
+      const [posData, movData, accData, assetData, balData, quotesData] = await Promise.all([
         listPositions(),
         listMovements(),
         listAccounts(),
         listAssets(),
         listAccountBalances(),
+        listQuotes(),
       ])
 
       setPositions(posData)
@@ -87,6 +100,7 @@ export default function PositionsPage() {
       setAccounts(accData)
       setAssets(assetData)
       setAccountBalances(balData)
+      setQuotes(quotesData)
 
       // Se a collection positions estiver vazia no momento (backend-only recalcs pendentes),
       // deriva posições em memória a partir dos lançamentos contábeis de movements
@@ -99,6 +113,25 @@ export default function PositionsPage() {
     }
   }, [])
 
+  const handleRefreshQuotes = async () => {
+    try {
+      setRefreshingQuotes(true)
+      const res = await refreshQuotes()
+      toast.success(
+        res.updated_count > 0
+          ? `Cotações atualizadas: ${res.updated_count} ativos sincronizados via brapi.dev.`
+          : 'Cotações verificadas com sucesso.',
+      )
+      // Recarrega cotações
+      const newQuotes = await listQuotes()
+      setQuotes(newQuotes)
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Falha ao atualizar cotações com brapi.dev.')
+    } finally {
+      setRefreshingQuotes(false)
+    }
+  }
+
   React.useEffect(() => {
     loadData()
   }, [loadData])
@@ -109,17 +142,73 @@ export default function PositionsPage() {
     const accMap = new Map<string, AccountRecord>(accounts.map((a) => [a.id, a]))
     const astMap = new Map<string, AssetRecord>(assets.map((a) => [a.id, a]))
 
+    // Classes que utilizam cotação de mercado para cálculo do valor de mercado
+    const marketValueClasses: string[] = ['equities', 'real_estate_funds', 'crypto']
+
+    const calculateMarketValue = (
+      rawClass: string,
+      ticker: string,
+      qtyE8: number,
+      costCents: number,
+      curr: string,
+    ) => {
+      // Renda fixa continua estritamente por valor investido/custo
+      if (rawClass === 'fixed_income') {
+        return {
+          currentPriceCents: undefined,
+          marketValueCents: costCents,
+          hasQuote: false,
+          quoteDate: undefined,
+          currency: curr,
+        }
+      }
+
+      // Se for classe de mercado com ticker cadastrado
+      const q = ticker ? getQuoteForTicker(quotes, ticker) : undefined
+      if (q && q.price_cents > 0) {
+        // quantidade decimal = qtyE8 / 1e8
+        // valor de mercado = (qtyE8 / 1e8) * (q.price_cents)
+        const mvCents = Math.round((qtyE8 / 1e8) * q.price_cents)
+        return {
+          currentPriceCents: q.price_cents,
+          marketValueCents: mvCents,
+          hasQuote: true,
+          quoteDate: q.quoted_at || q.updated,
+          currency: q.currency || curr,
+        }
+      }
+
+      // Se for equities/real_estate_funds/crypto e não tiver cotação: fallback custo
+      return {
+        currentPriceCents: undefined,
+        marketValueCents: costCents,
+        hasQuote: false,
+        quoteDate: undefined,
+        currency: curr,
+      }
+    }
+
     if (hasDbPositions) {
       return positions.map((p) => {
         const acc = p.expand?.account_id || accMap.get(p.account_id)
         const ast = p.expand?.asset_id || astMap.get(p.asset_id)
         const rawClass = (ast?.asset_class || 'other') as AssetClass
+        const ticker = ast?.ticker || ''
+        const curr = (ast?.currency || acc?.currency || 'BRL').toUpperCase()
+        const mvInfo = calculateMarketValue(
+          rawClass,
+          ticker,
+          p.quantity_e8,
+          p.total_cost_cents || 0,
+          curr,
+        )
+
         return {
           id: p.id,
           accountId: p.account_id,
           accountName: acc?.name || 'Conta de Custódia',
           assetId: p.asset_id,
-          ticker: ast?.ticker || 'Ativo',
+          ticker: ticker || 'Ativo',
           assetName: ast?.name || '',
           assetClass: rawClass,
           assetClassLabel: ASSET_CLASS_LABELS[rawClass] || 'Outro',
@@ -128,6 +217,7 @@ export default function PositionsPage() {
           totalCostCents: p.total_cost_cents || 0,
           maturityDate: p.maturity_date,
           indexer: p.indexer,
+          ...mvInfo,
         }
       })
     }
@@ -136,21 +226,26 @@ export default function PositionsPage() {
       const acc = p.account || accMap.get(p.account_id)
       const ast = p.asset || astMap.get(p.asset_id)
       const rawClass = (ast?.asset_class || 'other') as AssetClass
+      const ticker = ast?.ticker || ''
+      const curr = (ast?.currency || acc?.currency || 'BRL').toUpperCase()
+      const mvInfo = calculateMarketValue(rawClass, ticker, p.quantity_e8, p.total_cost_cents, curr)
+
       return {
         id: p.key,
         accountId: p.account_id,
         accountName: acc?.name || 'Conta de Custódia',
         assetId: p.asset_id,
-        ticker: ast?.ticker || 'Ativo',
+        ticker: ticker || 'Ativo',
         assetName: ast?.name || '',
         assetClass: rawClass,
         assetClassLabel: ASSET_CLASS_LABELS[rawClass] || 'Outro',
         quantityE8: p.quantity_e8,
         averagePriceCents: p.average_price_cents,
         totalCostCents: p.total_cost_cents,
+        ...mvInfo,
       }
     })
-  }, [hasDbPositions, positions, derivedPositions, accounts, assets])
+  }, [hasDbPositions, positions, derivedPositions, accounts, assets, quotes])
 
   // Opções para os filtros de múltipla escolha
   const assetFilterOptions: MultiSelectOption[] = React.useMemo(() => {
@@ -299,12 +394,29 @@ export default function PositionsPage() {
   const hasActiveFilters =
     selectedAssetIds.length > 0 || selectedAccountIds.length > 0 || selectedClasses.length > 0
 
-  // Total consolidado em custo de aquisição (filtrado e geral)
+  // Total consolidado em custo de aquisição e valor de mercado (filtrado e geral)
   const totalPositionsCount = filteredPositions.length
   const totalPortfolioCostCents = filteredPositions.reduce((acc, p) => acc + p.totalCostCents, 0)
+  const totalPortfolioMarketValueCents = filteredPositions.reduce(
+    (acc, p) => acc + p.marketValueCents,
+    0,
+  )
 
   // Saldo total em dinheiro em caixa disponível (todas as contas)
   const totalCashCents = accountBalances.reduce((acc, b) => acc + (b.balance_cents || 0), 0)
+
+  // Última data de atualização de cotações encontrada
+  const latestQuoteDate = React.useMemo(() => {
+    if (quotes.length === 0) return null
+    let latest: string | null = null
+    for (const q of quotes) {
+      const d = q.quoted_at || q.updated
+      if (d && (!latest || d > latest)) {
+        latest = d
+      }
+    }
+    return latest
+  }, [quotes])
 
   return (
     <div className="space-y-6">
@@ -314,18 +426,30 @@ export default function PositionsPage() {
         icon={Layers}
         breadcrumbs={[{ label: 'Patrimônio', href: '/wealth/portfolios' }, { label: 'Posições' }]}
         actions={
-          <Button asChild size="sm" className="h-9 text-xs">
-            <a href="/wealth/movements">
-              <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
-              Lançar Movimentação
-            </a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 text-xs gap-1.5"
+              onClick={handleRefreshQuotes}
+              disabled={refreshingQuotes}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshingQuotes ? 'animate-spin' : ''}`} />
+              {refreshingQuotes ? 'Atualizando...' : 'Atualizar Cotações'}
+            </Button>
+            <Button asChild size="sm" className="h-9 text-xs">
+              <a href="/wealth/movements">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
+                Lançar Movimentação
+              </a>
+            </Button>
+          </div>
         }
       />
 
       {/* Resumo consolidado */}
       {(normalizedPositions.length > 0 || accountBalances.length > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium">Total de Posições Ativas</p>
             <p className="text-2xl font-bold font-mono mt-1 text-foreground">
@@ -336,6 +460,11 @@ export default function PositionsPage() {
                 </span>
               )}
             </p>
+            {latestQuoteDate && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Cotações: {formatDateBRL(latestQuoteDate, { includeTime: true })}
+              </p>
+            )}
           </div>
           <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium">
@@ -348,13 +477,37 @@ export default function PositionsPage() {
             >
               {formatCurrencyBRL(totalCashCents / 100)}
             </p>
+            <p className="text-[11px] text-muted-foreground mt-1">Liquidez imediata</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground font-medium">
-              Custo Total em Ativos (Entrada)
+              Custo de Aquisição (Entrada)
             </p>
-            <p className="text-2xl font-bold font-mono mt-1 text-primary">
+            <p className="text-2xl font-bold font-mono mt-1 text-muted-foreground">
               {formatCurrencyBRL(totalPortfolioCostCents / 100)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">Preço médio ponderado</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground font-medium">Valor de Mercado (Atual)</p>
+            <p className="text-2xl font-bold font-mono mt-1 text-primary">
+              {formatCurrencyBRL(totalPortfolioMarketValueCents / 100)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {totalPortfolioMarketValueCents >= totalPortfolioCostCents ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                  +
+                  {formatCurrencyBRL(
+                    (totalPortfolioMarketValueCents - totalPortfolioCostCents) / 100,
+                  )}
+                </span>
+              ) : (
+                <span className="text-destructive font-semibold">
+                  {formatCurrencyBRL(
+                    (totalPortfolioMarketValueCents - totalPortfolioCostCents) / 100,
+                  )}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -561,6 +714,8 @@ export default function PositionsPage() {
                   <th className="px-4 py-3 text-right">Quantidade (e8)</th>
                   <th className="px-4 py-3 text-right">Preço Médio</th>
                   <th className="px-4 py-3 text-right">Custo Total</th>
+                  <th className="px-4 py-3 text-right">Cotação Atual</th>
+                  <th className="px-4 py-3 text-right">Valor de Mercado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -585,8 +740,34 @@ export default function PositionsPage() {
                     <td className="px-4 py-3 text-right font-mono text-muted-foreground">
                       {formatCurrencyBRL(pos.averagePriceCents / 100)}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-bold text-foreground">
+                    <td className="px-4 py-3 text-right font-mono text-muted-foreground">
                       {formatCurrencyBRL(pos.totalCostCents / 100)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-foreground">
+                      {pos.hasQuote && pos.currentPriceCents ? (
+                        <span>{formatCurrencyBRL(pos.currentPriceCents / 100)}</span>
+                      ) : pos.assetClass === 'fixed_income' ? (
+                        <span className="text-muted-foreground text-[11px]">Renda Fixa</span>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[11px] cursor-help">
+                                Sem cotação
+                                <Info className="h-3 w-3" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">
+                                Ativo sem cotação recente na brapi.dev. Exibindo valor de custo.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-bold text-primary">
+                      {formatCurrencyBRL(pos.marketValueCents / 100)}
                     </td>
                   </tr>
                 ))}
@@ -653,6 +834,8 @@ export default function PositionsPage() {
                           <th className="px-4 py-2.5 text-right">Quantidade (e8)</th>
                           <th className="px-4 py-2.5 text-right">Preço Médio</th>
                           <th className="px-4 py-2.5 text-right">Custo Total</th>
+                          <th className="px-4 py-2.5 text-right">Cotação Atual</th>
+                          <th className="px-4 py-2.5 text-right">Valor de Mercado</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
@@ -676,8 +859,24 @@ export default function PositionsPage() {
                             <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">
                               {formatCurrencyBRL(pos.averagePriceCents / 100)}
                             </td>
-                            <td className="px-4 py-2.5 text-right font-mono font-bold text-foreground">
+                            <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">
                               {formatCurrencyBRL(pos.totalCostCents / 100)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono text-foreground">
+                              {pos.hasQuote && pos.currentPriceCents ? (
+                                <span>{formatCurrencyBRL(pos.currentPriceCents / 100)}</span>
+                              ) : pos.assetClass === 'fixed_income' ? (
+                                <span className="text-muted-foreground text-[11px]">
+                                  Renda Fixa
+                                </span>
+                              ) : (
+                                <span className="text-amber-600 dark:text-amber-400 text-[11px]">
+                                  Sem cotação
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono font-bold text-primary">
+                              {formatCurrencyBRL(pos.marketValueCents / 100)}
                             </td>
                           </tr>
                         ))}
@@ -687,8 +886,14 @@ export default function PositionsPage() {
                           <td colSpan={4} className="px-4 py-2 text-right text-[11px]">
                             Subtotal {group.classLabel}:
                           </td>
-                          <td className="px-4 py-2 text-right font-mono font-bold text-foreground">
+                          <td className="px-4 py-2 text-right font-mono font-semibold text-muted-foreground">
                             {formatCurrencyBRL(group.subtotalCostCents / 100)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-[11px]">Mercado:</td>
+                          <td className="px-4 py-2 text-right font-mono font-bold text-primary">
+                            {formatCurrencyBRL(
+                              group.items.reduce((acc, i) => acc + i.marketValueCents, 0) / 100,
+                            )}
                           </td>
                         </tr>
                       </tfoot>

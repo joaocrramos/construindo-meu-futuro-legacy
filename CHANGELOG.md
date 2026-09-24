@@ -4,6 +4,38 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.119] - 2026-09-24 (Integração brapi.dev: cotações de ativos, câmbio USD/EUR, valor de mercado e atualização sob demanda)
+
+### Adicionado (Added)
+
+- **Collection `quotes` (`pocketbase/migrations/0028_create_quotes.js`)**:
+  - Criação da collection `quotes` no PocketBase com índice único em `ticker` e regras de segurança (leitura para autenticados, mutação exclusiva para superusuário/hooks).
+  - Remoção de migration residual 0027 que havia abortado sem criar a tabela.
+- **Hook de Cotações e Câmbio (`pocketbase/hooks/quotes.js`)**:
+  - Integração com a API brapi.dev utilizando o secret `BRAPI_TOKEN`.
+  - Atualização automática de cotações agendada via `cronAdd` 2 vezes por dia útil no horário civil de Brasília (11:00 e 18:00 BRT / 14:00 e 21:00 UTC).
+  - Endpoint sob demanda `POST /backend/v1/quotes/refresh` para usuários autenticados, com registro de trilha em `audit_logs` (`event_type: 'QUOTES_REFRESHED'`).
+  - Suporte completo a cotações de ativos e pares de moedas estrangeiras (`USD-BRL`, `EUR-BRL`).
+- **Serviço de Cotações no Frontend (`src/services/quotes.ts`)**:
+  - Métodos `listQuotes`, `refreshQuotes`, `getQuoteForTicker` e `getExchangeRateToBRL`.
+- **Valor de Mercado nas Posições (`src/pages/wealth/Positions.tsx`)**:
+  - Cálculo de valor de mercado (`quantidade × cotação`) para ações, fundos imobiliários e criptoativos com cotação na brapi.dev.
+  - Renda fixa mantida estritamente por valor investido/custo de aquisição.
+  - Fallback gracioso com tooltip "Sem cotação" para ativos sem fechamento disponível.
+  - Botão "Atualizar Cotações" com indicador de progresso e exibição da data/hora civil da última atualização via `formatDateBRL`.
+- **Consolidação Patrimonial e Câmbio (`src/pages/wealth/Consolidation.tsx`)**:
+  - Conversão em tempo real de contas internacionais em USD e EUR para Real (BRL) utilizando as taxas da brapi.dev.
+  - Resumo de patrimônio consolidado global em BRL e tabela detalhada de saldos e taxas de conversão.
+  - Botão "Atualizar Cotações" para sincronização imediata.
+
+### Testes e Governança (ADR-006)
+
+- Nova suíte de testes `src/test/quotesIntegration.test.tsx` com mock parcial via `importOriginal`.
+- Validação estrita de governança de migrations (`check-migrations.mjs` e `checkMigrations.test.ts`).
+- Bump de versão para `0.0.119` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.117] - 2026-09-24 (Moeda responsiva no modal de movimentação conforme conta selecionada)
 
 ### Corrigido (Fixed)

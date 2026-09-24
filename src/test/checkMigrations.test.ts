@@ -172,4 +172,31 @@ describe('check:migrations guard script', () => {
     expect(res.status).toBe(0)
     expect(res.stdout).toContain('atendem aos critérios de governança')
   })
+
+  it('permite o salto de 0025 para 0027 ou 0028', () => {
+    createTempMigration(
+      '0001_create_users.js',
+      'migrate((app) => { app.save(new Collection({ name: "users" })) }, (app) => {})',
+    )
+    for (let i = 2; i <= 10; i++) {
+      const pad = String(i).padStart(4, '0')
+      createTempMigration(`${pad}_mig.js`, 'migrate((app) => {}, (app) => {})')
+    }
+    createTempMigration('0020_add_due_date.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration('0021_mig.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration(
+      '0022_create_alerts.js',
+      'migrate((app) => { app.save(new Collection({ name: "alerts" })) }, (app) => {})',
+    )
+    createTempMigration('0023_mig.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration('0024_mig.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration('0025_mig.js', 'migrate((app) => {}, (app) => {})')
+    createTempMigration(
+      '0028_create_quotes.js',
+      'migrate((app) => { app.save(new Collection({ name: "quotes" })) }, (app) => {})',
+    )
+    const res = runCheck()
+    expect(res.status).toBe(0)
+    expect(res.stdout).toContain('Todas as 17 migrations')
+  })
 })
