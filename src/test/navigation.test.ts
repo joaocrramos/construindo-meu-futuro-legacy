@@ -54,6 +54,14 @@ describe('Configuração da Navegação Estrutural', () => {
     expect(titles).toContain('Limpeza do Ambiente de Dev')
   })
 
+  it('deve conter a rota correspondente para Limpeza do Ambiente de Dev apontando para /admin/reset-dev', () => {
+    const admin = navigationConfig.find((s) => s.id === 'admin')
+    const resetDevItem = admin?.items.find((i) => i.title === 'Limpeza do Ambiente de Dev')
+    expect(resetDevItem).toBeDefined()
+    expect(resetDevItem?.href).toBe('/admin/reset-dev')
+    expect(resetDevItem?.requireAdmin).toBe(true)
+  })
+
   it('deve conter os subitens consolidados de Conta sem entradas duplicadas de senha ou aparência', () => {
     const account = navigationConfig.find((s) => s.id === 'account')
     expect(account).toBeDefined()

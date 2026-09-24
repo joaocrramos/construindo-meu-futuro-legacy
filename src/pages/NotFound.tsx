@@ -7,7 +7,7 @@ const NotFound = () => {
 
   useEffect(() => {
     document.title = 'Página não encontrada · Construindo Meu Futuro'
-    console.error('404 Error: User attempted to access non-existent route:', location.pathname)
+    console.warn('404: Rota não encontrada:', location.pathname)
   }, [location.pathname])
 
   return (

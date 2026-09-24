@@ -51,8 +51,8 @@ const AdminSecurityPage = lazy(() => import('@/pages/admin/Security'))
 const AdminEmailPage = lazy(() => import('@/pages/admin/Email'))
 const AdminSettingsPage = lazy(() => import('@/pages/admin/Settings'))
 
-// Rota restrita de desenvolvimento (/admin/reset-dev) - não é importada em produção
-const AdminResetDevPage = import.meta.env.DEV ? lazy(() => import('@/pages/admin/ResetDev')) : null
+// Rota restrita de desenvolvimento (/admin/reset-dev) com tela informativa/bloqueada
+const AdminResetDevPage = lazy(() => import('@/pages/admin/ResetDev'))
 
 // Área 4: Conta (Lazy Chunks)
 const AccountProfilePage = lazy(() => import('@/pages/account/Profile'))
@@ -370,19 +370,17 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
-                {/* Rota /admin/reset-dev registrada exclusivamente em ambiente de desenvolvimento */}
-                {AdminResetDevPage && (
-                  <Route
-                    path="/admin/reset-dev"
-                    element={
-                      <ProtectedRoute requireAdmin>
-                        <AppLayout>
-                          <AdminResetDevPage />
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                )}
+                {/* Rota /admin/reset-dev com tela de recurso bloqueado e governança */}
+                <Route
+                  path="/admin/reset-dev"
+                  element={
+                    <ProtectedRoute requireAdmin>
+                      <AppLayout>
+                        <AdminResetDevPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Área 4: Conta */}
                 <Route

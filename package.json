@@ -2,7 +2,7 @@
   "name": "construindo-meu-futuro",
   "description": "Sistema de organização patrimonial e acompanhamento de investimentos pessoais",
   "private": true,
-  "version": "0.0.108",
+  "version": "0.0.109",
   "type": "module",
   "scripts": {
     "start": "vite dev",

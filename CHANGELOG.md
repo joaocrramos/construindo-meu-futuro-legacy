@@ -4,6 +4,22 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.109] - 2026-09-24 (Correção da rota /admin/reset-dev e tratamento amigável de 404)
+
+### Corrigido (Fixed)
+
+- **Registro da Rota `/admin/reset-dev` (`src/App.tsx`)**:
+  - Habilitado o registro incondicional da rota protegida `/admin/reset-dev` apontando para o componente de governança `AdminResetDevPage` (`src/pages/admin/ResetDev.tsx`), eliminando o erro de 404 e runtime no preview ao navegar pelo menu lateral Admin → "Limpeza do Ambiente de Dev" ou diretamente.
+  - A tela exibe de forma segura e clara as informações de governança e travas de proteção em 5 camadas com o botão de execução desabilitado e bloqueado, garantindo conformidade com o menu de navegação e as regras da aplicação.
+- **Tratamento Amigável de Página 404 (`src/pages/NotFound.tsx`)**:
+  - Ajustado o log de aviso em rota inexistente de `console.error` para `console.warn`, impedindo que acessos a URLs inexistentes gerem runtime errors nos interceptadores de console dos ambientes de preview.
+- **Suíte de Testes Automatizados (`src/test/navigation.test.ts`)**:
+  - Adicionado caso de teste validando o item de menu "Limpeza do Ambiente de Dev" com link `/admin/reset-dev` e proteção `requireAdmin`.
+- **Governança de Versionamento (ADR-006)**:
+  - Incremento de versão semântica para `0.0.109` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.108] - 2026-09-24 (Envio de e-mail transacional via Resend para novos alertas de vencimento crítico)
 
 ### Adicionado (Added)
