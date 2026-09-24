@@ -4,6 +4,22 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.125] - 2026-09-24 (Remoção de endpoint de debug público e de relatório de auditoria desatualizado)
+
+### Segurança (Security)
+
+- **Removida a rota `GET /backend/v1/quotes/debug-migrations` (`pocketbase/hooks/quotes.js`)**: expunha a tabela interna `_migrations` sem exigir autenticação. Tinha sido adicionada como diagnóstico e não era usada pelo frontend.
+
+### Removido (Removed)
+
+- **`docs/AUDIT_SYNC_ACTIONS.md`**: relatório gerado automaticamente com dados incorretos (`VERSION` 0.0.35, "migrations 0001 a 0022", tag `v0.0.123` no remoto, que não existe). O estado real está em `VERSION`, `CHANGELOG.md` e `pocketbase/migrations/README.md`.
+
+### Governança de Versionamento (ADR-006)
+
+- `VERSION`, `package.json` e `CHANGELOG.md` realinhados em `0.0.125`. As entradas 0.0.123 e 0.0.124 existiram só como contador de build no `package.json`, sem release correspondente.
+
+---
+
 ## [0.0.122] - 2026-09-24 (Limpeza de migrations duplicadas, guard de migrations e CI verde)
 
 ### Corrigido (Fixed)
