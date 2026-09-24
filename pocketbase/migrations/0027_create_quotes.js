@@ -1,3 +1,5 @@
+// Migration 0027: Criação da collection quotes para integração com brapi.dev
+// Armazena cotações de ativos e pares cambiais (USD/BRL, EUR/BRL)
 migrate(
   (app) => {
     if (app.hasTable('quotes')) {
@@ -15,7 +17,7 @@ migrate(
       fields: [
         { name: 'ticker', type: 'text', required: true, min: 1, max: 30 },
         { name: 'price_cents', type: 'number', required: true, onlyInt: true },
-        { name: 'currency', type: 'text', required: true, min: 3, max: 3 },
+        { name: 'currency', type: 'text', required: true, min: 3, max: 10 },
         { name: 'quoted_at', type: 'date', required: false },
         { name: 'change_percent', type: 'number', required: false },
         { name: 'source', type: 'text', required: false },
