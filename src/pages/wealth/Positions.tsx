@@ -142,9 +142,6 @@ export default function PositionsPage() {
     const accMap = new Map<string, AccountRecord>(accounts.map((a) => [a.id, a]))
     const astMap = new Map<string, AssetRecord>(assets.map((a) => [a.id, a]))
 
-    // Classes que utilizam cotação de mercado para cálculo do valor de mercado
-    const marketValueClasses: string[] = ['equities', 'real_estate_funds', 'crypto']
-
     const calculateMarketValue = (
       rawClass: string,
       ticker: string,

@@ -1,3 +1,5 @@
+/// <reference types="@testing-library/jest-dom" />
+import '@testing-library/jest-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -130,7 +132,6 @@ describe('Integração de Cotações brapi.dev e Valor de Mercado', () => {
         account_id: 'acc-1',
         asset_id: 'ast-petr4',
         quantity_e8: 10000000000, // 100 ações
-        averagePriceCents: 3000, // R$ 30,00 cada
         average_price_cents: 3000,
         total_cost_cents: 300000, // R$ 3.000,00 custo
         created: '2026-01-01',
@@ -142,7 +143,6 @@ describe('Integração de Cotações brapi.dev e Valor de Mercado', () => {
         account_id: 'acc-1',
         asset_id: 'ast-cdb',
         quantity_e8: 500000000000,
-        averagePriceCents: 100,
         average_price_cents: 100,
         total_cost_cents: 500000, // R$ 5.000,00 aplicado
         created: '2026-01-01',
