@@ -406,6 +406,12 @@ cronAdd('quotes_refresh_closing', '0 21 * * 1-5', () => {
 })
 
 // Rota sob demanda para atualização manual (exige autenticação)
+routerAdd('GET', '/backend/v1/quotes/debug-migrations', (e) => {
+  const rows = []
+  $app.db().newQuery('SELECT file, applied FROM _migrations').all(rows)
+  return e.json(200, { rows })
+})
+
 routerAdd('POST', '/backend/v1/quotes/refresh', (e) => {
   const authRecord = e.auth
   if (!authRecord) {
