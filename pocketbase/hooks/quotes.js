@@ -42,9 +42,9 @@ cronAdd('quotes_refresh_morning', '0 14 * * 1-5', () => {
     const tickersList = Object.keys(tickersSet)
     let updatedCount = 0
 
-    // 2. Buscar cotações na brapi.dev em lotes de até 20 tickers
+    // 2. Buscar cotações na brapi.dev em lotes de até 10 tickers
     if (tickersList.length > 0) {
-      const batchSize = 20
+      const batchSize = 10
       for (let b = 0; b < tickersList.length; b += batchSize) {
         const batchTickers = tickersList.slice(b, b + batchSize)
         const tickersParam = batchTickers.join(',')
@@ -155,38 +155,43 @@ cronAdd('quotes_refresh_morning', '0 14 * * 1-5', () => {
           if (pairSymbol && bidPrice > 0) {
             const priceCents = Math.round(bidPrice * 100)
             const quotedAt = new Date().toISOString()
+            const fxTicker = pairSymbol.replace('-', '') // USDBRL / EURBRL
+            const tickersToSave = [pairSymbol, fxTicker]
 
-            try {
-              let existingPair = null
+            for (let t = 0; t < tickersToSave.length; t++) {
+              const currentTicker = tickersToSave[t]
               try {
-                existingPair = $app.findFirstRecordByData('quotes', 'ticker', pairSymbol)
-              } catch (_) {}
+                let existingPair = null
+                try {
+                  existingPair = $app.findFirstRecordByData('quotes', 'ticker', currentTicker)
+                } catch (_) {}
 
-              if (existingPair) {
-                existingPair.set('price_cents', priceCents)
-                existingPair.set('currency', 'BRL')
-                existingPair.set('quoted_at', quotedAt)
-                existingPair.set('change_percent', 0)
-                existingPair.set('source', 'brapi.dev')
-                existingPair.set('raw_data', cItem)
-                $app.save(existingPair)
-              } else {
-                const newPair = new Record(quotesCol)
-                newPair.set('ticker', pairSymbol)
-                newPair.set('price_cents', priceCents)
-                newPair.set('currency', 'BRL')
-                newPair.set('quoted_at', quotedAt)
-                newPair.set('change_percent', 0)
-                newPair.set('source', 'brapi.dev')
-                newPair.set('raw_data', cItem)
-                $app.save(newPair)
+                if (existingPair) {
+                  existingPair.set('price_cents', priceCents)
+                  existingPair.set('currency', 'BRL')
+                  existingPair.set('quoted_at', quotedAt)
+                  existingPair.set('change_percent', 0)
+                  existingPair.set('source', 'brapi_fx')
+                  existingPair.set('raw_data', cItem)
+                  $app.save(existingPair)
+                } else {
+                  const newPair = new Record(quotesCol)
+                  newPair.set('ticker', currentTicker)
+                  newPair.set('price_cents', priceCents)
+                  newPair.set('currency', 'BRL')
+                  newPair.set('quoted_at', quotedAt)
+                  newPair.set('change_percent', 0)
+                  newPair.set('source', 'brapi_fx')
+                  newPair.set('raw_data', cItem)
+                  $app.save(newPair)
+                }
+              } catch (pairSaveErr) {
+                console.log(
+                  `[WARN][QUOTES_CRON] Erro ao salvar par ${currentTicker}: ${pairSaveErr.message}`,
+                )
               }
-              updatedCount++
-            } catch (pairSaveErr) {
-              console.log(
-                `[WARN][QUOTES_CRON] Erro ao salvar par ${pairSymbol}: ${pairSaveErr.message}`,
-              )
             }
+            updatedCount++
           }
         }
       }
@@ -242,7 +247,7 @@ cronAdd('quotes_refresh_closing', '0 21 * * 1-5', () => {
     let updatedCount = 0
 
     if (tickersList.length > 0) {
-      const batchSize = 20
+      const batchSize = 10
       for (let b = 0; b < tickersList.length; b += batchSize) {
         const batchTickers = tickersList.slice(b, b + batchSize)
         const tickersParam = batchTickers.join(',')
@@ -348,38 +353,43 @@ cronAdd('quotes_refresh_closing', '0 21 * * 1-5', () => {
           if (pairSymbol && bidPrice > 0) {
             const priceCents = Math.round(bidPrice * 100)
             const quotedAt = new Date().toISOString()
+            const fxTicker = pairSymbol.replace('-', '') // USDBRL / EURBRL
+            const tickersToSave = [pairSymbol, fxTicker]
 
-            try {
-              let existingPair = null
+            for (let t = 0; t < tickersToSave.length; t++) {
+              const currentTicker = tickersToSave[t]
               try {
-                existingPair = $app.findFirstRecordByData('quotes', 'ticker', pairSymbol)
-              } catch (_) {}
+                let existingPair = null
+                try {
+                  existingPair = $app.findFirstRecordByData('quotes', 'ticker', currentTicker)
+                } catch (_) {}
 
-              if (existingPair) {
-                existingPair.set('price_cents', priceCents)
-                existingPair.set('currency', 'BRL')
-                existingPair.set('quoted_at', quotedAt)
-                existingPair.set('change_percent', 0)
-                existingPair.set('source', 'brapi.dev')
-                existingPair.set('raw_data', cItem)
-                $app.save(existingPair)
-              } else {
-                const newPair = new Record(quotesCol)
-                newPair.set('ticker', pairSymbol)
-                newPair.set('price_cents', priceCents)
-                newPair.set('currency', 'BRL')
-                newPair.set('quoted_at', quotedAt)
-                newPair.set('change_percent', 0)
-                newPair.set('source', 'brapi.dev')
-                newPair.set('raw_data', cItem)
-                $app.save(newPair)
+                if (existingPair) {
+                  existingPair.set('price_cents', priceCents)
+                  existingPair.set('currency', 'BRL')
+                  existingPair.set('quoted_at', quotedAt)
+                  existingPair.set('change_percent', 0)
+                  existingPair.set('source', 'brapi_fx')
+                  existingPair.set('raw_data', cItem)
+                  $app.save(existingPair)
+                } else {
+                  const newPair = new Record(quotesCol)
+                  newPair.set('ticker', currentTicker)
+                  newPair.set('price_cents', priceCents)
+                  newPair.set('currency', 'BRL')
+                  newPair.set('quoted_at', quotedAt)
+                  newPair.set('change_percent', 0)
+                  newPair.set('source', 'brapi_fx')
+                  newPair.set('raw_data', cItem)
+                  $app.save(newPair)
+                }
+              } catch (pairSaveErr) {
+                console.log(
+                  `[WARN][QUOTES_CRON] Erro ao salvar par ${currentTicker}: ${pairSaveErr.message}`,
+                )
               }
-              updatedCount++
-            } catch (pairSaveErr) {
-              console.log(
-                `[WARN][QUOTES_CRON] Erro ao salvar par ${pairSymbol}: ${pairSaveErr.message}`,
-              )
             }
+            updatedCount++
           }
         }
       }
@@ -423,33 +433,56 @@ routerAdd('POST', '/backend/v1/quotes/refresh', (e) => {
     })
   }
 
-  // 1. Obter todos os tickers únicos cadastrados em assets (e das posições do usuário)
+  // 1. Obter todos os tickers únicos: do body da requisição (se enviado) OU das posições/ativos do usuário autenticado
   const tickersSet = {}
+  let customTickersProvided = false
+
   try {
-    const assetsList = $app.findRecordsByFilter(
-      'assets',
-      'is_active = true && ticker != ""',
-      'ticker',
-      1000,
-      0,
-    )
-    for (let i = 0; i < assetsList.length; i++) {
-      const rawTicker = (assetsList[i].getString('ticker') || '').trim().toUpperCase()
-      if (rawTicker && rawTicker.length >= 2 && !rawTicker.includes(' ')) {
-        tickersSet[rawTicker] = true
+    const reqInfo = e.requestInfo()
+    const body = reqInfo ? reqInfo.body : {}
+    if (body && Array.isArray(body.tickers) && body.tickers.length > 0) {
+      customTickersProvided = true
+      for (let t = 0; t < body.tickers.length; t++) {
+        const rawTicker = String(body.tickers[t] || '').trim().toUpperCase()
+        if (rawTicker && rawTicker.length >= 2 && !rawTicker.includes(' ')) {
+          tickersSet[rawTicker] = true
+        }
       }
     }
-  } catch (astErr) {
-    console.log('[WARN][QUOTES_REFRESH] Erro ao buscar ativos: ' + astErr.message)
+  } catch (_) {}
+
+  // Se não foi enviada lista de tickers no body, busca tickers únicos de equities, real_estate_funds, crypto ou das posições do usuário
+  if (!customTickersProvided) {
+    try {
+      const userFilter = `user_id = "${authRecord.id}" && is_active = true && ticker != ""`
+      const assetsList = $app.findRecordsByFilter(
+        'assets',
+        userFilter,
+        'ticker',
+        1000,
+        0,
+      )
+      for (let i = 0; i < assetsList.length; i++) {
+        const rawTicker = (assetsList[i].getString('ticker') || '').trim().toUpperCase()
+        const assetClass = assetsList[i].getString('asset_class')
+        // Ativos de renda fixa não têm ticker de mercado na brapi
+        if (assetClass === 'fixed_income') continue
+        if (rawTicker && rawTicker.length >= 2 && !rawTicker.includes(' ')) {
+          tickersSet[rawTicker] = true
+        }
+      }
+    } catch (astErr) {
+      console.log('[WARN][QUOTES_REFRESH] Erro ao buscar ativos: ' + astErr.message)
+    }
   }
 
   const tickersList = Object.keys(tickersSet)
   let updatedCount = 0
   const errors = []
 
-  // 2. Buscar cotações na brapi.dev em lotes de 20
+  // 2. Buscar cotações na brapi.dev em lotes de até 10 tickers (respeitando plano free)
   if (tickersList.length > 0) {
-    const batchSize = 20
+    const batchSize = 10
     for (let b = 0; b < tickersList.length; b += batchSize) {
       const batchTickers = tickersList.slice(b, b + batchSize)
       const tickersParam = batchTickers.join(',')
@@ -556,38 +589,42 @@ routerAdd('POST', '/backend/v1/quotes/refresh', (e) => {
         if (pairSymbol && bidPrice > 0) {
           const priceCents = Math.round(bidPrice * 100)
           const quotedAt = new Date().toISOString()
+          const fxTicker = pairSymbol.replace('-', '') // USDBRL ou EURBRL
+          const tickersToSave = [pairSymbol, fxTicker]
 
-          try {
-            let existingPair = null
+          for (let t = 0; t < tickersToSave.length; t++) {
+            const currentTicker = tickersToSave[t]
             try {
-              existingPair = $app.findFirstRecordByData('quotes', 'ticker', pairSymbol)
-            } catch (_) {}
+              let existingPair = null
+              try {
+                existingPair = $app.findFirstRecordByData('quotes', 'ticker', currentTicker)
+              } catch (_) {}
 
-            if (existingPair) {
-              existingPair.set('price_cents', priceCents)
-              existingPair.set('currency', 'BRL')
-              existingPair.set('quoted_at', quotedAt)
-              existingPair.set('change_percent', 0)
-              existingPair.set('source', 'brapi.dev')
-              existingPair.set('raw_data', cItem)
-              $app.save(existingPair)
-            } else {
-              const newPair = new Record(quotesCol)
-              newPair.set('ticker', pairSymbol)
-              newPair.set('price_cents', priceCents)
-              newPair.set('currency', 'BRL')
-              newPair.set('quoted_at', quotedAt)
-              newPair.set('change_percent', 0)
-              newPair.set('source', 'brapi.dev')
-              newPair.set('raw_data', cItem)
-              $app.save(newPair)
+              if (existingPair) {
+                existingPair.set('price_cents', priceCents)
+                existingPair.set('currency', 'BRL')
+                existingPair.set('quoted_at', quotedAt)
+                existingPair.set('change_percent', 0)
+                existingPair.set('source', 'brapi_fx')
+                existingPair.set('raw_data', cItem)
+                $app.save(existingPair)
+              } else {
+                const newPair = new Record(quotesCol)
+                newPair.set('ticker', currentTicker)
+                newPair.set('price_cents', priceCents)
+                newPair.set('currency', 'BRL')
+                newPair.set('quoted_at', quotedAt)
+                newPair.set('change_percent', 0)
+                newPair.set('source', 'brapi_fx')
+                newPair.set('raw_data', cItem)
+                $app.save(newPair)
+              }
+            } catch (pairSaveErr) {
+              errors.push(`Falha ao salvar par ${currentTicker}: ${pairSaveErr.message}`)
             }
-            updatedCount++
-          } catch (pairSaveErr) {
-            errors.push(`Falha ao salvar par ${pairSymbol}: ${pairSaveErr.message}`)
           }
-        }
-      }
+          updatedCount++
+        }      }
     }
   } catch (currErr) {
     errors.push(`Erro ao buscar moedas: ${currErr.message}`)

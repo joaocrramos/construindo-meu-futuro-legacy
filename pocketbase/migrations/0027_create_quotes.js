@@ -13,6 +13,14 @@ migrate(
       updateRule: null,
       deleteRule: null,
       fields: [
+        {
+          name: 'user_id',
+          type: 'relation',
+          required: false,
+          collectionId: '_pb_users_auth_',
+          cascadeDelete: false,
+          maxSelect: 1,
+        },
         { name: 'ticker', type: 'text', required: true, min: 1, max: 30 },
         { name: 'price_cents', type: 'number', required: true, onlyInt: true },
         { name: 'currency', type: 'text', required: true, min: 3, max: 10 },

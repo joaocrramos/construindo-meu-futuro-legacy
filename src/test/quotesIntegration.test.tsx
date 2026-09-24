@@ -276,10 +276,34 @@ describe('Integração de Cotações brapi.dev e Valor de Mercado', () => {
     const valeQuote = quotesService.getQuoteForTicker(mockQuotes, 'vale3')
     expect(valeQuote?.price_cents).toBe(6500)
 
+    // getQuote
+    const directQuote = quotesService.getQuote('vale3', mockQuotes)
+    expect(directQuote?.price_cents).toBe(6500)
+
     const eurRate = quotesService.getExchangeRateToBRL(mockQuotes, 'EUR')
     expect(eurRate).toBe(6.1)
 
     const brlRate = quotesService.getExchangeRateToBRL(mockQuotes, 'BRL')
     expect(brlRate).toBe(1)
+
+    // getFxRate USD -> BRL e EUR -> BRL
+    const fxEurBrl = quotesService.getFxRate('EUR', 'BRL', mockQuotes)
+    expect(fxEurBrl).toBe(6.1)
+    const fxBrlBrl = quotesService.getFxRate('BRL', 'BRL', mockQuotes)
+    expect(fxBrlBrl).toBe(1)
+
+    // Formato sem traço USDBRL
+    const mockFxQuotes: quotesService.QuoteRecord[] = [
+      {
+        id: 'fx-usd',
+        ticker: 'USDBRL',
+        price_cents: 550,
+        currency: 'BRL',
+        source: 'brapi_fx',
+        created: '',
+        updated: '',
+      },
+    ]
+    expect(quotesService.getFxRate('USD', 'BRL', mockFxQuotes)).toBe(5.5)
   })
 })

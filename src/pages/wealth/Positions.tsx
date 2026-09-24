@@ -34,7 +34,13 @@ import {
   type AssetClass,
 } from '@/services/assets'
 import { listAccountBalances, type AccountBalanceRecord } from '@/services/accountBalances'
-import { listQuotes, refreshQuotes, getQuoteForTicker, type QuoteRecord } from '@/services/quotes'
+import {
+  listQuotes,
+  refreshQuotes,
+  getQuoteForTicker,
+  getQuote,
+  type QuoteRecord,
+} from '@/services/quotes'
 import { formatDateBRL } from '@/lib/formatters'
 import { RefreshCw, Info } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -161,7 +167,7 @@ export default function PositionsPage() {
       }
 
       // Se for classe de mercado com ticker cadastrado
-      const q = ticker ? getQuoteForTicker(quotes, ticker) : undefined
+      const q = ticker ? getQuote(ticker, quotes) || getQuoteForTicker(quotes, ticker) : undefined
       if (q && q.price_cents > 0) {
         // quantidade decimal = qtyE8 / 1e8
         // valor de mercado = (qtyE8 / 1e8) * (q.price_cents)

@@ -4,6 +4,31 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.121] - 2026-09-24 (Integração brapi.dev completa: rota POST /backend/v1/quotes/refresh, câmbio USDBRL/EURBRL, valor de mercado e consolidação patrimonial)
+
+### Modificado (Changed)
+
+- **Backend Hook de Cotações (`pocketbase/hooks/quotes.js`)**:
+  - Rota `POST /backend/v1/quotes/refresh` com suporte a recebimento de lista explícita de `tickers` no corpo da requisição (`e.requestInfo().body.tickers`) ou derivação automática dos tickers únicos das classes de mercado (ações, FIIs, ETFs, BDRs e cripto) pertencentes ao usuário autenticado (`user_id = @auth.id`), excluindo renda fixa.
+  - Rate limiting respeitado para o plano free da brapi.dev com loteamento de até 10 tickers por requisição HTTP.
+  - Cotações de câmbio USD e EUR gravadas em `quotes` tanto no formato com hífen (`USD-BRL`, `EUR-BRL`) quanto no formato contínuo (`USDBRL`, `EURBRL`) com source `"brapi_fx"`.
+  - Resiliência total: falhas de chamada à brapi.dev jamais derrubam a rota, retornando resposta JSON informativa com status 200 e lista de advertências.
+  - Auditoria com evento `QUOTES_REFRESHED` e severidade `info` em `audit_logs`.
+- **Serviço de Cotações (`src/services/quotes.ts`)**:
+  - `refreshQuotes(tickers?: string[])` com parâmetro opcional de tickers.
+  - Novas funções utilitárias `getQuote(ticker, quotes)` e `getFxRate(fromCurrency, toCurrency, quotes)` com suporte a conversão cambial direta e triangulação.
+- **Telas de Posições e Consolidação Patrimonial (`src/pages/wealth/Positions.tsx` e `src/pages/wealth/Consolidation.tsx`)**:
+  - Uso dos utilitários `getQuote` e `getFxRate` para valor de mercado e conversão de saldos internacionais (USD/EUR) para BRL.
+  - Exibição da taxa utilizada e data da cotação.
+  - Botão "Atualizar Cotações" com indicador de carregamento e feedback visual.
+
+### Testes e Governança (ADR-006)
+
+- Atualização e expansão da suíte de testes `src/test/quotesIntegration.test.tsx` com mocks parciais via `importOriginal`.
+- Incremento de versão semântica para `0.0.121` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.119] - 2026-09-24 (Integração brapi.dev: cotações de ativos, câmbio USD/EUR, valor de mercado e atualização sob demanda)
 
 ### Adicionado (Added)

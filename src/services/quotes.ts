@@ -40,9 +40,10 @@ export async function listQuotes(): Promise<QuoteRecord[]> {
 /**
  * Dispara atualização de cotações sob demanda via hook no backend.
  */
-export async function refreshQuotes(): Promise<RefreshQuotesResponse> {
+export async function refreshQuotes(tickers?: string[]): Promise<RefreshQuotesResponse> {
   const response = await pb.send<RefreshQuotesResponse>('/backend/v1/quotes/refresh', {
     method: 'POST',
+    body: tickers && tickers.length > 0 ? { tickers } : undefined,
   })
   return response
 }
@@ -60,14 +61,45 @@ export function getQuoteForTicker(quotes: QuoteRecord[], ticker: string): QuoteR
  * Utilitário para obter a taxa de câmbio (em decimal) para conversão para BRL.
  * Suporta USD-BRL e EUR-BRL. Retorna undefined se não encontrada.
  */
+export function getQuote(ticker: string, quotes: QuoteRecord[] = []): QuoteRecord | undefined {
+  return getQuoteForTicker(quotes, ticker)
+}
+
+export function getFxRate(
+  fromCurrency: string,
+  toCurrency: string = 'BRL',
+  quotes: QuoteRecord[] = [],
+): number | undefined {
+  const normFrom = (fromCurrency || '').trim().toUpperCase()
+  const normTo = (toCurrency || '').trim().toUpperCase()
+
+  if (normFrom === normTo) return 1
+  if (normTo === 'BRL') {
+    return getExchangeRateToBRL(quotes, normFrom)
+  }
+
+  // Se toCurrency não for BRL, calcula triangulação via BRL se ambos existirem
+  const fromToBrl = getExchangeRateToBRL(quotes, normFrom)
+  const toToBrl = getExchangeRateToBRL(quotes, normTo)
+  if (fromToBrl && toToBrl && toToBrl > 0) {
+    return fromToBrl / toToBrl
+  }
+
+  return undefined
+}
+
 export function getExchangeRateToBRL(quotes: QuoteRecord[], currency: string): number | undefined {
   const normCurr = (currency || '').trim().toUpperCase()
   if (normCurr === 'BRL') return 1
 
-  const pairKey = `${normCurr}-BRL`
-  const quote = quotes.find(
-    (q) => q.ticker.toUpperCase() === pairKey || q.ticker.toUpperCase() === `${normCurr}/BRL`,
-  )
+  const pairKeyDash = `${normCurr}-BRL`
+  const pairKeySlash = `${normCurr}/BRL`
+  const pairKeyRaw = `${normCurr}BRL`
+
+  const quote = quotes.find((q) => {
+    const t = q.ticker.toUpperCase()
+    return t === pairKeyDash || t === pairKeySlash || t === pairKeyRaw
+  })
 
   if (quote && quote.price_cents > 0) {
     return quote.price_cents / 100

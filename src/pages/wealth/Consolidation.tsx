@@ -28,6 +28,7 @@ import {
   listQuotes,
   refreshQuotes,
   getExchangeRateToBRL,
+  getFxRate,
   type QuoteRecord,
 } from '@/services/quotes'
 
@@ -93,13 +94,19 @@ export default function ConsolidationPage() {
   }
 
   // Câmbio atual obtido da brapi.dev
-  const usdRate = React.useMemo(() => getExchangeRateToBRL(quotes, 'USD'), [quotes])
-  const eurRate = React.useMemo(() => getExchangeRateToBRL(quotes, 'EUR'), [quotes])
+  const usdRate = React.useMemo(() => getFxRate('USD', 'BRL', quotes) ?? getExchangeRateToBRL(quotes, 'USD'), [quotes])
+  const eurRate = React.useMemo(() => getFxRate('EUR', 'BRL', quotes) ?? getExchangeRateToBRL(quotes, 'EUR'), [quotes])
 
   // Data da cotação de câmbio
   const exchangeDate = React.useMemo(() => {
-    const usdQuote = quotes.find((q) => q.ticker.toUpperCase() === 'USD-BRL')
-    const eurQuote = quotes.find((q) => q.ticker.toUpperCase() === 'EUR-BRL')
+    const usdQuote = quotes.find((q) => {
+      const t = q.ticker.toUpperCase()
+      return t === 'USD-BRL' || t === 'USDBRL'
+    })
+    const eurQuote = quotes.find((q) => {
+      const t = q.ticker.toUpperCase()
+      return t === 'EUR-BRL' || t === 'EURBRL'
+    })
     const d = usdQuote?.quoted_at || eurQuote?.quoted_at || usdQuote?.updated || eurQuote?.updated
     return d || null
   }, [quotes])
