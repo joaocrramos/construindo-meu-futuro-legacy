@@ -167,7 +167,7 @@ describe('check:migrations guard script', () => {
     expect(res.stdout).toContain('Todas as 12 migrations')
   })
 
-  it('passa com as migrations reais do projeto incluindo a migration 0024 de reset', () => {
+  it('passa com as migrations reais do projeto incluindo a migration 0024 e 0025', () => {
     const res = runCheck(join(repoRoot, 'pocketbase', 'migrations'))
     expect(res.status).toBe(0)
     expect(res.stdout).toContain('atendem aos critérios de governança')

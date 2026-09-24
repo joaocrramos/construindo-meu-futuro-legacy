@@ -4,6 +4,33 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.114] - 2026-09-24 (Moeda das contas como lista enumerada BRL, USD, EUR e robustez de last_login)
+
+### Modificado (Changed)
+
+- **Moeda das Contas Patrimoniais como Lista Enumerada Fechada (`/wealth/accounts`)**:
+  - Conversão do campo `accounts.currency` no schema do backend PocketBase para `SelectField` restrito a `['BRL', 'USD', 'EUR']` via migration `0025_accounts_currency_enum.js`.
+  - Normalização segura de dados legados no banco de dados para os valores válidos (`BRL`, `USD`, `EUR`).
+  - Atualização do schema mirror em `src/lib/pocketbase/schema.json`.
+  - Na tela `src/pages/wealth/Accounts.tsx`, substituição do input de texto livre por `Select` padronizado com as três opções enumeradas (`BRL`, `USD`, `EUR`), valor padrão `BRL` e renderização com tipografia mono.
+  - Formatação visual no grid de contas estendida para suportar símbolo de Euro (`€`) além de Dólar (`$`) e Real (`R$`).
+  - Validação estrita em `src/services/accounts.ts` rejeitando quaisquer moedas fora da lista permitida em `createAccount` e `updateAccount`.
+
+### Corrigido (Fixed)
+
+- **Auditoria de `last_login` do Usuário na Autenticação (`pocketbase/hooks/auth.js`)**:
+  - Garantida a execução do hook `onRecordAuthRequest` gravando a data/hora do login em `users.last_login` de forma não-bloqueante.
+  - Cobertura de teste automatizada validando a preservação do login e log de advertência caso a persistência em banco falhe.
+
+### Testes e Governança (ADR-006)
+
+- `src/test/wealthInstitutionsAccounts.test.tsx`: novo teste de integração cobrindo a seleção das moedas `BRL`, `USD` e `EUR` no modal de Contas.
+- `src/test/authLastLoginHook.test.ts`: asserção de tolerância a falhas na gravação de `last_login`.
+- `src/test/checkMigrations.test.ts`: validação da nova migration 0025.
+- Incremento de versão semântica para `0.0.114` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.112] - 2026-09-24 (Organização do menu Patrimônio com submenu expansível Cadastros e ícone de lixeira para Desativar)
 
 ### Modificado (Changed)

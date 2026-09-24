@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T09:37:09.690Z",
+  "generatedAt": "2026-09-24T10:00:34.210Z",
   "collections": [
     {
       "name": "users",
@@ -431,9 +431,10 @@
         },
         {
           "name": "currency",
-          "type": "text",
+          "type": "select",
           "required": true,
-          "system": false
+          "system": false,
+          "selectValues": ["BRL", "USD", "EUR"]
         },
         {
           "name": "account_number",

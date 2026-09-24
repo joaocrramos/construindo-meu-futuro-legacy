@@ -38,6 +38,8 @@ import {
   createAccount,
   updateAccount,
   toggleAccountActive,
+  ACCOUNT_CURRENCIES,
+  type AccountCurrency,
   type AccountRecord,
   type AccountType,
 } from '@/services/accounts'
@@ -69,7 +71,7 @@ export default function AccountsPage() {
   const [institutionId, setInstitutionId] = React.useState('')
   const [name, setName] = React.useState('')
   const [accountType, setAccountType] = React.useState<AccountType>('checking')
-  const [currency, setCurrency] = React.useState('BRL')
+  const [currency, setCurrency] = React.useState<AccountCurrency>('BRL')
   const [agency, setAgency] = React.useState('')
   const [accountNumber, setAccountNumber] = React.useState('')
   const [isActive, setIsActive] = React.useState(true)
@@ -116,7 +118,7 @@ export default function AccountsPage() {
     setInstitutionId(item.institution_id)
     setName(item.name)
     setAccountType(item.account_type)
-    setCurrency(item.currency || 'BRL')
+    setCurrency((item.currency as AccountCurrency) || 'BRL')
     setAgency(item.agency || '')
     setAccountNumber(item.account_number || '')
     setIsActive(item.is_active)
@@ -141,7 +143,7 @@ export default function AccountsPage() {
           institution_id: institutionId,
           name: name.trim(),
           account_type: accountType,
-          currency: currency.trim().toUpperCase() || 'BRL',
+          currency: currency,
           agency: agency.trim() || undefined,
           account_number: accountNumber.trim() || undefined,
           is_active: isActive,
@@ -152,7 +154,7 @@ export default function AccountsPage() {
           institution_id: institutionId,
           name: name.trim(),
           account_type: accountType,
-          currency: currency.trim().toUpperCase() || 'BRL',
+          currency: currency,
           agency: agency.trim() || undefined,
           account_number: accountNumber.trim() || undefined,
           is_active: isActive,
@@ -299,15 +301,25 @@ export default function AccountsPage() {
                   <Label htmlFor="accCurrency" className="text-xs font-semibold">
                     Moeda *
                   </Label>
-                  <Input
-                    id="accCurrency"
-                    placeholder="BRL, USD, EUR"
+                  <Select
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                    className="h-9 text-xs uppercase font-mono"
-                    maxLength={3}
-                    required
-                  />
+                    onValueChange={(val: AccountCurrency) => setCurrency(val)}
+                  >
+                    <SelectTrigger
+                      id="accCurrency"
+                      aria-label="Moeda"
+                      className="w-full h-9 text-xs bg-background text-foreground border-input focus:ring-2 focus:ring-ring font-mono"
+                    >
+                      <SelectValue placeholder="Selecione a moeda" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      {ACCOUNT_CURRENCIES.map((curr) => (
+                        <SelectItem key={curr} value={curr} className="text-xs font-mono">
+                          {curr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -451,7 +463,9 @@ export default function AccountsPage() {
                       <td className="px-4 py-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                         {acc.currency === 'USD'
                           ? `$ ${balanceVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                          : formatCurrencyBRL(balanceVal)}
+                          : acc.currency === 'EUR'
+                            ? `€ ${balanceVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            : formatCurrencyBRL(balanceVal)}
                       </td>
                       <td className="px-4 py-3 font-mono text-muted-foreground">
                         {acc.agency || acc.account_number

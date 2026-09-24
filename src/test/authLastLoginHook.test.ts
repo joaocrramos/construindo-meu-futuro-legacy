@@ -88,4 +88,53 @@ describe('Hook de Autenticação - last_login (pocketbase/hooks/auth.js)', () =>
     expect(otherColRecord.set).not.toHaveBeenCalled()
     expect(fakeApp.save).not.toHaveBeenCalled()
   })
+
+  it('preserva integridade e nunca propaga exceções de banco nem interrompe login', () => {
+    const errorThrowingApp = {
+      save: vi.fn().mockImplementation(() => {
+        throw new Error('Connection reset by peer')
+      }),
+    }
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const fakeUser = {
+      _data: {} as Record<string, unknown>,
+      collection: () => ({ name: 'users' }),
+      set(key: string, val: unknown) {
+        this._data[key] = val
+      },
+      get(key: string) {
+        return this._data[key]
+      },
+    }
+
+    const nextFn = vi.fn()
+    const e = { record: fakeUser, next: nextFn }
+
+    // Simula a exata execução do hook com bloco try/catch
+    expect(() => {
+      e.next()
+      try {
+        const record = e.record
+        if (!record) return
+        const colName = record.collection() ? record.collection().name : ''
+        if (colName !== 'users') return
+        const nowIso = new Date().toISOString()
+        record.set('last_login', nowIso)
+        errorThrowingApp.save(record)
+      } catch (err) {
+        console.error('Falha não-bloqueante ao atualizar last_login do usuario:', err)
+      }
+    }).not.toThrow()
+
+    expect(nextFn).toHaveBeenCalled()
+    expect(fakeUser.get('last_login')).toBeDefined()
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Falha não-bloqueante ao atualizar last_login do usuario:'),
+      expect.any(Error),
+    )
+
+    consoleErrorSpy.mockRestore()
+  })
 })

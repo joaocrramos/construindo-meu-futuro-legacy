@@ -401,6 +401,78 @@ describe('CRUD de Contas & Custódias', () => {
         expect.objectContaining({
           name: 'Reserva Emergência',
           is_active: false,
+          currency: 'BRL',
+        }),
+      )
+    })
+  })
+
+  it('5. Modal de conta renderiza select enumerado de moedas com opções BRL, USD, EUR e padrão BRL', async () => {
+    vi.mocked(accService.listAccounts).mockResolvedValue([])
+    vi.mocked(balService.listAccountBalances).mockResolvedValue([])
+    vi.mocked(instService.listInstitutions).mockResolvedValue([
+      {
+        id: 'inst_1',
+        user_id: 'usr_1',
+        name: 'Banco Itaú',
+        institution_type: 'bank',
+        is_active: true,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      },
+    ])
+    vi.mocked(accService.createAccount).mockResolvedValue({
+      id: 'acc_usd',
+      user_id: 'usr_1',
+      institution_id: 'inst_1',
+      name: 'Nomad Global',
+      account_type: 'international_checking',
+      currency: 'USD',
+      is_active: true,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    })
+
+    render(
+      <MemoryRouter>
+        <AccountsPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Criar primeira conta/i })).not.toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Criar primeira conta/i }))
+
+    // O trigger do Select de Moeda deve ter id="accCurrency" e aria-label="Moeda"
+    const currencyTrigger = screen.getByRole('combobox', { name: /Moeda/i })
+    expect(currencyTrigger).not.toBeNull()
+    expect(currencyTrigger.getAttribute('id')).toBe('accCurrency')
+    // Valor inicial padrão deve ser BRL
+    expect(currencyTrigger.textContent).toContain('BRL')
+
+    // Abre o select de moedas e seleciona USD
+    fireEvent.click(currencyTrigger)
+    const usdOption = await screen.findByRole('option', { name: /^USD$/i })
+    expect(usdOption).not.toBeNull()
+    // As outras opções BRL e EUR também devem existir
+    expect(screen.getByRole('option', { name: /^BRL$/i })).not.toBeNull()
+    expect(screen.getByRole('option', { name: /^EUR$/i })).not.toBeNull()
+
+    fireEvent.click(usdOption)
+
+    const nameInput = screen.getByPlaceholderText(/Ex.: Itaú Conta Principal/i)
+    fireEvent.change(nameInput, { target: { value: 'Nomad Global' } })
+
+    const submitBtn = screen.getByRole('button', { name: /Criar Conta/i })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(accService.createAccount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Nomad Global',
+          currency: 'USD',
         }),
       )
     })

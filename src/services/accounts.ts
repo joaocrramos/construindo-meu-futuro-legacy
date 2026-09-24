@@ -9,13 +9,16 @@ export type AccountType =
   | 'cash'
   | 'other'
 
+export const ACCOUNT_CURRENCIES = ['BRL', 'USD', 'EUR'] as const
+export type AccountCurrency = (typeof ACCOUNT_CURRENCIES)[number]
+
 export interface AccountRecord {
   id: string
   user_id: string
   institution_id: string
   name: string
   account_type: AccountType
-  currency: string
+  currency: AccountCurrency
   account_number?: string
   agency?: string
   is_active: boolean
@@ -30,7 +33,7 @@ export interface CreateAccountPayload {
   institution_id: string
   name: string
   account_type: AccountType
-  currency?: string
+  currency?: AccountCurrency
   account_number?: string
   agency?: string
   is_active?: boolean
@@ -40,7 +43,7 @@ export interface UpdateAccountPayload {
   institution_id?: string
   name?: string
   account_type?: AccountType
-  currency?: string
+  currency?: AccountCurrency
   account_number?: string
   agency?: string
   is_active?: boolean
@@ -68,6 +71,9 @@ export function translateAccountError(error: unknown): string {
     }
     if (data?.institution_id) {
       return 'Selecione uma instituição válida.'
+    }
+    if (data?.currency) {
+      return 'A moeda da conta deve ser BRL, USD ou EUR.'
     }
   }
 
@@ -99,12 +105,17 @@ export async function createAccount(payload: CreateAccountPayload): Promise<Acco
     throw new Error('Usuário não autenticado.')
   }
 
+  const validCurrency = (payload.currency || 'BRL').toUpperCase() as AccountCurrency
+  if (!ACCOUNT_CURRENCIES.includes(validCurrency)) {
+    throw new Error('A moeda da conta deve ser BRL, USD ou EUR.')
+  }
+
   try {
     const record = await pb.collection('accounts').create<AccountRecord>(
       {
         ...payload,
         user_id: userId,
-        currency: payload.currency || 'BRL',
+        currency: validCurrency,
         is_active: payload.is_active !== undefined ? payload.is_active : true,
       },
       {
@@ -127,8 +138,17 @@ export async function updateAccount(
   id: string,
   payload: UpdateAccountPayload,
 ): Promise<AccountRecord> {
+  const updateData = { ...payload }
+  if (updateData.currency) {
+    const validCurrency = updateData.currency.toUpperCase() as AccountCurrency
+    if (!ACCOUNT_CURRENCIES.includes(validCurrency)) {
+      throw new Error('A moeda da conta deve ser BRL, USD ou EUR.')
+    }
+    updateData.currency = validCurrency
+  }
+
   try {
-    const record = await pb.collection('accounts').update<AccountRecord>(id, payload, {
+    const record = await pb.collection('accounts').update<AccountRecord>(id, updateData, {
       expand: 'institution_id',
     })
     return record
