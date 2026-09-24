@@ -4,6 +4,23 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.115] - 2026-09-24 (Mock parcial de accounts em wealthInstitutionsAccounts.test e fixação de runner ubuntu-24.04 no CI)
+
+### Corrigido (Fixed)
+
+- **Mock Parcial em `wealthInstitutionsAccounts.test.tsx` (`src/test/wealthInstitutionsAccounts.test.tsx`)**:
+  - Corrigido automock total `vi.mock('@/services/accounts')` que esvaziava a constante canônica `ACCOUNT_CURRENCIES = ['BRL', 'USD', 'EUR']`.
+  - Aplicado mock parcial com factory assíncrona `async (importOriginal) => { const actual = await importOriginal(); ... }`, preservando a lista enumerada de moedas e mockando individualmente as funções de serviço (`listAccounts`, `createAccount`, `updateAccount`, `toggleAccountActive`, `translateAccountError`).
+  - Corrige falha determinística no teste "Modal de conta renderiza select enumerado de moedas com opções BRL, USD, EUR e padrão BRL", onde o gatilho Radix Select renderizava string vazia em vez do valor padrão "BRL".
+- **Fixação de Imagem do Runner no CI (`.github/workflows/ci.yml`)**:
+  - Fixada a imagem do runner GitHub Actions em `ubuntu-24.04` (em vez de `ubuntu-latest` flutuante para transição para Ubuntu 26.04), garantindo estabilidade e previsibilidade de ambiente na esteira de CI.
+
+### Governança de Versionamento (ADR-006)
+
+- Incremento de versão semântica para `0.0.115` sincronizada em `VERSION`, `package.json` e `CHANGELOG.md`.
+
+---
+
 ## [0.0.114] - 2026-09-24 (Moeda das contas como lista enumerada BRL, USD, EUR e robustez de last_login)
 
 ### Modificado (Changed)

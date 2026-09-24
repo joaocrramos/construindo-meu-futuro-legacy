@@ -9,7 +9,17 @@ import * as accService from '@/services/accounts'
 import * as balService from '@/services/accountBalances'
 
 vi.mock('@/services/institutions')
-vi.mock('@/services/accounts')
+vi.mock('@/services/accounts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/accounts')>()
+  return {
+    ...actual,
+    listAccounts: vi.fn(),
+    createAccount: vi.fn(),
+    updateAccount: vi.fn(),
+    toggleAccountActive: vi.fn(),
+    translateAccountError: vi.fn(actual.translateAccountError),
+  }
+})
 vi.mock('@/services/accountBalances')
 
 describe('CRUD de Instituições Financeiras', () => {
