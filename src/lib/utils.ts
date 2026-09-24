@@ -11,6 +11,4 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-const syntax_error_probe: number = "not a number"
-
 // Add any other utility functions here

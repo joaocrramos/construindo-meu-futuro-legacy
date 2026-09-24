@@ -4,6 +4,18 @@ Todas as modificações notáveis neste projeto serão documentadas neste arquiv
 
 ---
 
+## [0.0.106] - 2026-09-24 (Remoção de artefatos de debug commitados por engano)
+
+### Removido (Removed)
+
+- **Remoção de artefatos de debug commitados por engano**:
+  - Removido `src/test/tempEnvCheck.test.ts` (debug com asserção que falhava de propósito).
+  - Removido `src/test/gitVerifier.test.ts` (debug com asserções git).
+  - Removido `scripts/git-push-check.mjs` (script de debug).
+  - Revertidas alterações indevidas de probe/diagnóstico em `src/lib/utils.ts` e `src/test/checkMigrations.test.ts`.
+
+---
+
 ## [0.0.104] - 2026-09-24 (Remoção do arquivo de debug e consolidação da correção de timezone)
 
 ### Removido (Removed)
